@@ -1,0 +1,47 @@
+// Google Apps Script — paste this in your Google Sheet's Script Editor
+// Then deploy as Web App with "Anyone" access
+// Copy the deployment URL into VITE_GOOGLE_SHEETS_WEBHOOK in .env.local
+
+/*
+function doPost(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var data = JSON.parse(e.postData.contents);
+    
+    // Get or create the right sheet
+    var sheetName = data.type || 'EVENTS';
+    var sheet = ss.getSheetByName(sheetName);
+    if (!sheet) {
+      sheet = ss.insertSheet(sheetName);
+      // Add headers
+      var headers = ['Timestamp', 'Type', 'Affiliate ID', 'Name', 'Email', 'Product', 'Platform', 'Followers', 'Amount (INR)', 'Source URL'];
+      sheet.appendRow(headers);
+      sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#1a4d2e').setFontColor('white');
+    }
+    
+    sheet.appendRow([
+      data.timestamp,
+      data.type,
+      data.affId,
+      data.affName,
+      data.affEmail,
+      data.product,
+      data.platform,
+      data.followers || '',
+      data.amount || 0,
+      data.source || ''
+    ]);
+    
+    return ContentService.createTextOutput(JSON.stringify({success: true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({error: err.message}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  return ContentService.createTextOutput('Avani Agro Foods — Affiliate Tracker Active')
+    .setMimeType(ContentService.MimeType.TEXT);
+}
+
