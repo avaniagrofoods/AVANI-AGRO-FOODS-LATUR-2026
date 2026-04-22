@@ -6,6 +6,8 @@ import {
 } from 'lucide-react'
 import SEO from '../components/SEO'
 import { CATALOG_LINK, WHATSAPP_NUMBER, AFFILIATE_LINKS, STRIPE_LINKS } from '../data/links'
+import LeadMagnet from '../components/LeadMagnet'
+import { useLanguage } from '../context/LanguageContext'
 
 const STATS = [
   { label: 'Export Countries', value: '25+', icon: Globe },
@@ -51,6 +53,7 @@ const TESTIMONIALS = [
 ]
 
 export default function Home() {
+  const { t, isRTL } = useLanguage()
   const [activeTab, setActiveTab] = useState('Global')
 
   return (
@@ -71,29 +74,29 @@ export default function Home() {
         <div style={{ position: 'absolute', top: '10%', right: '5%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(34,197,94,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: '5%', left: '10%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,68,68,0.03) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-        <div className="container" style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
-          <div>
+        <div className="container" style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center', direction: isRTL ? 'rtl' : 'ltr' }}>
+          <div style={{ textAlign: isRTL ? 'right' : 'left' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 30, padding: '6px 16px', marginBottom: 24 }}>
               <Globe size={14} color="var(--color-primary)" />
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--color-primary)' }}>Exporting from Latur, Maharashtra</span>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--color-primary)' }}>{activeTab === 'Global' ? 'Exporting Globally' : 'Market Specific Export'}</span>
             </div>
 
-            <h1 style={{ fontSize: 'clamp(2.4rem, 5vw, 3.8rem)', fontWeight: 900, color: 'var(--color-text)', lineHeight: 1.15, marginBottom: 24 }}>
-              India's Finest
-              <span style={{ display: 'block', background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Moringa Powder</span>
-              Global Export
+            <h1 style={{ fontSize: 'clamp(2.4rem, 5vw, 3.8rem)', fontWeight: 900, color: 'var(--color-text)', lineHeight: 1.15, marginBottom: 24, textAlign: isRTL ? 'right' : 'left' }}>
+              {t.heroTitle1}
+              <span style={{ display: 'block', background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t.heroTitle2}</span>
+              {t.heroTitle3}
             </h1>
 
-            <p style={{ fontSize: '1.1rem', color: 'var(--color-text-light)', lineHeight: 1.7, maxWidth: 500, marginBottom: 40 }}>
-              Premium FSSAI & APEDA-certified Moringa Powder and Red Onion Powder — export-ready for USA, UK, UAE, and 25+ countries. Minimum 100 kg. Samples available.
+            <p style={{ fontSize: '1.1rem', color: 'var(--color-text-light)', lineHeight: 1.7, maxWidth: 500, marginBottom: 40, marginLeft: isRTL ? 'auto' : 0, marginRight: isRTL ? 0 : 'auto', textAlign: isRTL ? 'right' : 'left' }}>
+              {t.heroDesc}
             </p>
 
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: isRTL ? 'flex-end' : 'flex-start' }}>
               <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi! I need a quote for Moringa Powder bulk order.')}`} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ gap: 8 }}>
-                <Zap size={18} /> Get Bulk Quote
+                <Zap size={18} /> {t.getQuote}
               </a>
-              <a href={CATALOG_LINK} target="_blank" rel="noopener noreferrer" className="btn" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.25)', gap: 8 }}>
-                <Package size={18} /> View Catalog
+              <a href={CATALOG_LINK} target="_blank" rel="noopener noreferrer" className="btn" style={{ background: 'rgba(34,197,94,0.05)', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', gap: 8 }}>
+                <Package size={18} /> {t.viewCatalog}
               </a>
             </div>
 
@@ -140,6 +143,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <LeadMagnet />
 
       {/* ── STATS ── */}
       <section style={{ background: 'var(--color-primary)', padding: '64px 0' }}>
@@ -192,79 +197,87 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── AFFILIATE LINKS ── */}
-      <section style={{ padding: '96px 0', background: 'var(--color-bg-alt)' }}>
+      {/* ── PARTNER LINKS (AMAZON & IHERB) ── */}
+      <section id="partner-links" style={{ padding: '96px 0', background: 'var(--color-bg-alt)' }}>
         <div className="container">
           <div className="section-header">
-            <div className="section-tag" style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--color-accent)', border: '1px solid rgba(239,68,68,0.2)' }}>Global Affiliate Program</div>
-            <h2 className="section-title">Shop Our Partner Products</h2>
-            <p className="section-desc">Discover top-rated Moringa products on Amazon and iHerb. Hand-picked for quality & authenticity.</p>
+            <div className="section-tag" style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--color-accent)', border: '1px solid rgba(239,68,68,0.2)' }}>Shop Global Partner Products</div>
+            <h2 className="section-title">Global Associate & Partner Links</h2>
+            <p className="section-desc">Recommended Moringa products and dietary supplements from our trusted global partners.</p>
           </div>
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 40, flexWrap: 'wrap' }}>
             {['Global', 'India'].map(t => (
               <button key={t} onClick={() => setActiveTab(t)} className="btn" style={{
-                background: activeTab === t ? 'var(--color-accent)' : 'rgba(255,255,255,0.08)',
-                color: 'white'
-              }}>{t === 'Global' ? '🌍 Global Buyers' : '🇮🇳 India Buyers'}</button>
+                background: activeTab === t ? 'var(--color-accent)' : '#fff',
+                color: activeTab === t ? 'white' : 'var(--color-text)',
+                border: '1px solid var(--color-border)',
+                fontWeight: 800
+              }}>{t === 'Global' ? '🌍 Global Buyers Links' : '🇮🇳 India Buyers Links'}</button>
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
             {activeTab === 'Global' ? (
               <>
-                {[AFFILIATE_LINKS.AMAZON.GLOBAL, AFFILIATE_LINKS.AMAZON.KULI_KULI, AFFILIATE_LINKS.IHERB.US].map(link => (
-                  <a key={link.name} href={link.url} target="_blank" rel="noopener noreferrer" style={{
-                    display: 'block', textDecoration: 'none',
-                    background: 'white', border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)', padding: '24px', transition: 'all 0.2s ease',
-                    boxShadow: 'var(--shadow-sm)'
-                  }}
-                    onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.transform = 'translateY(-4px)' }}
-                    onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.transform = 'translateY(0)' }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                      <span style={{ background: 'rgba(34,197,94,0.1)', color: 'var(--color-primary)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '3px 10px', borderRadius: 30 }}>{link.platform}</span>
-                      <ExternalLink size={14} color="var(--color-text-light)" />
+                {[
+                  AFFILIATE_LINKS.AMAZON.GLOBAL,
+                  AFFILIATE_LINKS.AMAZON.KULI_KULI,
+                  AFFILIATE_LINKS.IHERB.US,
+                ].map(link => (
+                  <div key={link.name} className="card card-hover" style={{ padding: '32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                        <span className="badge">{link.platform}</span>
+                        <ExternalLink size={16} color="var(--color-text-light)" />
+                      </div>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: 8 }}>{link.name}</h3>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginBottom: 24 }}>{link.market} — {link.commission} Commission</p>
                     </div>
-                    <div style={{ fontWeight: 800, color: 'var(--color-text)', marginBottom: 8 }}>{link.name}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginBottom: 14 }}>{link.market} — Commission: {link.commission}</div>
-                    <div className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: '0.85rem' }}>
-                      Shop Now <ExternalLink size={14} />
-                    </div>
-                  </a>
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', gap: 8 }}>
+                      Shop on {link.platform} <ExternalLink size={14} />
+                    </a>
+                  </div>
+                ))}
+                {/* Future Provision Links */}
+                {AFFILIATE_LINKS.FUTURE.filter(l => !l.placeholder).map(link => (
+                  <div key={link.id} className="card" style={{ padding: '32px', opacity: 0.6 }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 800 }}>{link.name}</h3>
+                    <p style={{ fontSize: '0.8rem' }}>Coming Soon</p>
+                  </div>
                 ))}
               </>
             ) : (
               <>
-                {[AFFILIATE_LINKS.AMAZON.ORGANIC_INDIA, AFFILIATE_LINKS.AMAZON.HIMALAYAN_ORGANICS, AFFILIATE_LINKS.IHERB.INDIA].map(link => (
-                  <a key={link.name} href={link.url} target="_blank" rel="noopener noreferrer" style={{
-                    display: 'block', textDecoration: 'none',
-                    background: 'white', border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)', padding: '24px', transition: 'all 0.2s ease',
-                    boxShadow: 'var(--shadow-sm)'
-                  }}
-                    onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.transform = 'translateY(-4px)' }}
-                    onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.transform = 'translateY(0)' }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                      <span style={{ background: 'rgba(34,197,94,0.1)', color: 'var(--color-primary)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '3px 10px', borderRadius: 30 }}>{link.platform}</span>
-                      <ExternalLink size={14} color="var(--color-text-light)" />
+                {[
+                  AFFILIATE_LINKS.AMAZON.ORGANIC_INDIA,
+                  AFFILIATE_LINKS.AMAZON.HIMALAYAN_ORGANICS,
+                  AFFILIATE_LINKS.IHERB.INDIA,
+                ].map(link => (
+                  <div key={link.name} className="card card-hover" style={{ padding: '32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                        <span className="badge">{link.platform}</span>
+                        <ExternalLink size={16} color="var(--color-text-light)" />
+                      </div>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: 8 }}>{link.name}</h3>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginBottom: 24 }}>{link.market} — {link.commission} Commission</p>
                     </div>
-                    <div style={{ fontWeight: 800, color: 'var(--color-text)', marginBottom: 8 }}>{link.name}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginBottom: 14 }}>{link.market} — Commission: {link.commission}</div>
-                    <div className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: '0.85rem' }}>
-                      Shop Now <ExternalLink size={14} />
-                    </div>
-                  </a>
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', gap: 8 }}>
+                      Shop on {link.platform} <ExternalLink size={14} />
+                    </a>
+                  </div>
                 ))}
               </>
             )}
           </div>
 
-          <div style={{ textAlign: 'center', marginTop: 32 }}>
+          <div style={{ textAlign: 'center', marginTop: 48 }}>
+            <div style={{ fontSize: '0.9rem', color: 'var(--color-text-light)', marginBottom: 24 }}>
+              Are you a content creator? Want to earn commission like this?
+            </div>
             <Link to="/affiliate" className="btn" style={{ background: 'var(--color-accent)', color: 'white', gap: 8 }}>
-              Become an Affiliate Partner <ArrowRight size={16} />
+              Learn About Our Affiliate Program <ArrowRight size={18} />
             </Link>
           </div>
         </div>

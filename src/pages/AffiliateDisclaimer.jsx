@@ -41,7 +41,7 @@ export default function AffiliateDisclaimer() {
             We only recommend products that we genuinely believe in or have seen used effectively in the agriculture and wellness space. Our recommendations are based on quality, certifications (FSSAI, Organic), and market demand — not just commission rates.
           </p>
           <p style={{ color: 'var(--color-text-light)', lineHeight: 1.8, marginTop: 16 }}>
-            If you have any questions, please contact us at <a href="mailto:avaniagrofoods1356@gmail.com" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>avaniagrofoods1356@gmail.com</a>.
+            If you have any questions, please contact us at <a href="mailto:sales@avaniagrofoods.com" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>sales@avaniagrofoods.com</a>.
           </p>
         </section>
       </div>

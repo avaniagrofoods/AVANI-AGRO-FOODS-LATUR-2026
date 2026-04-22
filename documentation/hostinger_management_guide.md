@@ -1,0 +1,83 @@
+# Avani Agro Foods: Hostinger hPanel Management Guide
+
+This guide provides a detailed, step-by-step explanation of your Hostinger dashboard (hPanel). Use this to manage your website, set up professional communications, and explore new AI-powered growth tools.
+
+---
+
+## 🚀 Immediate "To-Dos" (Top Priority)
+
+Your dashboard currently shows two critical items that should be completed to professionalize your business:
+
+### 1. Claim your Free Email
+- **What it is**: Your hosting plan includes professional email addresses (e.g., `info@avaniagrofoods.com`).
+- **Why it matters**: Sending business emails from a `@gmail.com` address can look unprofessional to large B2B importers.
+- **Action**: Click the **[Claim]** button. I recommend creating:
+  - `info@avaniagrofoods.com` (General inquiries)
+  - `sales@avaniagrofoods.com` (For quotations and orders)
+
+### 2. Claim your Free Email Marketing Plan (Reach)
+- **What it is**: Access to Hostinger **Reach**, an AI email marketing tool.
+- **Why it matters**: You can send newsletters and product updates (like "New Batch of Moringa Powder Ready!") to your list of importers.
+- **Action**: Click **[Get Started]** to activate your 1-year free trial.
+
+---
+
+## 🛠️ Menu Navigation (Step-by-Step)
+
+### 🏠 Home
+The starting point. It shows your hosting status, resource usage, and the "To-Dos" mentioned above.
+
+### 🌐 Websites
+This is where you manage [avaniagrofoods.com](https://avaniagrofoods.com).
+- **File Manager**: This is where your website's code lives. (We used this to fix the "White Screen" error).
+- **Backups**: Hostinger takes daily/weekly backups. **Check this once a month** to ensure backups are running successfully.
+- **SSL**: Ensure this is "Active." It provides the padlock icon in the browser, which is crucial for trust.
+
+### 🌍 Domains
+Manage your domain settings.
+- **DNS Zone Editor**: Used if you ever need to connect external services (like Google Workspace or custom tracking).
+- **Auto-Renewal**: Ensure this is **ON** so you don't accidentally lose your domain name.
+
+### ✨ Horizons (Vibe Coding)
+- **What it is**: A new feature where you "talk" to an AI to build small apps.
+- **When to use it**: Use this if you want to build a small side-tool, such as a "Moringa Dosage Calculator" or a "Shipping Cost Estimator," without writing code.
+- **Note**: This is separate from your main React platform we just deployed.
+
+### 📧 Emails
+Manage your business mailboxes.
+- **Create Account**: Add new employees or departments.
+- **Webmail**: A simple browser-based way to read your emails if you aren't using Outlook or Gmail.
+
+### 📈 Reach
+- **Feature**: AI-powered email campaigns.
+- **Field-by-Field**: Define your **Audience**, use the **AI Content Generator** to write the email, and **Schedule** the send time. It handles all the technical stuff (SPF/DKIM) for you.
+
+### 🛒 eCommerce
+- **Only relevant** if you decide to use Hostinger's built-in store builder. Since we have built a custom React platform, you likely won't need this section unless you launch a secondary retail shop.
+
+### 🖥️ VPS (Virtual Private Server)
+- High-level hosting for very high-traffic sites. You are currently on **Shared/Cloud Web Hosting**, which is perfect for your needs. You can ignore this unless your traffic grows to millions of visitors.
+
+### 👥 Agents (Beta)
+- Use this if you want to give a developer (like me) temporary access to your dashboard without sharing your main password.
+
+### 💳 Billing
+- View your invoices and manage your payment methods (Credit Card/UPI/PayPal).
+
+---
+
+## 🛡️ Security & Maintenance (Field-by-Field)
+
+To keep your site safe, configure these settings:
+
+1. **Two-Factor Authentication (2FA)**:
+   - Go to **Account > Account Settings**.
+   - Enable 2FA using an app like Google Authenticator. This prevents hackers from accessing your dashboard even if they have your password.
+
+2. **Daily Backups**:
+   - Go to **Websites > Manage > Files > Backups**.
+   - Ensure "Daily Backups" is active (it usually is on premium plans).
+
+3. **Performance Monitoring**:
+   - Go to **Websites > Manage > Analytics**.
+   - Check your "Visitor" count and "Resource Usage" to see if your site is getting popular!

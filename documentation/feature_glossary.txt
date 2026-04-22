@@ -1,0 +1,56 @@
+AVANI AGRO FOODS - HOSTINGER FEATURE GLOSSARY
+==========================================================
+
+This glossary explains exactly what the icons in your Hostinger Services menu mean 
+for your specific "Avani Agro Foods" project.
+
+--- 1. HOSTING SECTION ---
+
+- WEB HOSTING (The Globe Icon): 
+  The "House" for your website. This is the field where you upload your `dist` folder.
+  
+- NODE.JS WEB APPS (JS Icon):
+  A powerful field for running background programs. Not needed for your site today, 
+  but used if you ever want to add a real-time database.
+
+- CLOUD HOSTING (Cloud Icon):
+  A faster, more expensive version of Web Hosting. Use this if your traffic 
+  reaches over 100,000 visitors per month.
+
+--- 2. WEBSITES SECTION ---
+
+- WEBSITE BUILDER (Pencil Icon):
+  A tool for beginners. **NOTE**: Do not use this. You already have a professional 
+  custom-coded site which is much better than what the builder creates.
+
+- ECOMMERCE WEBSITE BUILDER (Cart Icon):
+  A tool for simple online shops. **NOTE**: Avoid this. Your B2B Store is custom-built 
+  to handle the unique "Verified Partner" logic you requested.
+
+--- 3. DOMAINS SECTION ---
+
+- DOMAIN NAME SEARCH (Globe with Magnifying Glass):
+  The field where you buy your address (e.g., `avaniagrofoods.com`).
+
+- DOMAIN TRANSFER (Arrow Icon):
+  Used if you ever want to move your website address away from Hostinger to another provider.
+
+--- 4. EMAIL SECTION ---
+
+- BUSINESS EMAIL (Envelope Icon):
+  The field where you create professional addresses like `sales@avaniagrofoods.com`. 
+  This increases trust significantly with international B2B partners.
+
+- EMAIL MARKETING (Megaphone Icon):
+  Used to send bulk emails (newsletters) to all the Manufacturers and Importers 
+  listed in your directories.
+
+--- 5. VPS SECTION ---
+
+- VPS HOSTING:
+  "Virtual Private Server". High-level hosting for experts. You don't need this for 
+  the next 2 years as your Business Plan is plenty powerful.
+
+==========================================================
+Updated: 2026-04-19
+==========================================================

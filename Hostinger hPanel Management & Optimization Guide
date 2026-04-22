@@ -1,0 +1,33 @@
+# Hostinger hPanel Management & Optimization Guide
+
+This plan outlines the creation of a detailed, step-by-step guide for managing your Hostinger account. This guide will help you navigate the new dashboard features and ensure your hosting environment is secure and optimized.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **To-Do Items**: Your dashboard shows two urgent "To-Dos": **Claiming your free email** and **Claiming your free email marketing plan**. I recommend completing these as soon as possible to establish professional communication with your B2B partners.
+
+## Proposed Changes
+
+### Documentation
+
+#### [NEW] [hostinger_management_guide.md](file:///C:/Users/ALPHA-1/OneDrive/Desktop/AVANI%20AGRO%20FOODS%20LATUR%202026/documentation/hostinger_management_guide.md)
+Create a comprehensive markdown file that covers:
+1. **Home Section**: Explaining the "To-Dos" and overview.
+2. **Websites Section**: How to access the File Manager, check SSL status, and manage backups.
+3. **Domains Section**: DNS management and ensuring your domain doesn't expire.
+4. **Horizons (Vibe Coding)**: Explain how this AI tool works and when (or when not) to use it for your current custom React project.
+5. **Emails**: Step-by-step on setting up `info@avaniagrofoods.com`.
+6. **Reach**: Explanation of the new AI-powered email marketing tool for your B2B newsletters.
+7. **Security & Maintenance**: Setting up 2FA, daily backups, and performance monitoring.
+
+## Open Questions
+
+1. **Email Preferences**: Do you have a preferred email address format? (e.g., `info@...`, `sales@...`, or `support@...`)
+2. **Target Audience**: For the "Reach" email marketing, do you have an existing list of importer emails to upload?
+
+## Verification Plan
+
+### Manual Verification
+- **Guide Review**: I will present the guide to you and ensure it matches the current UI you see on your screen.
+- **Actionable Steps**: I will walk you through the first few steps (like claiming the email) if you are ready.

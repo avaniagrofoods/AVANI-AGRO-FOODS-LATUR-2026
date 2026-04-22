@@ -34,7 +34,7 @@ export default function Importers() {
   }
 
   return (
-    <PasswordGate title="Global Importers Database" subtitle="This database contains 30 verified global importers of Moringa Powder & Onion Powder." storageKey="imp_access">
+    <PasswordGate password="Samarth@1356" title="Global Importers Database" subtitle="This database contains 30 verified global importers of Moringa Powder & Onion Powder." storageKey="imp_access">
       <SEO title="Global Importers Database" description="30 verified international importers of Moringa Powder and Red Onion Powder from India. USA, EU, UAE, Japan, Australia and more." />
 
       <div className="page-top">

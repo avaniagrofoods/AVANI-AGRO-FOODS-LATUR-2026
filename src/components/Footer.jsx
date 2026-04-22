@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
 import { Mail, Phone, MapPin, Globe, Leaf, Shield, FileText, ExternalLink } from 'lucide-react'
 import { CATALOG_LINK, WHATSAPP_NUMBER, OWNER_EMAIL } from '../data/links'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function Footer() {
+  const { t, isRTL } = useLanguage()
   const year = new Date().getFullYear()
   return (
     <footer className="footer">
@@ -10,16 +12,16 @@ export default function Footer() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 48, marginBottom: 48 }}>
           
           {/* Brand Column */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <img src="/logo.jpeg" alt="Logo" style={{ height: 44, width: 44, objectFit: 'contain', borderRadius: 8 }} onError={e => e.target.style.display='none'} />
-              <div>
+          <div style={{ textAlign: isRTL ? 'right' : 'left' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, justifyContent: isRTL ? 'flex-end' : 'flex-start' }}>
+              <img src="/logo.png" alt="Logo" style={{ height: 44, width: 44, objectFit: 'contain', borderRadius: 8 }} onError={e => e.target.style.display='none'} />
+              <div style={{ textAlign: isRTL ? 'right' : 'left' }}>
                 <div style={{ fontWeight: 900, fontSize: '1.05rem', color: 'white' }}>AVANI AGRO FOODS</div>
                 <div style={{ fontSize: '0.6rem', letterSpacing: '0.15em', textTransform: 'uppercase', opacity: 0.5 }}>Export · Affiliate · B2B</div>
               </div>
             </div>
             <p style={{ fontSize: '0.875rem', opacity: 0.65, lineHeight: 1.7, marginBottom: 20 }}>
-              Premium Moringa Powder &amp; Red Onion Powder exporter from Latur, Maharashtra, India. Certified quality for global markets.
+              {t.heroDesc.split('—')[0]}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <a href={`mailto:${OWNER_EMAIL}`} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', color: 'rgba(255,255,255,0.65)' }}>
@@ -35,15 +37,15 @@ export default function Footer() {
           </div>
 
           {/* Quick Links */}
-          <div>
-            <h4 style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-accent)', marginBottom: 20 }}>Quick Links</h4>
+          <div style={{ textAlign: isRTL ? 'right' : 'left' }}>
+            <h4 style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-accent)', marginBottom: 20 }}>{isRTL ? 'روابط سريعة' : 'Quick Links'}</h4>
             <nav className="footer-links" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <Link to="/">Home</Link>
+              <Link to="/">{t.home}</Link>
               <Link to="/about">About Avani Agro</Link>
               <Link to="/products">Products</Link>
               <Link to="/blog">Export & Health Blog</Link>
               <Link to="/affiliate">Affiliate Program</Link>
-              <Link to="/b2b-store">B2B Store</Link>
+              <Link to="/b2b">B2B Store</Link>
               <Link to="/contact">Contact & Inquiry</Link>
               <a href={CATALOG_LINK} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 📄 Product Catalog <ExternalLink size={12} />

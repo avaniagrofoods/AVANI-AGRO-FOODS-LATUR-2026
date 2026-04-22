@@ -1,0 +1,44 @@
+# Implementation Plan: 'Auto Mode' Project & Website Update
+
+The goal is to finalize the standardization of the business contact information by updating the local environment configuration and deploying the changes to the live website (`avaniagrofoods.com`).
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Deployment Target Selection**: The codebase contains both Hostinger (manual walkthrough) and Vercel (`.vercel/`, `vercel.json`) configurations.
+> - I propose using **Vercel** for the "auto mode" update as it supports a programmatic deployment flow (`npx vercel --prod`).
+> - Please confirm if `avaniagrofoods.com` is currently managed via Vercel. If it is on Hostinger, the "auto mode" update will require a manual upload of the `deploy.zip` archive after I prepare it.
+
+> [!WARNING]
+> **Environment Variables**: I detected that `.env.local` still contains the old Gmail address. I will update this to ensure the build process picks up the correct professional email.
+
+## Proposed Changes
+
+### Configuration & Folder Update
+
+#### [MODIFY] [.env.local](file:///c:/Users/ALPHA-1/OneDrive/Desktop/AVANI%20AGRO%20FOODS%20LATUR%202026/.env.local)
+- Update `VITE_OWNER_EMAIL` to `sales@avaniagrofoods.com`.
+
+### Production Build
+
+- Execute `npm run build` to generate the latest production assets in the `dist/` folder.
+- (Optional) Create an updated `deploy.zip` if Hostinger is the final destination.
+
+### Website Deployment
+
+- Execute `npx vercel --prod` to trigger an automated production deployment.
+- This will synchronize the live website with the updated local "folder" content.
+
+## Open Questions
+
+- **Vercel Link**: Is the project currently logged in to Vercel on this machine? If not, the automated deployment might prompt for a login, which will require your intervention.
+- **Hostinger Baseline**: If the site is purely on Hostinger, would you like me to prepare the `deploy.zip` and provide instructions for the manual upload?
+
+## Verification Plan
+
+### Automated Verification
+- Run `npm run build` and check for any environment variable injection errors.
+- Use `browser_subagent` to visit the live site after deployment and verify the footer/contact info.
+
+### Manual Verification
+- Final smoke test of the Contact Form on the live site to ensure emails arrive at `sales@avaniagrofoods.com`.

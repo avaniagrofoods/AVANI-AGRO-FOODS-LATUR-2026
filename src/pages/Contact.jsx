@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import SEO from '../components/SEO'
 import { sendContactEmail, sendAutoReply } from '../lib/emailjs'
 import { logInquiry } from '../lib/googleSheets'
+import QuotationBuilder from '../components/QuotationBuilder'
+import PasswordGate from '../components/PasswordGate'
 import { WHATSAPP_NUMBER } from '../data/links'
 import { Mail, Phone, MapPin, MessageSquare, Send, Globe, FileText } from 'lucide-react'
 
@@ -15,6 +18,9 @@ const INQUIRY_TYPES = [
 ]
 
 export default function Contact() {
+  const navigate = useNavigate()
+  const redirectTimer = useRef(null)
+
   const [form, setForm] = useState({
     firstName: '', lastName: '', email: '', phone: '', company: '', country: '',
     inquiryType: INQUIRY_TYPES[0], message: ''
@@ -22,6 +28,13 @@ export default function Contact() {
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(false)
   const [showQuote, setShowQuote] = useState(false)
+  const [showAdminPopup, setShowAdminPopup] = useState(false)
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimer.current) clearTimeout(redirectTimer.current)
+    }
+  }, [])
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
@@ -62,6 +75,13 @@ export default function Contact() {
       setStatus('success')
       if (['Export Pricing Request', 'Sample Request', 'Bulk B2B Inquiry', 'Importer / Distributor Partnership'].includes(form.inquiryType)) {
         setShowQuote(true)
+        redirectTimer.current = setTimeout(() => {
+          navigate('/')
+        }, 5000)
+      } else {
+        redirectTimer.current = setTimeout(() => {
+          navigate('/')
+        }, 5000)
       }
     } catch (err) {
       console.error(err)
@@ -100,7 +120,7 @@ export default function Contact() {
               <div className="card" style={{ padding: '32px' }}>
                 <h2 style={{ fontSize: '1.3rem', fontWeight: 900, marginBottom: 28 }}>Contact Details</h2>
                 {[
-                  { icon: Mail, label: 'Email', value: 'avaniagrofoods1356@gmail.com', href: 'mailto:avaniagrofoods1356@gmail.com' },
+                  { icon: Mail, label: 'Email', value: 'sales@avaniagrofoods.com', href: 'mailto:sales@avaniagrofoods.com' },
                   { icon: Phone, label: 'WhatsApp', value: '+91 7219053645', href: `https://wa.me/${WHATSAPP_NUMBER}` },
                   { icon: MapPin, label: 'Location', value: 'Latur, Maharashtra, India — 413512', href: null },
                   { icon: Globe, label: 'Export Ports', value: 'Nhava Sheva (JN Port), Mumbai', href: null },
@@ -142,14 +162,15 @@ export default function Contact() {
 
             {/* Form */}
             <div>
-              {status === 'success' && !showQuote && (
+              {status === 'success' && !showQuote && !showAdminPopup && (
                 <div style={{ background: 'rgba(26,77,46,0.1)', border: '1px solid var(--color-primary)', borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: 28 }}>
                   <div style={{ fontWeight: 800, color: 'var(--color-primary)', marginBottom: 6 }}>✅ Message received!</div>
                   <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--color-text)' }}>Thank you! We'll respond within 24 hours. A confirmation email has been sent to {form.email}.</p>
+                  <p style={{ margin: '10px 0 0 0', fontSize: '0.85rem', color: 'var(--color-text-light)' }}>Redirecting to Home page in 5 seconds...</p>
                 </div>
               )}
 
-              {!showQuote ? (
+              {!showQuote && !showAdminPopup ? (
                 <div className="card" style={{ padding: '40px' }}>
                   <h2 style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: 8 }}>Send an Inquiry</h2>
                   <p style={{ color: 'var(--color-text-light)', fontSize: '0.9rem', marginBottom: 32 }}>Fill out the form and a proforma quotation will appear automatically for export inquiries.</p>
@@ -198,7 +219,7 @@ export default function Contact() {
 
                     {status === 'error' && (
                       <div style={{ color: '#dc2626', fontSize: '0.85rem', background: 'rgba(220,38,38,0.08)', padding: 12, borderRadius: 8 }}>
-                        ⚠️ Failed to send. Please email us directly at <a href="mailto:avaniagrofoods1356@gmail.com">avaniagrofoods1356@gmail.com</a>
+                        ⚠️ Failed to send. Please email us directly at <a href="mailto:sales@avaniagrofoods.com">sales@avaniagrofoods.com</a>
                       </div>
                     )}
 
@@ -211,20 +232,54 @@ export default function Contact() {
                     </p>
                   </form>
                 </div>
-              ) : (
-                <div>
-                  <div style={{ background: 'rgba(26,77,46,0.08)', border: '1px solid var(--color-primary)', borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: 32 }}>
-                    <div style={{ fontWeight: 800, color: 'var(--color-primary)', marginBottom: 6 }}>✅ Inquiry Received — Your Proforma Quotation is Ready!</div>
-                    <p style={{ margin: 0, fontSize: '0.9rem' }}>Review and customize your quotation below. Print or save as PDF.</p>
+              ) : showQuote ? (
+                <div className="animate-in">
+                  <div style={{ background: 'rgba(26,77,46,0.08)', border: '1px solid var(--color-primary)', borderRadius: 'var(--radius-md)', padding: '32px', marginBottom: 40, textAlign: 'center' }}>
+                    <div style={{ fontSize: '3rem', marginBottom: 16 }}>✅</div>
+                    <div style={{ fontWeight: 900, color: 'var(--color-primary)', fontSize: '1.5rem', marginBottom: 12 }}>Inquiry Received Successfully!</div>
+                    <p style={{ fontSize: '1rem', color: 'var(--color-text)', maxWidth: 600, margin: '0 auto 24px' }}>
+                      Thank you for your interest in Avani Agro Foods. Our team will review your requirements and respond within 24 hours.
+                    </p>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--color-text-light)' }}>
+                      A confirmation email has been sent to <strong>{form.email}</strong>.
+                    </div>
+                    <div style={{ marginTop: 24, fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                      Redirecting to Home page in 5 seconds...
+                    </div>
                   </div>
-                  <div className="card" style={{ padding: '32px' }}>
-                    <QuotationBuilder defaultName={`${form.firstName} ${form.lastName} — ${form.company}`} defaultEmail={form.email} defaultCountry={form.country} />
+
+                  <div style={{ textAlign: 'center', marginTop: 24 }}>
+                    <button onClick={() => {
+                      if (redirectTimer.current) clearTimeout(redirectTimer.current)
+                      setShowQuote(false)
+                      setShowAdminPopup(true)
+                    }} style={{ background: 'none', border: 'none', color: 'var(--color-text-light)', fontSize: '0.8rem', textDecoration: 'underline', cursor: 'pointer' }}>
+                      Admin: View Quotation
+                    </button>
                   </div>
-                  <button onClick={() => setShowQuote(false)} className="btn" style={{ marginTop: 20 }}>
-                    <FileText size={16} /> &larr; Back to Contact Form
-                  </button>
                 </div>
-              )}
+              ) : showAdminPopup ? (
+                <div className="animate-in">
+                  <PasswordGate 
+                    password="Samarth@1356" 
+                    title="Unlock Your Quotation" 
+                    description="As per our professional policy, export quotations are protected. Please enter the access password provided to you or use the default one if applicable."
+                  >
+                    <div style={{ marginTop: 20 }}>
+                      <QuotationBuilder defaultName={`${form.firstName} ${form.lastName} — ${form.company}`} defaultEmail={form.email} defaultCountry={form.country} />
+                    </div>
+                  </PasswordGate>
+
+                  <div style={{ textAlign: 'center', marginTop: 40 }}>
+                    <button onClick={() => {
+                      setShowAdminPopup(false)
+                      navigate('/')
+                    }} className="btn" style={{ gap: 8 }}>
+                      <MessageSquare size={16} /> &larr; Return to Home
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

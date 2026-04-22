@@ -1,0 +1,47 @@
+# Implementation Plan - Contact Information Update
+
+This plan outlines the steps to transition the website's contact email from `avaniagrofoods1356@gmail.com` to `sales@avaniagrofoods.com` and ensure all website links point to `https://avaniagrofoods.com/`.
+
+## User Review Required
+
+> [!IMPORTANT]
+> The update will change the destination email for all contact forms. Please ensure that `sales@avaniagrofoods.com` is correctly set up in your EmailJS dashboard or where you receive these emails.
+
+## Proposed Changes
+
+The changes will be applied to all source files where the old email is mentioned.
+
+### Configuration & Data
+
+#### [MODIFY] [links.js](file:///c:/Users/ALPHA-1/OneDrive/Desktop/AVANI%20AGRO%20FOODS%20LATUR%202026/src/data/links.js)
+- Update `OWNER_EMAIL`.
+- Note: `ZOHO_CRM_DASHBOARD` contains the old prefix; I will leave it as is unless confirmed otherwise, as it's likely a specific account URL.
+
+#### [MODIFY] [blogs.js](file:///c:/Users/ALPHA-1/OneDrive/Desktop/AVANI%20AGRO%20FOODS%20LATUR%202026/src/data/blogs.js)
+- Update all occurrences of the email in blog content and CTAs.
+
+### Logic & Services
+
+#### [MODIFY] [emailjs.js](file:///c:/Users/ALPHA-1/OneDrive/Desktop/AVANI%20AGRO%20FOODS%20LATUR%202026/src/lib/emailjs.js)
+- Update the recipient email address for form submissions.
+
+### UI Components & Pages
+
+#### [MODIFY] [Contact.jsx](file:///c:/Users/ALPHA-1/OneDrive/Desktop/AVANI%20AGRO%20FOODS%20LATUR%202026/src/pages/Contact.jsx)
+- Update display email and error message contact link.
+
+#### [MODIFY] [About.jsx](file:///c:/Users/ALPHA-1/OneDrive/Desktop/AVANI%20AGRO%20FOODS%20LATUR%202026/src/pages/About.jsx)
+- Update contact section email.
+
+#### [MODIFY] [Legal Pages](file:///c:/Users/ALPHA-1/OneDrive/Desktop/AVANI%20AGRO%20FOODS%20LATUR%202026/src/pages/)
+- Update email in `Privacy.jsx`, `Disclaimer.jsx`, and `AffiliateDisclaimer.jsx`.
+
+#### [MODIFY] [Quotation Components](file:///c:/Users/ALPHA-1/OneDrive/Desktop/AVANI%20AGRO%20FOODS%20LATUR%202026/src/)
+- Update email in `QuotationSheet.jsx` and `QuotationBuilder.jsx`.
+
+## Verification Plan
+
+### Manual Verification
+1. Search all files for `avaniagrofoods1356@gmail.com` to ensure zero occurrences remain.
+2. Check the "Contact" and "About" pages in the browser to verify the new email is visible.
+3. Test the contact form (if possible) or verify the `emailjs.js` code matches the new address.

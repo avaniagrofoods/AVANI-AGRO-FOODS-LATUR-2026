@@ -13,7 +13,7 @@ export default function Privacy() {
           { title: '4. Cookies', text: 'We use minimal cookies for session management (password-protected pages). We do not use third-party advertising cookies.' },
           { title: '5. Data Sharing', text: 'We do not share your personal data with third parties except where required by law. EmailJS and Google Sheets are used as processing tools under their respective privacy policies.' },
           { title: '6. Data Retention', text: 'Inquiry data is retained for 3 years for business record-keeping. You may request deletion at any time by emailing us.' },
-          { title: '7. Contact', text: 'For privacy-related queries, email: avaniagrofoods1356@gmail.com | Phone: +91 7219053645' },
+          { title: '7. Contact', text: 'For privacy-related queries, email: sales@avaniagrofoods.com | Phone: +91 7219053645' },
         ].map(({ title, text }) => (
           <div key={title} style={{ marginBottom: 32 }}>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 10 }}>{title}</h2>

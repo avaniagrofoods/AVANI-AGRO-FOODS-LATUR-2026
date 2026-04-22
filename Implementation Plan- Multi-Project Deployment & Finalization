@@ -1,0 +1,45 @@
+# Implementation Plan: Multi-Project Deployment & Finalization
+
+This plan addresses two goals: completing the **Avani Agro Foods** migration and deploying the new **Avani Loan Service** project.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Final DNS Step (Agro)**: To move `avaniagrofoods.com` from the placeholder page to the Vercel app, you **must** update the **A record (@)** in your Hostinger panel to point to `216.198.79.1`. I have verified that the `www` version is correctly pointing to Vercel, but the main (apex) domain is not.
+
+> [!IMPORTANT]
+> **Loan Service Hosting**: Since the "Avani Loan Service" is a React app (Vite), it cannot be "installed" into WordPress like a plugin. I recommend hosting it on a subdomain (e.g., `loans.avaniagrofoods.com`) or a subdirectory of your existing site. 
+
+## Proposed Changes
+
+### Phase 1: Avani Agro Foods (Migration & Branding Finalization)
+
+#### [MODIFY] [Vercel Link](file:///C:/Users/ALPHA-1/OneDrive/Desktop/AVANI%20AGRO%20FOODS%20LATUR%202026/)
+- [COMPLETED] Properly linked the local folder to the `avani-agro-foods-latur-2026` production project.
+- **Action**: Execute `npx vercel --prod` to push the branding updates (`sales@avaniagrofoods.com`) to the **live** domain.
+
+### Phase 2: Avani Loan Service (New Deployment)
+
+#### [NEW] Deployment Roadmap for [AVANI LOAN SERVICE FY 26-27](file:///C:/Users/ALPHA-1/Desktop/AVANI%20LOAN%20SERVICE%20FY%2026-27/)
+1. **Automated Approach (Vercel)**:
+   - I can initialize this project on Vercel as well. This is the "Auto Mode" choice—anything you push to GitHub will automatically update the site.
+2. **Manual Approach (Hostinger WordPress Hosting)**:
+   - I will generate the production build (`dist` folder).
+   - I will provide the step-by-step instructions for uploading these files to your Hostinger `public_html/loans` folder via FTP or File Manager.
+
+## Open Questions
+
+- **Loan Service URL**: Where would you like the "Avani Loan Service" to be hosted? Options are:
+  - A new domain (e.g., `avaniloans.com`)
+  - A subdomain (e.g., `loans.avaniagrofoods.com`)
+  - A subfolder of your current site (e.g., `avaniagrofoods.com/loans`)
+- **Auto-Mode Choice**: Given that Vercel provides automatic updates for free, would you like to use Vercel for the Loan Service as well, or are you committed to the Hostinger WordPress hosting for this specific project?
+
+## Verification Plan
+
+### Automated Tests
+- Verify the `avaniagrofoods.com/contact` page displays the new email address.
+- Verify `www.avaniagrofoods.com` is accessible (once DNS propagates).
+
+### Manual Verification
+- Ask the user to confirm they can see the Loan Service live once uploaded.

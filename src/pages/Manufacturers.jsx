@@ -31,7 +31,7 @@ export default function Manufacturers() {
   }
 
   return (
-    <PasswordGate title="Indian Manufacturers Database" subtitle="This database contains 60 verified Indian Moringa & Onion Powder manufacturers." storageKey="mfr_access">
+    <PasswordGate password="Samarth@1356" title="Indian Manufacturers Database" subtitle="This database contains 60 verified Indian Moringa & Onion Powder manufacturers." storageKey="mfr_access">
       <SEO title="Indian Manufacturers Database" description="Password-protected database of 60 Indian Moringa and Onion Powder manufacturers — Small, Medium and Large scale." />
 
       <div className="page-top">

@@ -12,7 +12,7 @@ export default function Disclaimer() {
           { title: '📊 Business Projections', text: 'Revenue projections (e.g., "₹1 Crore in 12 months") mentioned on this site are goals and targets — not guaranteed outcomes. Actual results will vary based on market conditions, effort, and external factors.' },
           { title: '🗂️ Directory Accuracy', text: 'Manufacturers and importers listed in our password-protected directories are compiled from public sources. Avani Agro Foods does not guarantee the accuracy of contact information and recommends verifying all details before conducting business.' },
           { title: '📦 Product Information', text: 'All product specifications are based on our current production standards. Batch-specific certifications and CoA (Certificate of Analysis) are available upon request and may vary slightly by harvest season.' },
-          { title: '📬 Contact', text: 'Questions about this disclaimer: avaniagrofoods1356@gmail.com' },
+          { title: '📬 Contact', text: 'Questions about this disclaimer: sales@avaniagrofoods.com' },
         ].map(({ title, text }) => (
           <div key={title} style={{ marginBottom: 32 }}>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 10 }}>{title}</h2>

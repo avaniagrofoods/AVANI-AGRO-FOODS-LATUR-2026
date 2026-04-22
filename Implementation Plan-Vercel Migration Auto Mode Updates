@@ -1,0 +1,42 @@
+# Implementation Plan: Vercel Migration & 'Auto Mode' Updates
+
+The goal is to migrate the live website `avaniagrofoods.com` to Vercel and establish an automated deployment pipeline (CI/CD) so that future changes are reflected on the website automatically.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **DNS Configuration Required**: To complete the migration from Hostinger to Vercel, you will need to update the DNS records at your domain registrar (likely Hostinger). I will provide the specific A and CNAME records, but you must apply them in your hosting panel.
+
+> [!WARNING]
+> **Account Suffix**: The current Vercel account linked is `avaniagrofoods1356-4705s-projects`. While the website will be `avaniagrofoods.com`, the internal Vercel project name still carries the legacy suffix. We can proceed with this or create a new project if preferred.
+
+## Proposed Changes
+
+### 1. Folder Synchronization (Local)
+
+#### [MODIFY] [.env.local](file:///c:/Users/ALPHA-1/OneDrive/Desktop/AVANI%20AGRO%20FOODS%20LATUR%202026/.env.local)
+- Update `VITE_OWNER_EMAIL` from `avaniagrofoods1356@gmail.com` to `sales@avaniagrofoods.com`.
+
+### 2. Enable Automatic Updates (CI/CD)
+
+- Use the GitHub CLI (`gh`) to commit and push all recent changes (contact updates, branding changes) to the GitHub repository.
+- Ensure the GitHub repository has a valid deployment hook to Vercel.
+
+### 3. Website Migration (Vercel)
+
+- Link the custom domain `avaniagrofoods.com` to the Vercel project using `npx vercel domains add`.
+- Generate the production build to verify local correctness before finalizing the domain link.
+
+## Open Questions
+
+- **DNS Access**: Do you have access to the DNS management panel for `avaniagrofoods.com` (usually in Hostinger's hPanel)? I will need you to update the records once I provide them.
+- **Project Renaming**: Would you like me to attempt to rename the Vercel project to remove the `1356` suffix, or is the current project name `avani-agro-foods-latur` acceptable?
+
+## Verification Plan
+
+### Deployment Verification
+- Verify the successful push to GitHub using `gh repo view`.
+- Confirm the Vercel deployment status using `npx vercel ls`.
+
+### Live Site Verification
+- Use `browser_subagent` to check `avaniagrofoods.com` after the DNS propagates (if applicable during this session) or verify the Vercel preview URL.

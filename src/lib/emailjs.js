@@ -6,6 +6,7 @@ const TEMPLATE_CONTACT = import.meta.env.VITE_EMAILJS_TEMPLATE_CONTACT || 'templ
 const TEMPLATE_AUTO_REPLY = import.meta.env.VITE_EMAILJS_TEMPLATE_AUTO_REPLY || 'template_g9rnfik'
 const TEMPLATE_AFFILIATE = import.meta.env.VITE_EMAILJS_TEMPLATE_AFFILIATE || 'template_affiliate'
 const TEMPLATE_QUOTE = import.meta.env.VITE_EMAILJS_TEMPLATE_QUOTE || 'template_quote'
+const TEMPLATE_B2B = import.meta.env.VITE_EMAILJS_TEMPLATE_B2B || 'template_b2b'
 
 // Initialize EmailJS
 emailjs.init(PUBLIC_KEY)
@@ -19,7 +20,7 @@ export async function sendContactEmail(formData) {
     phone: formData.phone || 'Not provided',
     company: formData.company || 'Not provided',
     to_name: 'Sachin Shinde',
-    to_email: 'avaniagrofoods1356@gmail.com'
+    to_email: 'sales@avaniagrofoods.com'
   })
 }
 
@@ -39,7 +40,7 @@ export async function sendAffiliateEmail(affData) {
     aff_id: affData.affId,
     aff_platform: affData.platform,
     aff_followers: affData.followers,
-    to_email: 'avaniagrofoods1356@gmail.com'
+    to_email: 'sales@avaniagrofoods.com'
   })
 }
 
@@ -51,5 +52,20 @@ export async function sendQuoteEmail(quoteData, customerEmail) {
     total: quoteData.total,
     product_summary: quoteData.items?.map(i => i.description).join(', '),
     to_email: customerEmail
+  })
+}
+
+export async function sendB2BRegistrationEmail(data) {
+  return emailjs.send(SERVICE_ID, TEMPLATE_B2B, {
+    company_name: data.companyName,
+    registration_number: data.regNumber,
+    business_type: data.businessType,
+    country: data.country,
+    contact_name: data.contactName,
+    contact_email: data.email,
+    contact_phone: data.mobile,
+    plan_name: data.planName,
+    plan_price: data.planPrice,
+    to_email: 'sales@avaniagrofoods.com'
   })
 }

@@ -1,0 +1,46 @@
+AVANI AGRO FOODS 2026 - SITE ARCHITECTURE & KEY FILE PATHS
+==========================================================
+
+This document serves as a one-stop reference for all critical file paths in the project.
+
+--- 1. PAGES (UI & Layout) ---
+- Home Page: src/pages/Home.jsx
+- B2B Store: src/pages/B2BStore.jsx
+- B2B Registration: src/pages/B2BRegistration.jsx
+- Products: src/pages/Products.jsx
+- Contact: src/pages/Contact.jsx
+- Affiliate: src/pages/Affiliate.jsx
+- Blog List: src/pages/Blog.jsx
+
+--- 2. DATA (Content & Listings) ---
+- Blog Content: src/data/blogs.js
+- B2B Verified Partners: src/data/b2bPartners.js
+- Global Manufacturers: src/data/manufacturersData.js
+- Global Importers: src/data/importersData.js
+- Payment/Affiliate Links: src/data/links.js
+
+--- 3. COMPONENTS (Reusable UI) ---
+- Navigation Bar: src/components/Navbar.jsx
+- Footer: src/components/Footer.jsx
+- Quotation Builder: src/components/QuotationBuilder.jsx
+- WhatsApp Bubble: src/components/WhatsAppBubble.jsx
+- Password Protection: src/components/PasswordGate.jsx
+- SEO Manager: src/components/SEO.jsx
+
+--- 4. SYSTEM & CORE ---
+- Design System (CSS): src/index.css
+- Email Notifications: src/lib/emailjs.js
+- Affiliate Tracking: src/lib/googleSheets.js
+- App Routing: src/App.jsx
+- Main Entry: src/main.jsx
+- App Configuration: vite.config.js
+- Environment Variables: .env.local
+
+--- 5. ASSETS ---
+- Public Images: public/images/
+- Blog Thumbnails: public/images/blog/
+- Logos/Icons: public/assets/
+
+==========================================================
+Record Created: 2026-04-19
+==========================================================

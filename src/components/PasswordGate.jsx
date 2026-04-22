@@ -1,85 +1,55 @@
 import { useState } from 'react'
-import { Lock, Eye, EyeOff, Shield } from 'lucide-react'
+import { Lock, Unlock, ShieldAlert } from 'lucide-react'
 
-const DIRECTORY_PASSWORD = "Samarth@1356"
-
-export default function PasswordGate({ title = "Protected Directory", subtitle = "This directory is password protected.", storageKey = "dir_access", children }) {
+export default function PasswordGate({ children, password = "password", title = "Secure Access Required", description = "Please enter the password to access this document." }) {
+  const [authenticated, setAuthenticated] = useState(false)
   const [input, setInput] = useState('')
-  const [error, setError] = useState('')
-  const [show, setShow] = useState(false)
-
-  const isAuthenticated = sessionStorage.getItem(storageKey) === 'true'
+  const [error, setError] = useState(false)
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (input === DIRECTORY_PASSWORD) {
-      sessionStorage.setItem(storageKey, 'true')
-      setError('')
-      window.location.reload()
+    if (input === password) {
+      setError(false)
+      setAuthenticated(true)
     } else {
-      setError('Incorrect password. Please contact Avani Agro Foods for access.')
-      setInput('')
+      setError(true)
     }
   }
 
-  if (isAuthenticated) return children
+  if (authenticated) {
+    return <>{children}</>
+  }
 
   return (
-    <div className="page-top" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="card" style={{ maxWidth: 440, width: '100%', padding: '48px 40px', textAlign: 'center' }}>
-        <div style={{
-          width: 80, height: 80, borderRadius: '50%',
-          background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 24px'
-        }}>
-          <Lock size={36} color="white" />
+    <div className="card" style={{ maxWidth: 400, margin: '40px auto', padding: '40px', textAlign: 'center' }}>
+      <div style={{ width: 64, height: 64, borderRadius: '50%', background: error ? 'rgba(239, 68, 68, 0.1)' : 'rgba(26, 77, 46, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+        {error ? <ShieldAlert size={32} color="#ef4444" /> : <Lock size={32} color="var(--color-primary)" />}
+      </div>
+      
+      <h2 style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: 12 }}>{title}</h2>
+      <p style={{ color: 'var(--color-text-light)', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: 32 }}>{description}</p>
+
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div>
+          <input
+            type="password"
+            className="input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Enter password..."
+            autoFocus
+            style={{ textAlign: 'center', fontSize: '1.1rem', letterSpacing: '0.2em' }}
+          />
+          {error && <div style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: 8, fontWeight: 700 }}>Incorrect password. Please try again.</div>}
         </div>
-
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(26,77,46,0.08)', padding: '4px 14px', borderRadius: 20, marginBottom: 20 }}>
-          <Shield size={12} color="var(--color-primary)" />
-          <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--color-primary)' }}>Restricted Access</span>
-        </div>
-
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 10 }}>{title}</h1>
-        <p style={{ color: 'var(--color-text-light)', marginBottom: 32, fontSize: '0.9rem', lineHeight: 1.6 }}>
-          {subtitle}
-          <br /><br />
-          This directory contains verified B2B contacts. Access is restricted to verified partners.
-        </p>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ position: 'relative' }}>
-            <input
-              id="dir-password"
-              type={show ? 'text' : 'password'}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder="Enter directory password"
-              className="input"
-              style={{ width: '100%', paddingRight: 48 }}
-              required
-              autoComplete="current-password"
-            />
-            <button type="button" onClick={() => setShow(!show)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)' }}>
-              {show ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
-
-          {error && (
-            <div className="badge" style={{ background: 'rgba(220,38,38,0.1)', color: '#dc2626', fontSize: '0.8rem', padding: '10px 14px', borderRadius: 'var(--radius-sm)' }}>
-              ⚠️ {error}
-            </div>
-          )}
-
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-            <Lock size={16} /> Unlock Directory
-          </button>
-        </form>
-
-        <p style={{ marginTop: 24, fontSize: '0.75rem', color: 'var(--color-text-light)' }}>
-          Need access? Contact us at <a href="mailto:avaniagrofoods1356@gmail.com" style={{ color: 'var(--color-primary)' }}>avaniagrofoods1356@gmail.com</a>
-        </p>
+        
+        <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', gap: 8 }}>
+          <Unlock size={18} /> Unlock Access
+        </button>
+      </form>
+      
+      <div style={{ marginTop: 24, fontSize: '0.7rem', color: 'var(--color-text-light)' }}>
+        Authorized Access Only • Avani Agro Foods
       </div>
     </div>
   )

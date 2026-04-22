@@ -51,15 +51,47 @@ export default function QuotationBuilder({ defaultName = '', defaultEmail = '', 
   const fmt = (n) => new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
 
   return (
-    <div id="quotation-builder" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="quotation-wrapper" style={{ display: 'flex', justifyContent: 'center', padding: '40px 20px', background: '#f5f7f5' }}>
+      <div id="quotation-builder" style={{ 
+        fontFamily: 'Inter, sans-serif',
+        maxWidth: '850px',
+        width: '100%',
+        background: 'white',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.1)',
+        borderRadius: '8px',
+        padding: '60px',
+        position: 'relative',
+        margin: '0 auto'
+      }}>
       {/* Print-only styles */}
       <style>{`
         @media print {
+          @page { size: A4 portrait; margin: 15mm; }
+          * { transform: none !important; animation: none !important; transition: none !important; }
+          body { background: white !important; margin: 0; padding: 0; }
           body * { visibility: hidden; }
           #quotation-builder, #quotation-builder * { visibility: visible; }
-          #quotation-builder { position: fixed; top: 0; left: 0; width: 100%; }
+          #quotation-builder { 
+            position: absolute !important; 
+            top: 0 !important; 
+            left: 0 !important; 
+            width: 100% !important; 
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
           .no-print { display: none !important; }
-          input, select, textarea { border: none !important; background: transparent !important; }
+          input, select, textarea { 
+            border: none !important; 
+            background: transparent !important; 
+            box-shadow: none !important;
+            outline: none !important;
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            color: black !important;
+          }
         }
       `}</style>
 
@@ -69,7 +101,7 @@ export default function QuotationBuilder({ defaultName = '', defaultEmail = '', 
           <img src="/logo.jpeg" alt="Logo" style={{ height: 56, marginBottom: 12, borderRadius: 8 }} onError={e => e.target.style.display='none'} />
           <div style={{ fontWeight: 900, fontSize: '1.3rem' }}>AVANI AGRO FOODS</div>
           <div style={{ opacity: 0.8, fontSize: '0.8rem' }}>Latur, Maharashtra, India — 413512</div>
-          <div style={{ opacity: 0.8, fontSize: '0.8rem' }}>+91 7219053645 | avaniagrofoods1356@gmail.com</div>
+          <div style={{ opacity: 0.8, fontSize: '0.8rem' }}>+91 7219053645 | sales@avaniagrofoods.com</div>
           <div style={{ opacity: 0.8, fontSize: '0.8rem' }}>FSSAI | APEDA | IEC Registered</div>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -190,6 +222,7 @@ export default function QuotationBuilder({ defaultName = '', defaultEmail = '', 
         <button onClick={handlePrint} className="btn" style={{ background: 'var(--color-accent)', color: 'white', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <Download size={18} /> Download Quotation
         </button>
+      </div>
       </div>
     </div>
   )

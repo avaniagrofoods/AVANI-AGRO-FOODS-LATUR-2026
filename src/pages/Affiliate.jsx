@@ -5,24 +5,6 @@ import { sendAffiliateEmail } from '../lib/emailjs'
 import { WHATSAPP_NUMBER, AFFILIATE_LINKS, STRIPE_LINKS } from '../data/links'
 import { Users, TrendingUp, Link as LinkIcon, DollarSign, CheckCircle, ArrowRight, Zap, Star } from 'lucide-react'
 
-const PLANS = [
-  {
-    region: '🇮🇳 India',
-    plans: [
-      { name: 'Starter', period: 'Monthly', price: '₹499', desc: 'Basic affiliate tools + tracking', link: STRIPE_LINKS.INDIA.MONTHLY },
-      { name: 'Growth', period: 'Yearly', price: '₹3,999', savings: 'Save ₹1,989', link: STRIPE_LINKS.INDIA.YEARLY },
-      { name: 'Lifetime', period: '3 Years', price: '₹7,999', savings: 'Best Value', link: STRIPE_LINKS.INDIA.THREE_YEARS },
-    ]
-  },
-  {
-    region: '🌍 Global',
-    plans: [
-      { name: 'Starter', period: 'Monthly', price: '$9', desc: 'Basic affiliate access', link: STRIPE_LINKS.GLOBAL.MONTHLY },
-      { name: 'Growth', period: 'Yearly', price: '$79', savings: 'Save $29', link: STRIPE_LINKS.GLOBAL.YEARLY },
-      { name: 'Lifetime', period: '3 Years', price: '$149', savings: 'Best Value', link: STRIPE_LINKS.GLOBAL.THREE_YEARS },
-    ]
-  }
-]
 
 function generateAffId() {
   return 'AV-' + Math.random().toString(36).substr(2, 6).toUpperCase()
@@ -78,10 +60,10 @@ export default function Affiliate() {
               <DollarSign size={14} /> Affiliate Program
             </div>
             <h1 style={{ fontSize: '3rem', fontWeight: 900, color: 'white', lineHeight: 1.2, marginBottom: 20 }}>
-              Earn <span style={{ background: 'linear-gradient(135deg, #e6a817, #f99f1f)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>15-20%</span><br />Commission
+              Join the <span style={{ background: 'linear-gradient(135deg, #e6a817, #f99f1f)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Avani Agro</span><br />Growth Network
             </h1>
             <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '1.1rem', maxWidth: 560, margin: '0 auto 40px', lineHeight: 1.7 }}>
-              Refer B2B buyers, retailers, or individuals to Avani Agro Foods and earn on every order. No upfront investment. Free to join.
+              Earn 5-20% commission by promoting our premium Moringa and Onion products. 100% Free to join — no hidden fees or subscriptions for marketers.
             </p>
             <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
               <a href="#register" className="btn btn-primary" style={{ gap: 8 }}><Zap size={18} /> Join Free Now</a>
@@ -261,35 +243,6 @@ export default function Affiliate() {
             </div>
           </div>
 
-          {/* Pricing Plans */}
-          <div style={{ marginTop: 72 }}>
-            <div className="section-header">
-              <div className="section-tag"><Star size={12} /> Premium Plans</div>
-              <h2 className="section-title">Affiliate Premium Plans</h2>
-              <p className="section-desc">Unlock advanced tools, priority support, and higher commission rates.</p>
-            </div>
-
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 40 }}>
-              {PLANS.map((p, i) => (
-                <button key={p.region} onClick={() => setPricingRegion(i)} className="btn" style={{ background: pricingRegion === i ? 'var(--color-primary)' : 'white', color: pricingRegion === i ? 'white' : 'var(--color-text)', border: '1px solid var(--color-border)' }}>{p.region}</button>
-              ))}
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 24, maxWidth: 800, margin: '0 auto' }}>
-              {PLANS[pricingRegion].plans.map((plan, i) => (
-                <div key={plan.name} className="card" style={{ padding: '32px', textAlign: 'center', border: i === 1 ? '2px solid var(--color-primary)' : '1px solid var(--color-border)', position: 'relative' }}>
-                  {i === 1 && <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: 'var(--color-primary)', color: 'white', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '4px 14px', borderRadius: 30 }}>Popular</div>}
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-primary)', marginBottom: 12 }}>{plan.name}</div>
-                  <div style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: 4 }}>{plan.price}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginBottom: plan.savings ? 8 : 24 }}>{plan.period}</div>
-                  {plan.savings && <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-accent)', marginBottom: 24 }}>{plan.savings}</div>}
-                  <a href={plan.link} target="_blank" rel="noopener noreferrer" className={`btn ${i === 1 ? 'btn-primary' : ''}`} style={{ width: '100%', justifyContent: 'center', background: i !== 1 ? 'white' : '', border: i !== 1 ? '1px solid var(--color-border)' : '' }}>
-                    Get {plan.name} Plan
-                  </a>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </>

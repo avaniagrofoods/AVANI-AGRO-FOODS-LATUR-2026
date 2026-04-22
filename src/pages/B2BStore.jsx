@@ -1,181 +1,197 @@
+import { useState } from 'react'
 import SEO from '../components/SEO'
-import { STRIPE_LINKS, WHATSAPP_NUMBER, CATALOG_LINK } from '../data/links'
-import { Package, Globe, Zap, CheckCircle, ArrowRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
-
-const PRODUCTS = [
-  {
-    name: 'Moringa Powder — 25 kg Export Bag',
-    desc: 'Export Grade A, 60-mesh, <7% moisture. Full documentation included.',
-    img: 'https://images.unsplash.com/photo-1556909114-44e1de269b20?w=600&q=80',
-    priceINR: '₹8,750',
-    priceUSD: '$105',
-    includes: ['Certificate of Analysis', 'Phytosanitary Certificate', 'Packing List'],
-    stripeIN: STRIPE_LINKS.INDIA.MONTHLY,
-    stripeGlobal: STRIPE_LINKS.GLOBAL.MONTHLY,
-    badge: 'Bestseller',
-    hs: '0712.90.90',
-    moq: '25 kg',
-  },
-  {
-    name: 'Red Onion Powder — 25 kg Export Bag',
-    desc: 'Dehydrated Export Grade, 60-80 mesh, Pyruvic Acid 90+, 24-month shelf life.',
-    img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80',
-    priceINR: '₹5,250',
-    priceUSD: '$63',
-    includes: ['Certificate of Analysis', 'Certificate of Origin', 'Health Certificate'],
-    stripeIN: STRIPE_LINKS.INDIA.YEARLY,
-    stripeGlobal: STRIPE_LINKS.GLOBAL.YEARLY,
-    badge: 'High Demand',
-    hs: '0712.20.00',
-    moq: '25 kg',
-  },
-  {
-    name: 'Mixed Bundle — Moringa + Onion (25 kg each)',
-    desc: 'Trial combo pack for new importers. 25 kg Moringa + 25 kg Onion Powder.',
-    img: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&q=80',
-    priceINR: '₹13,500',
-    priceUSD: '$162',
-    includes: ['Full documentation for both products', 'Separate CoA', 'Combined Invoice'],
-    stripeIN: STRIPE_LINKS.INDIA.THREE_YEARS,
-    stripeGlobal: STRIPE_LINKS.GLOBAL.THREE_YEARS,
-    badge: 'Best Value',
-    hs: 'Multiple',
-    moq: '50 kg total',
-  },
-]
-
-const TERMS_DATA = [
-  { label: 'Payment Terms', value: '30% advance, 70% before shipment (or LC at sight)' },
-  { label: 'Lead Time', value: '14-21 working days from PO confirmation' },
-  { label: 'Delivery Terms', value: 'FOB Nhava Sheva / CIF Destination' },
-  { label: 'Packaging', value: 'Multi-wall kraft bags, nitrogen-flushed' },
-  { label: 'Minimum Order', value: '25 kg (samples) / 100 kg (bulk)' },
-  { label: 'Documents Provided', value: 'CoA, Phytosanitary, Health Cert, CoO, Invoice, BL' },
-  { label: 'Samples', value: 'Free samples (courier at buyer cost) for verified buyers' },
-  { label: 'Certification', value: 'FSSAI, APEDA, ISO Compliant — documents on request' },
-]
+import { B2B_PARTNERS } from '../data/b2bPartners'
+import { 
+  Building2, MapPin, CheckCircle2, 
+  ExternalLink, Search, Filter, 
+  X, Briefcase, Globe, Phone
+} from 'lucide-react'
 
 export default function B2BStore() {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedPartner, setSelectedPartner] = useState(null)
+
+  const filteredPartners = B2B_PARTNERS.filter(p => 
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.industry.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.location.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
   return (
     <>
-      <SEO
-        title="B2B Store — Bulk Moringa Powder & Onion Powder"
-        description="Order Moringa Powder and Red Onion Powder directly from Avani Agro Foods. B2B bulk pricing, export documentation, and worldwide shipping."
-        keywords="moringa powder wholesale india, buy moringa bulk, red onion powder B2B, moringa export order"
+      <SEO 
+        title="B2B Store Directory — Registered Business Network"
+        description="Browse our verified network of global B2B partners, importers, and manufacturers. High-quality trade connections for international exports."
       />
 
-      <div className="page-top">
-        <div style={{ background: 'linear-gradient(135deg, var(--color-primary-dark), var(--color-primary))', padding: '72px 0', textAlign: 'center' }}>
-          <div className="container">
-            <div className="section-tag" style={{ justifyContent: 'center', background: 'rgba(255,255,255,0.15)', color: 'white', display: 'inline-flex', marginBottom: 16 }}>
-              <Globe size={14} /> B2B Export Store
-            </div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'white', marginBottom: 16 }}>Order Directly from Source</h1>
-            <p style={{ color: 'rgba(255,255,255,0.75)', maxWidth: 540, margin: '0 auto 32px', fontSize: '1.05rem' }}>
-              No middlemen. Factory-direct pricing. Complete documentation. Ship to USA, EU, UAE, and 25+ countries.
+      <div className="page-top" style={{ minHeight: '100vh', background: '#fcfdfc', padding: '120px 0' }}>
+        <div className="container">
+          
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: 60 }}>
+            <h1 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: 16 }}>B2B Store <span style={{ color: 'var(--color-primary)' }}>Directory</span></h1>
+            <p style={{ color: 'var(--color-text-light)', fontSize: '1.2rem', maxWidth: 700, margin: '0 auto 40px' }}>
+              Connect with our verified network of global exporters, importers, and wholesale distributors.
             </p>
-            <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi! I want to place a bulk B2B order. Please share your price list.')}`} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ gap: 8 }}>
-              <Zap size={18} /> Get Wholesale Price List
-            </a>
+            
+            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', maxWidth: 500, width: '100%' }}>
+                <Search style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-light)' }} size={20} />
+                <input 
+                  className="input" 
+                  style={{ paddingLeft: 48, height: 56, borderRadius: 28, border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }} 
+                  placeholder="Search by company, industry or location..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <a href="/b2b/register" className="btn btn-primary" style={{ height: 56, borderRadius: 28, padding: '0 32px' }}>
+                Join the Network
+              </a>
+            </div>
           </div>
-        </div>
 
-        <div className="container" style={{ padding: '72px 24px' }}>
-          {/* Products */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 32, marginBottom: 80 }}>
-            {PRODUCTS.map(p => (
-              <div key={p.name} className="card card-hover" style={{ overflow: 'hidden' }}>
-                <div style={{ position: 'relative' }}>
-                  <img src={p.img} alt={p.name} style={{ width: '100%', height: 180, objectFit: 'cover' }} />
-                  <div style={{ position: 'absolute', top: 14, left: 14, background: 'var(--color-accent)', color: 'white', fontSize: '0.7rem', fontWeight: 800, borderRadius: 30, padding: '4px 12px' }}>{p.badge}</div>
-                  <div style={{ position: 'absolute', top: 14, right: 14, background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '0.68rem', fontWeight: 700, borderRadius: 8, padding: '4px 10px' }}>HS: {p.hs}</div>
+          {/* Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 32 }}>
+            {filteredPartners.map(partner => (
+              <div key={partner.id} className="card card-hover shadow-sm" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+                <div style={{ height: 160, overflow: 'hidden' }}>
+                    <img src={partner.images[0]} alt={partner.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
-                <div style={{ padding: '28px' }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 900, marginBottom: 10, lineHeight: 1.3 }}>{p.name}</h3>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', lineHeight: 1.65, marginBottom: 16 }}>{p.desc}</p>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 }}>
+                <div style={{ padding: 24 }}>
+                  <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+                    <img src={partner.logo} alt={partner.name} style={{ width: 48, height: 48, borderRadius: 8, border: '1px solid var(--color-border)' }} />
                     <div>
-                      <div style={{ fontSize: '0.65rem', color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>India Price</div>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-primary)' }}>{p.priceINR}</div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '0.65rem', color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Global Price</div>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-accent)' }}>{p.priceUSD}</div>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {partner.name} {partner.verified && <CheckCircle2 size={16} color="var(--color-primary)" />}
+                      </h3>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <MapPin size={12} /> {partner.location}
+                      </div>
                     </div>
                   </div>
+                  
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginBottom: 20, lineClamp: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {partner.description}
+                  </p>
 
-                  <div style={{ marginBottom: 20 }}>
-                    {p.includes.map(inc => (
-                      <div key={inc} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', marginBottom: 6 }}>
-                        <CheckCircle size={13} color="var(--color-primary)" />
-                        {inc}
-                      </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+                    {partner.specialization.slice(0, 3).map(s => (
+                      <span key={s} style={{ fontSize: '0.7rem', fontWeight: 700, background: 'var(--color-bg-alt)', padding: '4px 10px', borderRadius: 12 }}>{s}</span>
                     ))}
                   </div>
 
-                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginBottom: 20 }}>
-                    <strong>MOQ:</strong> {p.moq}
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <a href={p.stripeIN} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ justifyContent: 'center', gap: 8 }}>
-                      🇮🇳 Order India (Stripe)
-                    </a>
-                    <a href={p.stripeGlobal} target="_blank" rel="noopener noreferrer" className="btn" style={{ justifyContent: 'center', gap: 8, background: 'var(--color-accent)', color: 'white' }}>
-                      🌍 Order Global (Stripe)
-                    </a>
-                    <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi! I want to order: ${p.name}`)}`} target="_blank" rel="noopener noreferrer" className="btn" style={{ justifyContent: 'center', gap: 8, background: '#25D366', color: 'white' }}>
-                      📱 Order via WhatsApp
-                    </a>
-                  </div>
+                  <button 
+                    onClick={() => setSelectedPartner(partner)}
+                    className="btn" 
+                    style={{ width: '100%', justifyContent: 'center', border: '1px solid var(--color-primary)', color: 'var(--color-primary)' }}
+                  >
+                    View Details
+                  </button>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Terms */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'flex-start' }}>
-            <div className="card" style={{ padding: '36px' }}>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: 24 }}>📋 Trade Terms & Conditions</h2>
-              {TERMS_DATA.map(({ label, value }) => (
-                <div key={label} style={{ display: 'flex', gap: 16, padding: '12px 0', borderBottom: '1px solid var(--color-border)', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--color-text-light)', minWidth: 160, flexShrink: 0 }}>{label}</span>
-                  <span style={{ fontWeight: 600 }}>{value}</span>
+          {filteredPartners.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '80px 0' }}>
+                <p style={{ color: 'var(--color-text-light)' }}>No matching businesses found. Try a different search term.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Detail Modal/View */}
+      {selectedPartner && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', 
+          backdropFilter: 'blur(4px)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+        }}>
+          <div className="animate-in" style={{
+            background: 'white', maxWidth: 800, width: '100%', 
+            borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+            maxHeight: '90vh', overflowY: 'auto', position: 'relative'
+          }}>
+            <button 
+                onClick={() => setSelectedPartner(null)}
+                style={{ position: 'absolute', top: 20, right: 20, background: 'white', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: 'var(--shadow-md)', zIndex: 10 }}
+            >
+                <X size={20} />
+            </button>
+
+            <div style={{ height: 280, position: 'relative' }}>
+                <img src={selectedPartner.images[0]} alt={selectedPartner.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ position: 'absolute', bottom: -30, left: 40, background: 'white', padding: 10, borderRadius: 12, boxShadow: 'var(--shadow-lg)' }}>
+                    <img src={selectedPartner.logo} alt={selectedPartner.name} style={{ width: 80, height: 80, borderRadius: 8 }} />
                 </div>
-              ))}
             </div>
 
-            <div>
-              <div className="card" style={{ padding: '36px', marginBottom: 24, background: 'linear-gradient(135deg, var(--color-primary-dark), var(--color-primary))' }}>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'white', marginBottom: 16 }}>Need a Custom Quote?</h2>
-                <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.9rem', lineHeight: 1.7, marginBottom: 24 }}>
-                  For quantities above 100 kg, LCL/FCL container loads, or custom packaging — contact us for special pricing.
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi! I need a custom quote for bulk Moringa/Onion Powder order.')}`} target="_blank" rel="noopener noreferrer" className="btn" style={{ background: '#25D366', color: 'white', justifyContent: 'center' }}>
-                    📱 WhatsApp for Custom Quote
-                  </a>
-                  <Link to="/contact" className="btn" style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', justifyContent: 'center' }}>
-                    📩 Send Email Inquiry
-                  </Link>
+            <div style={{ padding: '60px 40px 40px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20, marginBottom: 32 }}>
+                    <div>
+                        <h2 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+                            {selectedPartner.name} {selectedPartner.verified && <CheckCircle2 color="var(--color-primary)" />}
+                        </h2>
+                        <div style={{ display: 'flex', gap: 16, color: 'var(--color-text-light)', fontSize: '0.9rem' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Briefcase size={16} /> {selectedPartner.industry}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><MapPin size={16} /> {selectedPartner.location}</span>
+                        </div>
+                    </div>
                 </div>
-              </div>
 
-              <div className="card" style={{ padding: '28px' }}>
-                <h3 style={{ fontWeight: 900, marginBottom: 16 }}>Why Buy Direct?</h3>
-                {['No middleman markup — lowest factory prices', 'Full documentation from day 1', 'Sample before bulk order — always', 'Dedicated WhatsApp support', 'Fastest 14-21 day lead time', 'White-label and OEM accepted'].map(b => (
-                  <div key={b} style={{ display: 'flex', gap: 8, marginBottom: 10, fontSize: '0.85rem' }}>
-                    <CheckCircle size={14} color="var(--color-primary)" style={{ flexShrink: 0, marginTop: 2 }} />
-                    {b}
-                  </div>
-                ))}
-              </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 40 }}>
+                    <div>
+                        <h4 style={{ fontWeight: 800, marginBottom: 12 }}>About Business</h4>
+                        <p style={{ color: 'var(--color-text-light)', lineHeight: 1.6, marginBottom: 24 }}>{selectedPartner.description}</p>
+                        
+                        <h4 style={{ fontWeight: 800, marginBottom: 12 }}>Product Specialization</h4>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                            {selectedPartner.specialization.map(s => (
+                                <span key={s} style={{ background: 'var(--color-bg-alt)', padding: '6px 14px', borderRadius: 20, fontSize: '0.85rem' }}>{s}</span>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div style={{ background: '#f8faf8', padding: 24, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                        <h4 style={{ fontWeight: 800, marginBottom: 20 }}>Contact Information</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-light)', textTransform: 'uppercase', marginBottom: 4 }}>Contact Person</div>
+                                <div style={{ fontWeight: 700 }}>{selectedPartner.contact.name}</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-light)', textTransform: 'uppercase', marginBottom: 4 }}>Business Email</div>
+                                <div style={{ fontWeight: 700 }}>{selectedPartner.contact.email}</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-light)', textTransform: 'uppercase', marginBottom: 4 }}>WhatsApp</div>
+                                <div style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{selectedPartner.contact.whatsapp}</div>
+                            </div>
+                        </div>
+                        <a 
+                            href={`https://wa.me/${selectedPartner.contact.whatsapp.replace(/[^0-9]/g, '')}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="btn btn-primary" 
+                            style={{ width: '100%', justifyContent: 'center', marginTop: 24, gap: 8 }}
+                        >
+                            <Phone size={18} /> Connect on WhatsApp
+                        </a>
+                    </div>
+                </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      <style>{`
+        .animate-in { animation: modalIn 0.4s ease-out; }
+        @keyframes modalIn {
+          from { opacity: 0; transform: scale(0.95) translateY(20px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+      `}</style>
     </>
   )
 }

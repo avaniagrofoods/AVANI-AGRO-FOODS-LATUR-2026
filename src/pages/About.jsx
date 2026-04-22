@@ -30,7 +30,7 @@ export default function About() {
       <div className="page-top">
         {/* Hero */}
         <div style={{ background: 'linear-gradient(135deg, var(--color-primary-dark), var(--color-primary))', padding: '96px 0' }}>
-          <div className="container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
+          <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 40, alignItems: 'center' }}>
             <div>
               <div className="section-tag" style={{ background: 'rgba(255,255,255,0.15)', color: 'white', display: 'inline-flex', marginBottom: 20 }}>
                 🌿 Our Story
@@ -45,17 +45,20 @@ export default function About() {
               </div>
             </div>
             <div>
-              <div className="card" style={{ padding: '40px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)' }}>
-                <div style={{ width: 90, height: 90, borderRadius: '50%', background: 'linear-gradient(135deg, #e6a817, #f99f1f)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, fontSize: '2.5rem' }}>
-                  👨‍💼
+              <div className="card" style={{ padding: '40px 20px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', position: 'relative' }}>
+                <div style={{ display: 'flex', gap: 20, marginBottom: 24, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <img src="/logo.png" alt="Avani Logo" style={{ height: 100, width: 100, objectFit: 'contain', borderRadius: '50%', background: 'white', border: '2px solid white' }} />
+                  <div style={{ width: 120, height: 120, borderRadius: '50%', background: 'white', overflow: 'hidden', border: '3px solid #e6a817', boxShadow: '0 12px 24px rgba(0,0,0,0.2)' }}>
+                    <img src="/sachin.png" alt="Sachin Shinde" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
                 </div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'white', marginBottom: 8 }}>Sachin Shinde</h2>
-                <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginBottom: 24 }}>Founder & Export Director — Avani Agro Foods</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'white', marginBottom: 8, textAlign: 'center' }}>Sachin Shinde</h2>
+                <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginBottom: 24, textAlign: 'center' }}>Founder & Export Director — Avani Agro Foods</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
                   {[
                     { icon: MapPin, text: 'Latur, Maharashtra, India' },
                     { icon: Phone, text: '+91 7219053645' },
-                    { icon: Mail, text: 'avaniagrofoods1356@gmail.com' },
+                    { icon: Mail, text: 'sales@avaniagrofoods.com' },
                   ].map(({ icon: Icon, text }) => (
                     <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)' }}>
                       <Icon size={15} color="#e6a817" />
@@ -64,6 +67,30 @@ export default function About() {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Professional Gallery */}
+        <div style={{ padding: '80px 0', background: '#f0f4f1' }}>
+          <div className="container">
+            <div className="section-header">
+              <div className="section-tag">Facility & Products</div>
+              <h2 className="section-title">Professional Excellence</h2>
+              <p className="section-desc">Snapshots from our processing facility and export-ready product batches.</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 20 }}>
+              {[
+                { url: '/gallery/processing.png', title: 'Modern Moringa Processing' },
+                { url: '/gallery/packaging.png', title: 'Premium Export Packaging' },
+                { url: '/gallery/quality.webp', title: 'NABL Certified Quality' },
+                { url: '/gallery/research.webp', title: 'Export R&D Excellence' },
+              ].map((img, i) => (
+                <div key={i} className="card card-hover" style={{ overflow: 'hidden', padding: 0 }}>
+                  <img src={img.url} alt={img.title} style={{ width: '100%', height: 260, objectFit: 'cover' }} />
+                  <div style={{ padding: '16px', fontWeight: 800, fontSize: '0.85rem', textAlign: 'center' }}>{img.title}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -78,7 +105,7 @@ export default function About() {
                 Our 12-month roadmap is to build India's most trusted small-scale agri-export brand by combining the power of direct B2B exports, affiliate marketing, and digital presence. Moringa Powder is our hero product — a global superfood with $10 billion market potential.
               </p>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 24 }}>
               {VALUES.map(({ icon: Icon, title, desc }) => (
                 <div key={title} className="card card-hover" style={{ padding: '32px', textAlign: 'center' }}>
                   <Icon size={40} color="var(--color-primary)" style={{ margin: '0 auto 20px' }} />

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, Globe, ChevronDown } from 'lucide-react'
+import { Menu, X, Globe, ChevronDown, Languages } from 'lucide-react'
 import { CATALOG_LINK } from '../data/links'
+import { useLanguage } from '../context/LanguageContext'
 
 const NAV_ITEMS = [
   { label: 'Home', href: '/' },
@@ -17,14 +18,16 @@ const NAV_ITEMS = [
   { label: 'Blog', href: '/blog' },
   { label: 'Affiliate', href: '/affiliate' },
   { label: 'Free AI Tools', href: '/tools' },
-  { label: 'B2B Store', href: '/b2b-store' },
+  { label: 'B2B Store', href: '/b2b' },
   { label: 'Contact', href: '/contact' },
 ]
 
 export default function Navbar() {
+  const { lang, setLang, t, isRTL } = useLanguage()
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [langOpen, setLangOpen] = useState(false)
   const location = useLocation()
 
   useEffect(() => {
@@ -55,58 +58,67 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Nav */}
-        <ul className="navbar-nav hide-mobile" style={{ flexDirection: 'row' }}>
-          {NAV_ITEMS.map((item) => (
-            <li key={item.label} style={{ position: 'relative' }}>
-              {item.children ? (
-                <div
-                  onMouseEnter={() => setDropdownOpen(true)}
-                  onMouseLeave={() => setDropdownOpen(false)}
-                  style={{ position: 'relative' }}
-                >
-                  <button
-                    className="nav-link"
-                    style={{ display: 'flex', alignItems: 'center', gap: 4 }}
-                  >
-                    {item.label} <ChevronDown size={14} />
-                  </button>
-                  {dropdownOpen && (
-                    <div style={{
-                      position: 'absolute', top: '100%', left: 0, minWidth: 200,
-                      background: 'white', boxShadow: 'var(--shadow-lg)',
-                      borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
-                      padding: '8px', zIndex: 100
-                    }}>
-                      {item.children.map(c => (
-                        <Link key={c.href} to={c.href}
-                          className="nav-link"
-                          style={{ display: 'block', padding: '10px 14px' }}
-                        >
-                          {c.label}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Link
-                  to={item.href}
-                  className={`nav-link ${isActive(item.href) ? 'active' : ''}`}
-                >
-                  {item.label}
-                </Link>
-              )}
-            </li>
-          ))}
+        <ul className="navbar-nav hide-mobile" style={{ flexDirection: isRTL ? 'row-reverse' : 'row' }}>
           <li>
-            <a
-              href={CATALOG_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="nav-cta"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-            >
-              <Globe size={14} /> Catalog
+            <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>{t.home}</Link>
+          </li>
+          <li>
+            <Link to="/about" className={`nav-link ${isActive('/about') ? 'active' : ''}`}>{t.about}</Link>
+          </li>
+          <li>
+            <Link to="/products" className={`nav-link ${isActive('/products') ? 'active' : ''}`}>{t.products}</Link>
+          </li>
+          <li onMouseEnter={() => setDropdownOpen(true)} onMouseLeave={() => setDropdownOpen(false)} style={{ position: 'relative' }}>
+            <button className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              {t.directory} <ChevronDown size={14} />
+            </button>
+            {dropdownOpen && (
+              <div style={{
+                position: 'absolute', top: '100%', left: isRTL ? 'auto' : 0, right: isRTL ? 0 : 'auto',
+                minWidth: 200, background: 'white', boxShadow: 'var(--shadow-lg)',
+                borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
+                padding: '8px', zIndex: 100
+              }}>
+                <Link to="/manufacturers" className="nav-link" style={{ display: 'block', padding: '10px 14px' }}>{t.manufacturers}</Link>
+                <Link to="/importers" className="nav-link" style={{ display: 'block', padding: '10px 14px' }}>{t.importers}</Link>
+              </div>
+            )}
+          </li>
+          <li>
+            <Link to="/blog" className={`nav-link ${isActive('/blog') ? 'active' : ''}`}>{t.blog}</Link>
+          </li>
+          <li>
+            <Link to="/affiliate" className={`nav-link ${isActive('/affiliate') ? 'active' : ''}`}>{t.affiliate}</Link>
+          </li>
+          <li>
+            <Link to="/b2b" className={`nav-link ${isActive('/b2b') ? 'active' : ''}`}>{t.b2bStore}</Link>
+          </li>
+          <li>
+            <Link to="/contact" className={`nav-link ${isActive('/contact') ? 'active' : ''}`}>{t.contact}</Link>
+          </li>
+          
+          <li style={{ marginLeft: isRTL ? 0 : 12, marginRight: isRTL ? 12 : 0, display: 'flex', gap: 12, alignItems: 'center' }}>
+            {/* Language Switcher */}
+            <div onMouseEnter={() => setLangOpen(true)} onMouseLeave={() => setLangOpen(false)} style={{ position: 'relative' }}>
+              <button className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--color-bg-alt)', borderRadius: 20 }}>
+                <Languages size={16} /> <span style={{ textTransform: 'uppercase', fontWeight: 800, fontSize: '0.75rem' }}>{lang}</span>
+              </button>
+              {langOpen && (
+                <div style={{
+                  position: 'absolute', top: '100%', right: 0, minWidth: 120,
+                  background: 'white', boxShadow: 'var(--shadow-lg)',
+                  borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
+                  padding: '4px', zIndex: 100
+                }}>
+                  <button onClick={() => setLang('en')} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: lang === 'en' ? 'var(--color-bg-alt)' : 'none', cursor: 'pointer', fontSize: '0.85rem' }}>English</button>
+                  <button onClick={() => setLang('ar')} style={{ width: '100%', padding: '8px 12px', textAlign: 'right', border: 'none', background: lang === 'ar' ? 'var(--color-bg-alt)' : 'none', cursor: 'pointer', fontSize: '0.85rem' }}>العربية</button>
+                  <button onClick={() => setLang('fr')} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: lang === 'fr' ? 'var(--color-bg-alt)' : 'none', cursor: 'pointer', fontSize: '0.85rem' }}>Français</button>
+                </div>
+              )}
+            </div>
+
+            <a href={CATALOG_LINK} target="_blank" rel="noopener noreferrer" className="nav-cta" style={{ gap: 6 }}>
+              <Globe size={14} /> {t.viewCatalog}
             </a>
           </li>
         </ul>

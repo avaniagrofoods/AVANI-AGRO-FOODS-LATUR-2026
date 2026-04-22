@@ -1,0 +1,38 @@
+# Deployment Walkthrough: Avani Agro Foods
+
+The Avani Agro Foods platform is now successfully deployed and live on Hostinger.
+
+## Actions Taken
+
+### 1. Local Build & Packaging
+- Ran `npm run build` locally to generate optimized production assets.
+- Compressed the `dist/` folder contents into a `deploy.zip` archive for easy uploading.
+
+### 2. Manual Deployment
+- Uploaded the production files to the Hostinger `public_html` directory.
+- Removed conflicting WordPress files to ensure the React application takes precedence.
+
+### 3. Routing Configuration
+- Created a custom `.htaccess` file to handle Single Page Application (SPA) routing, ensuring that subpages like `/about`, `/contact`, and `/blog` load correctly without 404 errors.
+
+## Verification Results
+
+- **Home Page**: [avaniagrofoods.com](https://avaniagrofoods.com) is LIVE and verified.
+- **Subpage Routing**: Verified that subpages (e.g., `/about`) resolve correctly to the React application.
+- **SEO Elements**: Verified that Meta tags and Title tags are correctly appearing in search results.
+
+## Final File Structure in `public_html`
+- `assets/` (CSS/JS chunks)
+- `index.html` (Main entry point)
+- `sitemap.xml` (For search engines)
+- `robots.txt` (For search engines)
+- `.htaccess` (For routing)
+- Various images (`sachin.png`, `report-cover.png`, etc.)
+
+---
+
+> [!TIP]
+> **Next Recommended Steps**:
+> 1. **Setup Professional Email**: Go to Hostinger "Emails" to create `info@avaniagrofoods.com` if you haven't already.
+> 2. **Google Search Console**: Submit your `sitemap.xml` to Google to start indexation.
+> 3. **SSL Check**: Ensure your SSL certificate is "Always On" in the Hostinger dashboard.
