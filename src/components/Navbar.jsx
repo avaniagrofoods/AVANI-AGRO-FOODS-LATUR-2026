@@ -28,7 +28,22 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
+  const [enquiryCount, setEnquiryCount] = useState(0)
   const location = useLocation()
+
+  useEffect(() => {
+    const updateCount = () => {
+      const enquiries = JSON.parse(localStorage.getItem('avani_enquiries') || '[]')
+      setEnquiryCount(enquiries.length)
+    }
+    updateCount()
+    window.addEventListener('enquiry-updated', updateCount)
+    window.addEventListener('storage', updateCount)
+    return () => {
+      window.removeEventListener('enquiry-updated', updateCount)
+      window.removeEventListener('storage', updateCount)
+    }
+  }, [])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -70,17 +85,22 @@ export default function Navbar() {
           </li>
           <li onMouseEnter={() => setDropdownOpen(true)} onMouseLeave={() => setDropdownOpen(false)} style={{ position: 'relative' }}>
             <button className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              {t.directory} <ChevronDown size={14} />
+              {t.directory} {enquiryCount > 0 && <span style={{ background: '#dc2626', color: 'white', borderRadius: '50%', width: 18, height: 18, fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>{enquiryCount}</span>} <ChevronDown size={14} />
             </button>
             {dropdownOpen && (
               <div style={{
                 position: 'absolute', top: '100%', left: isRTL ? 'auto' : 0, right: isRTL ? 0 : 'auto',
-                minWidth: 200, background: 'white', boxShadow: 'var(--shadow-lg)',
+                minWidth: 220, background: 'white', boxShadow: 'var(--shadow-lg)',
                 borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
                 padding: '8px', zIndex: 100
               }}>
                 <Link to="/manufacturers" className="nav-link" style={{ display: 'block', padding: '10px 14px' }}>{t.manufacturers}</Link>
                 <Link to="/importers" className="nav-link" style={{ display: 'block', padding: '10px 14px' }}>{t.importers}</Link>
+                <div style={{ margin: '8px 0', borderTop: '1px solid var(--color-border)' }} />
+                <Link to="/admin/quotations" className="nav-link" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', color: 'var(--color-primary)', fontWeight: 700 }}>
+                  <span>📋 Quotations</span>
+                  {enquiryCount > 0 && <span style={{ background: '#dc2626', color: 'white', borderRadius: 20, padding: '2px 8px', fontSize: '0.65rem' }}>{enquiryCount} NEW</span>}
+                </Link>
               </div>
             )}
           </li>

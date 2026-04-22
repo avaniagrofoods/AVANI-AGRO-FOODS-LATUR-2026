@@ -73,6 +73,18 @@ export default function Contact() {
       try { await sendAutoReply(form) } catch {}
 
       setStatus('success')
+      
+      // 5. Save to LocalStorage for Admin Tracking
+      const newEnquiry = {
+        id: Date.now(),
+        ...form,
+        date: new Date().toLocaleString(),
+        isFulfilled: false
+      }
+      const existingEnquiries = JSON.parse(localStorage.getItem('avani_enquiries') || '[]')
+      localStorage.setItem('avani_enquiries', JSON.stringify([newEnquiry, ...existingEnquiries]))
+      window.dispatchEvent(new Event('enquiry-updated'))
+
       if (['Export Pricing Request', 'Sample Request', 'Bulk B2B Inquiry', 'Importer / Distributor Partnership'].includes(form.inquiryType)) {
         setShowQuote(true)
         redirectTimer.current = setTimeout(() => {
