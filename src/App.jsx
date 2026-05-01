@@ -23,6 +23,7 @@ import Disclaimer from './pages/Disclaimer'
 import AffiliateDisclaimer from './pages/AffiliateDisclaimer'
 import QuotationSheet from './pages/QuotationSheet'
 import AdminQuotations from './pages/AdminQuotations'
+import AffiliateDirectory from './pages/AffiliateDirectory'
 
 function ScrollToTop() {
   const location = window.location
@@ -59,6 +60,7 @@ export default function App() {
             <Route path="/affiliate-disclaimer" element={<AffiliateDisclaimer />} />
             <Route path="/quotation-sheet" element={<QuotationSheet />} />
             <Route path="/admin/quotations" element={<AdminQuotations />} />
+            <Route path="/affiliate/directory" element={<AffiliateDirectory />} />
             <Route path="*" element={
               <div className="page-top" style={{ textAlign: 'center', padding: '140px 24px' }}>
                 <h1 style={{ fontSize: '6rem', fontWeight: 900, color: 'var(--color-primary)', marginBottom: 16 }}>404</h1>

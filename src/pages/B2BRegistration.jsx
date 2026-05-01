@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Building2, Globe, CheckCircle2, 
@@ -10,6 +10,7 @@ import {
 import SEO from '../components/SEO'
 import { STRIPE_LINKS } from '../data/links'
 import { sendB2BRegistrationEmail } from '../lib/emailjs'
+import { logB2BRegistration } from '../lib/googleSheets'
 
 const PLANS = [
   {
@@ -74,20 +75,30 @@ export default function B2BRegistration() {
     e.preventDefault()
     setLoading(true)
     
+    const registrationData = {
+      ...formData,
+      planId: selectedPlan?.id,
+      planName: selectedPlan?.name,
+      planPrice: selectedPlan?.price
+    }
+
     try {
-      // Mock upload or registration logic
-      await sendB2BRegistrationEmail({
-        ...formData,
-        planId: selectedPlan?.id,
-        planName: selectedPlan?.name,
-        planPrice: selectedPlan?.price
-      })
+      // 1. Log to Google Sheets (Primary)
+      await logB2BRegistration(registrationData)
+      
+      // 2. Try to send Email notification (Secondary)
+      // We wrap this in another try/catch so email failure doesn't block success screen
+      try {
+        await sendB2BRegistrationEmail(registrationData)
+      } catch (emailError) {
+        console.warn('Email notification failed but data was logged to sheets:', emailError)
+      }
       
       setSubmitted(true)
       setStep(5)
     } catch (error) {
       console.error('Registration failed:', error)
-      alert('Registration failed. Please try again.')
+      alert('Registration failed. Please check your internet connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -394,12 +405,14 @@ export default function B2BRegistration() {
                 <PremiumUploader 
                   label="BUSINESS LICENSE (PDF/JPG)" 
                   sub="Formal registration document"
-                  onUpload={() => {}}
+                  value={formData.license}
+                  onUpload={(file) => updateForm('license', file)}
                 />
                 <PremiumUploader 
                   label="WAREHOUSE / OFFICE PHOTO" 
                   sub="Verification of physical presence"
-                  onUpload={() => {}}
+                  value={formData.warehousePhoto}
+                  onUpload={(file) => updateForm('warehousePhoto', file)}
                 />
               </div>
             </div>
@@ -539,20 +552,41 @@ export default function B2BRegistration() {
   )
 }
 
-function PremiumUploader({ label, sub, onUpload }) {
+function PremiumUploader({ label, sub, onUpload, value }) {
+  const inputRef = useRef(null)
+
+  const handleClick = () => {
+    inputRef.current?.click()
+  }
+
+  const handleChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      onUpload(file)
+    }
+  }
+
   return (
     <div style={{ textAlign: 'left' }}>
       <label className="label">{label}</label>
+      <input 
+        type="file" 
+        ref={inputRef} 
+        onChange={handleChange} 
+        style={{ display: 'none' }} 
+        accept="image/*,application/pdf"
+      />
       <motion.div 
         whileHover={{ scale: 1.01, borderColor: 'var(--color-primary)' }}
         whileTap={{ scale: 0.99 }}
+        onClick={handleClick}
         style={{ 
-          border: '2px dashed var(--color-border)', 
+          border: value ? '2px solid var(--color-primary)' : '2px dashed var(--color-border)', 
           borderRadius: 16, 
           padding: '32px 20px', 
           textAlign: 'center', 
           cursor: 'pointer', 
-          background: 'rgba(255,255,255,0.5)',
+          background: value ? 'rgba(26,77,46,0.02)' : 'rgba(255,255,255,0.5)',
           transition: 'all 0.3s ease',
           display: 'flex',
           flexDirection: 'column',
@@ -562,14 +596,18 @@ function PremiumUploader({ label, sub, onUpload }) {
       >
         <div style={{ 
           width: 48, height: 48, borderRadius: '50%', 
-          background: 'rgba(26,77,46,0.05)', 
+          background: value ? 'var(--color-primary)' : 'rgba(26,77,46,0.05)', 
           display: 'flex', alignItems: 'center', justifyContent: 'center' 
         }}>
-          <Upload size={20} color="var(--color-primary)" />
+          {value ? <CheckCircle2 size={20} color="white" /> : <Upload size={20} color="var(--color-primary)" />}
         </div>
         <div>
-          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-dark-green)' }}>{sub}</div>
-          <div style={{ fontSize: '0.65rem', color: '#888', marginTop: 4 }}>Drag and drop or click to browse</div>
+          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-dark-green)' }}>
+            {value ? (typeof value === 'string' ? value : value.name) : sub}
+          </div>
+          <div style={{ fontSize: '0.65rem', color: '#888', marginTop: 4 }}>
+            {value ? 'Click to change file' : 'Drag and drop or click to browse'}
+          </div>
         </div>
       </motion.div>
     </div>

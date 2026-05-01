@@ -10,8 +10,26 @@ import {
 export default function B2BStore() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedPartner, setSelectedPartner] = useState(null)
+  const [isPaid, setIsPaid] = useState(false)
+  const [showLogin, setShowLogin] = useState(false)
+  const [password, setPassword] = useState('')
 
-  const filteredPartners = B2B_PARTNERS.filter(p => 
+  const handleUnlock = () => {
+    if (password === 'Samarth@1356') {
+      setIsPaid(true)
+      setShowLogin(false)
+      alert('Access Granted! Global Importers unlocked.')
+    } else {
+      alert('Incorrect Membership Code.')
+    }
+  }
+
+  // Filter logic: Free users only see "reg_" (registrations), Paid see all
+  const accessiblePartners = isPaid 
+    ? B2B_PARTNERS 
+    : B2B_PARTNERS.filter(p => p.id.startsWith('reg_'))
+
+  const filteredPartners = accessiblePartners.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.industry.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.location.toLowerCase().includes(searchTerm.toLowerCase())
@@ -20,8 +38,9 @@ export default function B2BStore() {
   return (
     <>
       <SEO 
-        title="B2B Store Directory — Registered Business Network"
-        description="Browse our verified network of global B2B partners, importers, and manufacturers. High-quality trade connections for international exports."
+        title="B2B Directory & Global Partners"
+        description="Premium B2B directory of global superfood importers, manufacturers, and trade partners. Access verified leads for Moringa and Onion Powder exports."
+        keywords="global importers directory, B2B superfood trade, export partners india, agri trade leads"
       />
 
       <div className="page-top" style={{ minHeight: '100vh', background: '#fcfdfc', padding: '120px 0' }}>
@@ -35,12 +54,12 @@ export default function B2BStore() {
             </p>
             
             <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <div style={{ position: 'relative', maxWidth: 500, width: '100%' }}>
+              <div style={{ position: 'relative', maxWidth: 400, width: '100%' }}>
                 <Search style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-light)' }} size={20} />
                 <input 
                   className="input" 
                   style={{ paddingLeft: 48, height: 56, borderRadius: 28, border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-sm)' }} 
-                  placeholder="Search by company, industry or location..."
+                  placeholder="Search registered businesses..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -48,8 +67,45 @@ export default function B2BStore() {
               <a href="/b2b/register" className="btn btn-primary" style={{ height: 56, borderRadius: 28, padding: '0 32px' }}>
                 Join the Network
               </a>
+              {!isPaid && (
+                <button 
+                  onClick={() => setShowLogin(true)}
+                  className="btn" 
+                  style={{ height: 56, borderRadius: 28, padding: '0 32px', background: '#333', color: 'white', border: 'none' }}
+                >
+                  Unlock Global Importers
+                </button>
+              )}
             </div>
           </div>
+
+          {!isPaid && (
+            <div style={{ 
+              background: 'linear-gradient(135deg, #1a472a 0%, #2d5a27 100%)', 
+              borderRadius: 'var(--radius-lg)', 
+              padding: '30px 40px', 
+              color: 'white', 
+              marginBottom: 40,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 24,
+              boxShadow: 'var(--shadow-lg)'
+            }}>
+              <div>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: 8, color: 'white' }}>Upgrade to Paid Membership</h3>
+                <p style={{ opacity: 0.9, fontSize: '1rem' }}>Get instant access to 30+ Global Importers specifically for Moringa and Onion powder.</p>
+              </div>
+              <button 
+                onClick={() => setShowLogin(true)}
+                className="btn" 
+                style={{ background: 'var(--color-accent)', color: 'black', border: 'none', padding: '12px 32px', fontSize: '1rem' }}
+              >
+                Access Premium Data
+              </button>
+            </div>
+          )}
 
           {/* Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 32 }}>
@@ -192,6 +248,54 @@ export default function B2BStore() {
           to { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}</style>
+
+      {/* Unlock Modal */}
+      {showLogin && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', 
+          backdropFilter: 'blur(10px)', zIndex: 10000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+        }}>
+          <div className="animate-in" style={{
+            background: 'white', maxWidth: 400, width: '100%', 
+            borderRadius: 'var(--radius-lg)', padding: 40, position: 'relative',
+            textAlign: 'center'
+          }}>
+            <button 
+              onClick={() => setShowLogin(false)}
+              style={{ position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              <X size={20} />
+            </button>
+            
+            <Globe size={48} color="var(--color-primary)" style={{ marginBottom: 20 }} />
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 12 }}>Unlock Global Importers</h2>
+            <p style={{ color: 'var(--color-text-light)', marginBottom: 32, fontSize: '0.9rem' }}>
+              Enter your Paid Membership Code to access our full database of 30+ international importers.
+            </p>
+
+            <input 
+              type="password"
+              className="input"
+              placeholder="Enter Access Code"
+              style={{ marginBottom: 16, textAlign: 'center', fontSize: '1.1rem', letterSpacing: '4px' }}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleUnlock()}
+            />
+            <button 
+              onClick={handleUnlock}
+              className="btn btn-primary" 
+              style={{ width: '100%', justifyContent: 'center', height: 56 }}
+            >
+              Unlock Access
+            </button>
+            <p style={{ marginTop: 20, fontSize: '0.8rem', color: 'var(--color-text-light)' }}>
+              Contact support if you don't have a code.
+            </p>
+          </div>
+        </div>
+      )}
     </>
   )
 }

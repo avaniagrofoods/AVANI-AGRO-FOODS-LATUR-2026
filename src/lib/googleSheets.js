@@ -11,22 +11,15 @@
 // 5. Copy the deployment URL and paste into VITE_GOOGLE_SHEETS_WEBHOOK in .env.local
 // ============================================================
 
-const WEBHOOK_URL = import.meta.env.VITE_GOOGLE_SHEETS_WEBHOOK || '';
+const WEBHOOK_URL = import.meta.env.VITE_GOOGLE_SHEETS_WEBHOOK || "https://script.google.com/macros/s/AKfycbxQN2Z7Bi7V-iZFibeeFkOyOOaMeX-4jFF3hv4GIYSGILDpoKbMq1WpXlAlX_Uims8k/exec";
 
 /**
  * Log an affiliate event to Google Sheets
  * @param {Object} data - Event data
- * @param {string} data.type - 'REGISTRATION' | 'CLICK' | 'SALE' | 'VIEW'
- * @param {string} data.affId - Affiliate ID
- * @param {string} data.affName - Affiliate name
- * @param {string} data.affEmail - Affiliate email
- * @param {string} data.product - Product/link clicked
- * @param {string} data.platform - Amazon/iHerb/Direct
- * @param {number} [data.amount] - For SALE events
  */
 export async function logAffiliateEvent(data) {
   if (!WEBHOOK_URL || WEBHOOK_URL.includes('YOUR_DEPLOYMENT_ID')) {
-    // Fallback: store locally for now
+    // Fallback: store locally
     const existing = JSON.parse(localStorage.getItem('aff_events') || '[]');
     existing.push({ ...data, timestamp: new Date().toISOString() });
     localStorage.setItem('aff_events', JSON.stringify(existing));
@@ -41,11 +34,11 @@ export async function logAffiliateEvent(data) {
       source: window.location.href
     };
 
-    // Use no-cors because GAS web apps often require it from browser
+    // IMPORTANT: In no-cors mode, we cannot set Content-Type to application/json.
+    // We send it as a plain string which defaults to text/plain, avoiding preflight.
     await fetch(WEBHOOK_URL, {
       method: 'POST',
       mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
@@ -64,15 +57,17 @@ export async function logAffiliateEvent(data) {
 /**
  * Log a new affiliate registration
  */
-export async function logAffiliateRegistration({ affId, name, email, platform, followers }) {
+export async function logAffiliateRegistration({ affId, name, email, phone, platform, followers, why }) {
   return logAffiliateEvent({
     type: 'REGISTRATION',
     affId,
     affName: name,
     affEmail: email,
+    phone,
     product: 'N/A',
     platform,
     followers,
+    why,
     amount: 0
   });
 }
@@ -106,6 +101,24 @@ export async function logInquiry(formData) {
     followers: formData.country,
     amount: 0,
     message: formData.message
+  });
+}
+
+/**
+ * Log a new B2B registration
+ */
+export async function logB2BRegistration(data) {
+  return logAffiliateEvent({
+    type: 'B2B_REGISTRATION',
+    affId: data.regNumber || 'B2B',
+    affName: data.companyName,
+    affEmail: data.email,
+    phone: data.mobile,
+    product: data.planName,
+    platform: data.businessType,
+    followers: data.country,
+    amount: 0,
+    message: `Contact: ${data.contactName}. License: ${data.license?.name || 'No'}. Photo: ${data.warehousePhoto?.name || 'No'}`
   });
 }
 

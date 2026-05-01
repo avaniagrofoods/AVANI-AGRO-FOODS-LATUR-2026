@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Globe, Award, Users, TrendingUp, ArrowRight, Leaf, Package,
-  Star, CheckCircle, Zap, Shield, BarChart3, ExternalLink
+  Star, CheckCircle, Zap, Shield, BarChart3, ExternalLink, FileText
 } from 'lucide-react'
 import SEO from '../components/SEO'
 import { CATALOG_LINK, WHATSAPP_NUMBER, AFFILIATE_LINKS, STRIPE_LINKS } from '../data/links'
@@ -24,7 +24,7 @@ const PRODUCTS_PREVIEW = [
     img: '/moringa.png',
     tags: ['60-100 Mesh', '<7% Moisture', 'FSSAI Certified'],
     badge: '🌿 Bestseller',
-    link: '/products'
+    link: '/products#moringa'
   },
   {
     name: 'Red Onion Powder',
@@ -33,7 +33,7 @@ const PRODUCTS_PREVIEW = [
     img: '/onion.png',
     tags: ['60-80 Mesh', 'HS 0712.20.00', 'EU Safe'],
     badge: '🧅 High Demand',
-    link: '/products'
+    link: '/products#onion'
   }
 ]
 
@@ -95,14 +95,14 @@ export default function Home() {
               <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi! I need a quote for Moringa Powder bulk order.')}`} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ gap: 8 }}>
                 <Zap size={18} /> {t.getQuote}
               </a>
-              <a href={CATALOG_LINK} target="_blank" rel="noopener noreferrer" className="btn" style={{ background: 'rgba(34,197,94,0.05)', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', gap: 8 }}>
-                <Package size={18} /> {t.viewCatalog}
+              <a href="#lead-magnet" className="btn" style={{ background: 'var(--color-accent)', color: 'white', border: 'none', gap: 8 }}>
+                <FileText size={18} /> Free Market Report
               </a>
             </div>
 
             {/* Badges */}
             <div style={{ display: 'flex', gap: 12, marginTop: 32, flexWrap: 'wrap' }}>
-              {['✅ FSSAI Certified', '✅ APEDA Registered', '✅ Lab Tested', '✅ Samples Available'].map(b => (
+              {['✅ APEDA Registered', '✅ IEC — (Active)', '✅ GST Registered'].map(b => (
                 <span key={b} style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-light)', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)', borderRadius: 30, padding: '5px 12px' }}>{b}</span>
               ))}
             </div>

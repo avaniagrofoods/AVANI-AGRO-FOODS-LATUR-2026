@@ -164,7 +164,7 @@ export default function Contact() {
                 <div style={{ marginTop: 28 }}>
                   <h3 style={{ fontWeight: 800, marginBottom: 14, fontSize: '0.95rem' }}>Certifications</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {['✅ FSSAI — License No: (Pending)', '✅ APEDA Registered', '✅ IEC — (Active)', '✅ GST Registered'].map(c => (
+                    {['✅ APEDA Registered', '✅ IEC — (Active)', '✅ GST Registered'].map(c => (
                       <span key={c} style={{ fontSize: '0.8rem', color: 'var(--color-text)' }}>{c}</span>
                     ))}
                   </div>

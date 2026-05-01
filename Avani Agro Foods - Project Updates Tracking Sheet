@@ -1,0 +1,60 @@
+# Avani Agro Foods - Project Updates Tracking Sheet
+
+## 📅 Chronological Updates Record
+
+| Date | Update / Feature | Description | Status |
+|---|---|---|---|
+| Apr 21 | CIBIL OTP Issues | Fixed OTP emails delivery. Implemented master OTP bypass for owner, "Resend OTP", and robust verification logic. | ✅ Completed |
+| Apr 22 | Quotation UI Responsiveness | Centered quotation format for desktop, added automated post-submission password prompt, and fixed mobile layout rendering. | ✅ Completed |
+| Apr 22 | Alternative OTP Verification | Professionalized "Free CIBIL Check" UI/UX with floating labels and institutional-grade dashboard. | ✅ Completed |
+| Apr 22 | Quotation Flow & DNS Setup | Automated quotation workflow with password protection. Synced Vercel custom domain (`avaniagrofoods.com`) while preserving Hostinger emails. | ✅ Completed |
+| Apr 23 | B2B Directory Gating | Implemented state-based membership to gate Global Importers behind an "Unlock" modal for paid members only. | ✅ Completed |
+| Apr 24 | CIBIL Check Removal | Completely removed the "Free CIBIL Check" feature and its UI to clean up the codebase and simplify platform offerings. | ✅ Completed |
+| Apr 25 | Image & Design Fixes | Resolved image loading issues and ensured design consistency across the website. | ✅ Completed |
+| Apr 28 | Zoho CRM Auth | Finalized domain authentication (`avaniagrofoods.com`) in Zoho CRM for professional outgoing emails. | ✅ Completed |
+| Apr 29 | Catalog Link Update | Replaced old Google Drive catalog with new link (`1ZYjwH8dmgFCLwzARXE2zvZA2VyNOcxtG`). Redeployed via Vercel. | ✅ Completed |
+| Apr 29 | B2B Email & WhatsApp Flow | Designed high-converting 5-email sequence and WhatsApp automation templates for Zoho CRM to nurture global B2B leads. | ✅ Completed |
+
+---
+
+## 🛠️ Auto-Mode System Checklist
+
+- **Website Menu Bars:** `Home`, `About`, `Products`, `Directory`, `Blog`, `Affiliate`, `B2B Store`, and `Contact` are correctly linked and fully responsive on desktop & mobile.
+- **Images:** Professional imagery is correctly configured on the Home, Blog, and Directory pages. Ensure future images are compressed (WebP/JPEG) for fast loading.
+- **Vercel Deployment:** Configured to run in auto-mode on `git push`. Command `npm run build && npx vercel --prod` works flawlessly.
+- **GitHub Sync:** Set up to automatically trigger Vercel builds whenever the `main` branch is updated.
+- **Email & CRM:** `sales@avaniagrofoods.com` is configured and authenticated. Automated journeys trigger when website enquiries arrive.
+
+---
+
+## 🛑 Dos and Don'ts
+
+### Website Maintenance
+**✅ DO:**
+- Compress images before uploading them to the codebase to maintain fast loading speeds.
+- Check mobile responsiveness after adding any new text or sections.
+- Keep the Contact page and "WhatsApp Button" active globally for instant buyer connection.
+
+**❌ DON'T:**
+- Don't change `id` or `class` names of forms (like the Quotation form) without updating the corresponding JavaScript logic.
+- Don't use heavy, uncompressed videos natively on the site; upload them to YouTube/Vimeo and embed them.
+
+### GitHub & Vercel Deployment
+**✅ DO:**
+- Commit your code with clear messages (e.g., "Updated home page banner").
+- Verify the build locally using `npm run build` before pushing to GitHub to prevent live errors.
+- Monitor the Vercel dashboard occasionally to ensure zero build failures.
+
+**❌ DON'T:**
+- Don't push sensitive passwords or API keys to GitHub. Always use `.env` variables in Vercel.
+- Don't interrupt a Vercel deployment while it says "Building". Wait for it to finish.
+
+### Zoho CRM & Email Automations
+**✅ DO:**
+- Regularly test the "Contact Us" and "Quotation" forms on the website to ensure leads flow into Zoho CRM seamlessly.
+- Use the provided B2B Email Sequence as a foundation, updating pricing or product specs whenever your catalog changes.
+- Ensure the WhatsApp number (`+91 7219053645`) is actively monitored to answer automated replies.
+
+**❌ DON'T:**
+- Don't change the email DNS settings in Hostinger/Vercel. It will break Zoho CRM authentication.
+- Don't send bulk emails without an "Unsubscribe" link; it violates anti-spam rules.

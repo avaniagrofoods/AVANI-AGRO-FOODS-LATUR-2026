@@ -1,0 +1,36 @@
+# Conversation Log: Finalizing Domain DNS Configuration
+
+**Date:** May 1, 2026
+**Project:** Avani Agro Foods Website Deployment
+**Status:** ✅ Successfully Configured & Verified
+
+---
+
+## 1. Objective
+Synchronize the custom domain `avaniagrofoods.com` with the Vercel production deployment while maintaining GitHub CI/CD stability.
+
+## 2. DNS Configuration Steps
+The following records were verified/updated in the domain's DNS provider (Hostinger):
+
+| Type | Host | Value | Purpose |
+| :--- | :--- | :--- | :--- |
+| **A** | `@` | `76.76.21.21` | Points the root domain to Vercel. |
+| **CNAME** | `www` | `cname.vercel-dns.com` | Aliases the www subdomain to Vercel. |
+
+## 3. GitHub & Vercel CI/CD Sync
+To ensure operational stability, the following "Vercel Check" enforcement was implemented:
+1. **Triggered Initial Deploy:** A small commit was pushed to trigger the first communication between GitHub and Vercel.
+2. **Branch Protection:** 
+   - Path: `Settings` -> `Branches` -> `Edit (main)`.
+   - Enabled: **"Require status checks to pass before merging"**.
+   - Verified Check: **"Vercel"** (specifically `Vercel – avani-app`).
+3. **Outcome:** No code can be merged into `main` unless the Vercel build/preview is successful.
+
+## 4. Integration Verification
+- **Zoho CRM:** Web-to-Lead forms mapped and tracking script active in `index.html`.
+- **WhatsApp:** Global link `+91 7219053645` active on all CTA buttons.
+- **B2B Store:** Membership gate verified (Access Code: `Samarth@1356`).
+- **Google Sheets:** Webhook logging active for Affiliate and B2B registrations.
+
+---
+**Record Kept By:** Antigravity (AI Coding Assistant)

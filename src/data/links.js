@@ -22,28 +22,28 @@ export const AFFILIATE_LINKS = {
       url: "https://www.amazon.com/b?node=53629917011",
       platform: "Amazon US",
       market: "Global Buyers",
-      commission: "3-10%"
+      commission: "2%"
     },
     ORGANIC_INDIA: {
       name: "Organic India Moringa",
       url: "https://tinyurl.com/ywenv6wz",
       platform: "Amazon India",
       market: "India Buyers",
-      commission: "3-8%"
+      commission: "2%"
     },
     HIMALAYAN_ORGANICS: {
       name: "Himalayan Organics Moringa",
       url: "https://tinyurl.com/efttfn8x",
       platform: "Amazon India",
       market: "India Buyers",
-      commission: "3-8%"
+      commission: "2%"
     },
     KULI_KULI: {
       name: "Kuli Kuli Moringa (Global)",
       url: "https://amzn.to/4v7LZmw",
       platform: "Amazon Global",
       market: "Global Buyers",
-      commission: "3-10%"
+      commission: "2%"
     }
   },
   IHERB: {
@@ -52,14 +52,14 @@ export const AFFILIATE_LINKS = {
       url: "https://in.iherb.com/info/affiliates?rcode=PQZ1679",
       platform: "iHerb India",
       market: "India Buyers",
-      commission: "5-10%"
+      commission: "3%"
     },
     US: {
       name: "iHerb US / Global",
       url: "https://iherb.co/ocZkYDSJ",
       platform: "iHerb US",
       market: "Global Buyers",
-      commission: "5-10%"
+      commission: "3%"
     }
   },
   FUTURE: [
@@ -71,7 +71,7 @@ export const AFFILIATE_LINKS = {
   ]
 };
 
-export const CATALOG_LINK = "https://drive.google.com/file/d/1CaHIPfnbtNs4D1c_ohZCAaUHIGyn3e5X/view?usp=sharing";
+export const CATALOG_LINK = "https://drive.google.com/file/d/1ZYjwH8dmgFCLwzARXE2zvZA2VyNOcxtG/view?usp=sharing";
 export const ZOHO_CRM_DASHBOARD = "https://crmplus.zoho.in/avaniagrofoods/index.do/cxapp/crm/org60068319712/tab/Home/begin";
 export const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1X2TTc9iQ2IWCTQV0RknH37A3lmIFaaC0ImT4rfBPuLI/edit?gid=0#gid=0";
 export const WHATSAPP_NUMBER = "917219053645";

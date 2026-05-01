@@ -160,7 +160,7 @@ export default function Products() {
 
         <div className="container" style={{ padding: '72px 24px' }}>
           {PRODUCTS.map((product, idx) => (
-            <div key={product.id} style={{ marginBottom: 96 }}>
+            <div key={product.id} id={product.id} style={{ marginBottom: 96, scrollMarginTop: 100 }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 64, alignItems: 'center' }}>
                 <div style={{ order: idx % 2 === 0 ? 0 : 1 }}>
                   <div style={{ position: 'relative', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>

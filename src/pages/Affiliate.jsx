@@ -33,7 +33,15 @@ export default function Affiliate() {
     localStorage.setItem('affiliates', JSON.stringify(existing))
     
     // Log to Google Sheets
-    await logAffiliateRegistration({ affId: id, name: form.name, email: form.email, platform: form.platform, followers: form.followers })
+    await logAffiliateRegistration({ 
+      affId: id, 
+      name: form.name, 
+      email: form.email, 
+      phone: form.phone,
+      platform: form.platform, 
+      followers: form.followers,
+      why: form.why
+    })
     
     // Send email notification
     try { await sendAffiliateEmail({ ...form, affId: id }) } catch {}
@@ -46,10 +54,10 @@ export default function Affiliate() {
 
   return (
     <>
-      <SEO
-        title="Affiliate Program — Earn 15-20% Commission"
-        description="Join Avani Agro Foods affiliate program. Earn 15-20% commission on B2B referrals. Moringa Powder and Onion Powder affiliate marketing in India and globally."
-        keywords="moringa powder affiliate program india, earn commission moringa, avani agro foods affiliate"
+      <SEO 
+        title="B2B Affiliate Program — Earn 15-20% Commissions"
+        description="Join the Avani Agro Foods affiliate program. Earn high commissions by referring global B2B buyers for Moringa and Onion Powder. Professional dashboard and marketing support."
+        keywords="agri affiliate program, export commission india, B2B referral program, earn money exporting"
       />
 
       <div className="page-top">
@@ -149,6 +157,9 @@ export default function Affiliate() {
                     <a href="/affiliate/dashboard" className="btn" style={{ justifyContent: 'center' }}>
                       📊 View My Dashboard <ArrowRight size={16} />
                     </a>
+                    <a href="/affiliate/directory" className="btn" style={{ justifyContent: 'center', background: 'rgba(230,168,23,0.1)', color: '#e6a817', border: '1px solid rgba(230,168,23,0.2)' }}>
+                      📂 View Affiliate Directory (Admin)
+                    </a>
                   </div>
 
                   <div style={{ marginTop: 24, padding: '16px', background: 'rgba(26,77,46,0.08)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', color: 'var(--color-text-light)', textAlign: 'left' }}>
@@ -193,11 +204,11 @@ export default function Affiliate() {
                   </thead>
                   <tbody>
                     {[
-                      ['Amazon Global', 'Amazon US', '3-10%'],
-                      ['Amazon India', 'Amazon IN', '3-8%'],
-                      ['iHerb India', 'iHerb IN', '5-10%'],
-                      ['iHerb Global', 'iHerb US', '5-10%'],
-                      ['B2B Referral', 'Direct', '15-20%'],
+                      ['Amazon Global', 'Amazon US', '2%'],
+                      ['Amazon India', 'Amazon IN', '2%'],
+                      ['iHerb India', 'iHerb IN', '3%'],
+                      ['iHerb Global', 'iHerb US', '3%'],
+                      ['B2B Referral', 'Direct', '3%'],
                     ].map(([t, p, r], i) => (
                       <tr key={t} style={{ borderBottom: '1px solid var(--color-border)', background: i % 2 === 0 ? 'white' : '#f8faf8' }}>
                         <td style={{ padding: '10px 14px', fontWeight: 600 }}>{t}</td>
