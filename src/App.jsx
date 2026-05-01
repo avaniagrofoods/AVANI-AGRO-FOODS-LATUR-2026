@@ -1,3 +1,4 @@
+// Production build trigger: 2026-05-01 SEO & Reference Fix
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { useEffect } from 'react'
 import { LanguageProvider } from './context/LanguageContext'

@@ -29,6 +29,16 @@ export default function SEO({ title, description, keywords, image }) {
       setMeta('og:image', image, true)
       setMeta('twitter:image', image)
     }
+
+    // Canonical Link Handling
+    const canonicalUrl = `https://www.avaniagrofoods.com${window.location.pathname}`
+    let canonicalLink = document.querySelector('link[rel="canonical"]')
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link')
+      canonicalLink.setAttribute('rel', 'canonical')
+      document.head.appendChild(canonicalLink)
+    }
+    canonicalLink.setAttribute('href', canonicalUrl)
   }, [title, description, keywords, image])
 
   return null

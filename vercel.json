@@ -1,3 +1,16 @@
 {
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "destination": "https://www.avaniagrofoods.com/$1",
+      "permanent": true,
+      "has": [
+        {
+          "type": "host",
+          "value": "avaniagrofoods.com"
+        }
+      ]
+    }
+  ],
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }

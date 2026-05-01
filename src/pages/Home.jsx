@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Globe, Award, Users, TrendingUp, ArrowRight, Leaf, Package,
-  Star, CheckCircle, Zap, Shield, BarChart3, ExternalLink, FileText
+  Star, CheckCircle, Zap, Shield, BarChart3, ExternalLink
 } from 'lucide-react'
 import SEO from '../components/SEO'
 import { CATALOG_LINK, WHATSAPP_NUMBER, AFFILIATE_LINKS, STRIPE_LINKS } from '../data/links'
@@ -96,7 +96,7 @@ export default function Home() {
                 <Zap size={18} /> {t.getQuote}
               </a>
               <a href="#lead-magnet" className="btn" style={{ background: 'var(--color-accent)', color: 'white', border: 'none', gap: 8 }}>
-                <FileText size={18} /> Free Market Report
+                <span style={{ fontSize: '1.2rem' }}>📄</span> Free Market Report
               </a>
             </div>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, Trash2, Mail, User, Building, MapPin, ArrowRight, CheckCircle, ExternalLink } from 'lucide-react'
+import { Trash2, Mail, User, Building, MapPin, ArrowRight, CheckCircle, ExternalLink } from 'lucide-react'
 import PasswordGate from '../components/PasswordGate'
 import QuotationBuilder from '../components/QuotationBuilder'
 
@@ -95,7 +95,7 @@ export default function AdminQuotations() {
                         className="btn btn-primary" 
                         style={{ padding: '10px 20px', fontSize: '0.85rem', gap: 8 }}
                       >
-                        <FileText size={16} /> Fill Quotation <ArrowRight size={14} />
+                        <span>📄</span> Fill Quotation <ArrowRight size={14} />
                       </button>
                       <button 
                         onClick={() => deleteEnquiry(enquiry.id)}

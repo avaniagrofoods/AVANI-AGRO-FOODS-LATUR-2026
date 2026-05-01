@@ -6,7 +6,7 @@ import { logInquiry } from '../lib/googleSheets'
 import QuotationBuilder from '../components/QuotationBuilder'
 import PasswordGate from '../components/PasswordGate'
 import { WHATSAPP_NUMBER } from '../data/links'
-import { Mail, Phone, MapPin, MessageSquare, Send, Globe, FileText } from 'lucide-react'
+import { Mail, Phone, MapPin, MessageSquare, Send, Globe } from 'lucide-react'
 
 const INQUIRY_TYPES = [
   'Export Pricing Request',
@@ -49,25 +49,28 @@ export default function Contact() {
       // 2. Google Sheets Logging
       try { await logInquiry(form) } catch (err) { console.error('Sheets Error:', err) }
 
-      // 3. Zoho CRM Web-to-Lead
-      try {
-        const zohoParams = new URLSearchParams()
-        zohoParams.append('xnQsjsdp', import.meta.env.VITE_ZOHO_ORG_ID)
-        zohoParams.append('xmIwtLD', import.meta.env.VITE_ZOHO_VALIDATION_ID)
-        zohoParams.append('First Name', form.firstName)
-        zohoParams.append('Last Name', form.lastName)
-        zohoParams.append('Email', form.email)
-        zohoParams.append('Phone', form.phone)
-        zohoParams.append('Company', form.company)
-        zohoParams.append('Country', form.country)
-        zohoParams.append('Description', `${form.inquiryType}: ${form.message}`)
-        
-        await fetch('https://crm.zoho.in/crm/WebToLeadForm', {
-          method: 'POST',
-          mode: 'no-cors',
-          body: zohoParams
-        })
-      } catch (err) { console.error('Zoho Error:', err) }
+        // 3. Zoho CRM Web-to-Lead
+        try {
+          const zohoParams = new URLSearchParams()
+          zohoParams.append('xnQsjsdp', import.meta.env.VITE_ZOHO_ORG_ID)
+          zohoParams.append('xmIwtLD', import.meta.env.VITE_ZOHO_VALIDATION_ID)
+          zohoParams.append('actionType', 'TGVhZHM=')
+          zohoParams.append('First Name', form.firstName)
+          zohoParams.append('Last Name', form.lastName)
+          zohoParams.append('Email', form.email)
+          zohoParams.append('Phone', form.phone)
+          zohoParams.append('Company', form.company)
+          zohoParams.append('Country', form.country)
+          zohoParams.append('LEADCF4', form.inquiryType) // Buyer Type
+          zohoParams.append('LEADCF2', 'Website Inquiry') // Lead Status
+          zohoParams.append('Description', form.message)
+          
+          await fetch('https://crm.zoho.in/crm/WebToLeadForm', {
+            method: 'POST',
+            mode: 'no-cors',
+            body: zohoParams
+          })
+        } catch (err) { console.error('Zoho Error:', err) }
 
       // 4. Auto Reply to Customer
       try { await sendAutoReply(form) } catch {}

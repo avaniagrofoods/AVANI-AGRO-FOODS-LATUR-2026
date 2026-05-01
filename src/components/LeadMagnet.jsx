@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FileText, Send, CheckCircle, Download, ArrowRight } from 'lucide-react'
+import { Send, CheckCircle, Download, ArrowRight } from 'lucide-react'
 import { sendContactEmail } from '../lib/emailjs'
 
 export default function LeadMagnet() {
@@ -79,7 +79,7 @@ export default function LeadMagnet() {
           {!submitted ? (
             <>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 30, padding: '6px 16px', marginBottom: 24 }}>
-                <FileText size={14} /> <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>For Global Importers</span>
+                <span>📄</span> <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>For Global Importers</span>
               </div>
               <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: 16, lineHeight: 1.2 }}>
                 Get the <span style={{ color: 'var(--color-accent)' }}>Global Superfood</span> Market Report 2026

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Mail, Phone, MapPin, Globe, Leaf, Shield, FileText, ExternalLink } from 'lucide-react'
+import { Mail, Phone, MapPin, Globe, Leaf, Shield, ExternalLink } from 'lucide-react'
 import { CATALOG_LINK, WHATSAPP_NUMBER, OWNER_EMAIL } from '../data/links'
 import { useLanguage } from '../context/LanguageContext'
 
@@ -75,7 +75,7 @@ export default function Footer() {
             <h4 style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-accent)', marginBottom: 20 }}>Legal</h4>
             <nav className="footer-links" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <Link to="/privacy"><Shield size={13} style={{ display: 'inline', marginRight: 6 }} />Privacy Policy</Link>
-              <Link to="/disclaimer"><FileText size={13} style={{ display: 'inline', marginRight: 6 }} />Medical Disclaimer</Link>
+              <Link to="/disclaimer"><span>📄</span> Medical Disclaimer</Link>
               <Link to="/affiliate-disclaimer"><Leaf size={13} style={{ display: 'inline', marginRight: 6 }} />Affiliate Disclosure</Link>
             </nav>
 

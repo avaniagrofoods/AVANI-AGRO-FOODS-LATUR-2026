@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Printer, Plus, Trash2, FileText, Download } from 'lucide-react'
+import { Printer, Plus, Trash2, Download } from 'lucide-react'
 
 const defaultItems = [
   { id: 1, description: 'Premium Moringa Powder — Export Grade A', hscode: '0712.90.90', quantity: 100, unit: 'KG', rate: 350, amount: 35000 },

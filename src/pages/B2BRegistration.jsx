@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Building2, Globe, CheckCircle2, 
   ArrowRight, ShieldCheck, Zap, 
-  FileText, CreditCard, ChevronRight,
+  CreditCard, ChevronRight,
   Info, AlertCircle, Upload, Phone, Mail, User,
   Lock, ArrowLeft, CloudLightning, Shield 
 } from 'lucide-react'
