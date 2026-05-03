@@ -18,17 +18,29 @@
   --color-text-light: #64748b;
   --color-border: #e2e8f0;
   --color-white: #ffffff;
+  
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-blur: 12px;
+  
+  /* Modern Shadows */
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.02);
   --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.04), 0 4px 6px -2px rgba(0,0,0,0.02);
   --shadow-lg: 0 25px 50px -12px rgba(0,0,0,0.08);
   --shadow-xl: 0 20px 60px rgba(0,0,0,0.15);
   --shadow-premium: 0 30px 80px rgba(26,77,46,0.15);
+  
+  /* Radii */
   --radius-sm: 12px;
   --radius-md: 20px;
   --radius-lg: 32px;
   --radius-xl: 48px;
   --radius-2xl: 64px;
+  
+  /* Typography */
   --font-primary: 'Outfit', 'Inter', system-ui, sans-serif;
+  --font-secondary: 'Inter', system-ui, sans-serif;
 }
 
 /* ---- Reset ---- */
@@ -249,6 +261,15 @@ p { line-height: 1.7; }
   box-shadow: var(--shadow-premium);
 }
 
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
 /* ---- Badge ---- */
 .badge {
   display: inline-flex;
@@ -316,14 +337,15 @@ textarea.input { resize: vertical; min-height: 140px; }
   left: 0;
   right: 0;
   z-index: 1000;
-  height: 72px;
+  height: 80px;
   display: flex;
   align-items: center;
-  background: rgba(255,255,255,0.95);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  border-bottom: 1px solid var(--glass-border);
   box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
 }
 .navbar-inner {
   display: flex;

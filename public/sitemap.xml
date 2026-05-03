@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://avaniagrofoods.com/</loc><priority>1.00</priority></url>
-  <url><loc>https://avaniagrofoods.com/about</loc><priority>0.80</priority></url>
-  <url><loc>https://avaniagrofoods.com/products</loc><priority>0.90</priority></url>
-  <url><loc>https://avaniagrofoods.com/b2b</loc><priority>0.90</priority></url>
-  <url><loc>https://avaniagrofoods.com/affiliate</loc><priority>0.85</priority></url>
-  <url><loc>https://avaniagrofoods.com/blog</loc><priority>0.80</priority></url>
-  <url><loc>https://avaniagrofoods.com/contact</loc><priority>0.80</priority></url>
-  <url><loc>https://avaniagrofoods.com/manufacturers</loc><priority>0.70</priority></url>
-  <url><loc>https://avaniagrofoods.com/importers</loc><priority>0.70</priority></url>
-  <url><loc>https://avaniagrofoods.com/privacy</loc><priority>0.50</priority></url>
-  <url><loc>https://avaniagrofoods.com/disclaimer</loc><priority>0.50</priority></url>
-  <url><loc>https://avaniagrofoods.com/affiliate-disclaimer</loc><priority>0.50</priority></url>
+  <url><loc>https://www.avaniagrofoods.com/</loc><priority>1.00</priority></url>
+  <url><loc>https://www.avaniagrofoods.com/about</loc><priority>0.80</priority></url>
+  <url><loc>https://www.avaniagrofoods.com/products</loc><priority>0.90</priority></url>
+  <url><loc>https://www.avaniagrofoods.com/b2b</loc><priority>0.90</priority></url>
+  <url><loc>https://www.avaniagrofoods.com/affiliate</loc><priority>0.85</priority></url>
+  <url><loc>https://www.avaniagrofoods.com/blog</loc><priority>0.80</priority></url>
+  <url><loc>https://www.avaniagrofoods.com/contact</loc><priority>0.80</priority></url>
+  <url><loc>https://www.avaniagrofoods.com/manufacturers</loc><priority>0.70</priority></url>
+  <url><loc>https://www.avaniagrofoods.com/importers</loc><priority>0.70</priority></url>
+  <url><loc>https://www.avaniagrofoods.com/privacy</loc><priority>0.50</priority></url>
+  <url><loc>https://www.avaniagrofoods.com/disclaimer</loc><priority>0.50</priority></url>
+  <url><loc>https://www.avaniagrofoods.com/affiliate-disclaimer</loc><priority>0.50</priority></url>
 </urlset>

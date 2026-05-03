@@ -49,28 +49,30 @@ export default function Contact() {
       // 2. Google Sheets Logging
       try { await logInquiry(form) } catch (err) { console.error('Sheets Error:', err) }
 
-        // 3. Zoho CRM Web-to-Lead
+        // 3. HubSpot CRM Submission (Direct Integration - na2 Region)
         try {
-          const zohoParams = new URLSearchParams()
-          zohoParams.append('xnQsjsdp', import.meta.env.VITE_ZOHO_ORG_ID)
-          zohoParams.append('xmIwtLD', import.meta.env.VITE_ZOHO_VALIDATION_ID)
-          zohoParams.append('actionType', 'TGVhZHM=')
-          zohoParams.append('First Name', form.firstName)
-          zohoParams.append('Last Name', form.lastName)
-          zohoParams.append('Email', form.email)
-          zohoParams.append('Phone', form.phone)
-          zohoParams.append('Company', form.company)
-          zohoParams.append('Country', form.country)
-          zohoParams.append('LEADCF4', form.inquiryType) // Buyer Type
-          zohoParams.append('LEADCF2', 'Website Inquiry') // Lead Status
-          zohoParams.append('Description', form.message)
-          
-          await fetch('https://crm.zoho.in/crm/WebToLeadForm', {
+          const hsResponse = await fetch('https://api-na2.hubspot.com/submissions/v3/integration/submit/246074335/ee1ee377-e19b-4026-80cd-f5eddbb35793', {
             method: 'POST',
-            mode: 'no-cors',
-            body: zohoParams
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fields: [
+                { name: 'firstname', value: form.firstName },
+                { name: 'lastname', value: form.lastName },
+                { name: 'email', value: form.email },
+                { name: 'mobilephone', value: form.phone },
+                { name: 'company', value: form.company },
+                { name: 'country', value: form.country },
+                { name: 'message', value: form.message },
+                { name: 'inquiry_type', value: form.inquiryType }
+              ],
+              context: {
+                pageUri: window.location.href,
+                pageName: document.title
+              }
+            })
           })
-        } catch (err) { console.error('Zoho Error:', err) }
+          if (!hsResponse.ok) throw new Error('HubSpot Submission Failed')
+        } catch (err) { console.error('HubSpot Error:', err) }
 
       // 4. Auto Reply to Customer
       try { await sendAutoReply(form) } catch {}

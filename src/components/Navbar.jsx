@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Menu, X, Globe, ChevronDown, Languages } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { CATALOG_LINK } from '../data/links'
 import { useLanguage } from '../context/LanguageContext'
 
@@ -87,22 +88,32 @@ export default function Navbar() {
             <button className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               {t.directory} {enquiryCount > 0 && <span style={{ background: '#dc2626', color: 'white', borderRadius: '50%', width: 18, height: 18, fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>{enquiryCount}</span>} <ChevronDown size={14} />
             </button>
-            {dropdownOpen && (
-              <div style={{
-                position: 'absolute', top: '100%', left: isRTL ? 'auto' : 0, right: isRTL ? 0 : 'auto',
-                minWidth: 220, background: 'white', boxShadow: 'var(--shadow-lg)',
-                borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
-                padding: '8px', zIndex: 100
-              }}>
-                <Link to="/manufacturers" className="nav-link" style={{ display: 'block', padding: '10px 14px' }}>{t.manufacturers}</Link>
-                <Link to="/importers" className="nav-link" style={{ display: 'block', padding: '10px 14px' }}>{t.importers}</Link>
-                <div style={{ margin: '8px 0', borderTop: '1px solid var(--color-border)' }} />
-                <Link to="/admin/quotations" className="nav-link" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', color: 'var(--color-primary)', fontWeight: 700 }}>
-                  <span>📋 Quotations</span>
-                  {enquiryCount > 0 && <span style={{ background: '#dc2626', color: 'white', borderRadius: 20, padding: '2px 8px', fontSize: '0.65rem' }}>{enquiryCount} NEW</span>}
-                </Link>
-              </div>
-            )}
+            <AnimatePresence>
+              {dropdownOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  style={{
+                    position: 'absolute', top: '100%', left: isRTL ? 'auto' : 0, right: isRTL ? 0 : 'auto', minWidth: 200,
+                    background: 'white', boxShadow: 'var(--shadow-lg)',
+                    borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
+                    padding: '8px 0', zIndex: 100, marginTop: 4
+                  }}
+                >
+                  {NAV_ITEMS.find(i => i.label === 'Directory').children.map(c => (
+                    <Link key={c.href} to={c.href} className="nav-link" style={{ display: 'block', padding: '10px 20px', fontSize: '0.85rem' }}>
+                      {c.label}
+                    </Link>
+                  ))}
+                  <div style={{ margin: '8px 0', borderTop: '1px solid var(--color-border)' }} />
+                  <Link to="/admin/quotations" className="nav-link" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', color: 'var(--color-primary)', fontWeight: 700 }}>
+                    <span>📋 Quotations</span>
+                    {enquiryCount > 0 && <span style={{ background: '#dc2626', color: 'white', borderRadius: 20, padding: '2px 8px', fontSize: '0.65rem' }}>{enquiryCount} NEW</span>}
+                  </Link>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </li>
           <li>
             <Link to="/blog" className={`nav-link ${isActive('/blog') ? 'active' : ''}`}>{t.blog}</Link>
@@ -123,18 +134,25 @@ export default function Navbar() {
               <button className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--color-bg-alt)', borderRadius: 20 }}>
                 <Languages size={16} /> <span style={{ textTransform: 'uppercase', fontWeight: 800, fontSize: '0.75rem' }}>{lang}</span>
               </button>
-              {langOpen && (
-                <div style={{
-                  position: 'absolute', top: '100%', right: 0, minWidth: 120,
-                  background: 'white', boxShadow: 'var(--shadow-lg)',
-                  borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
-                  padding: '4px', zIndex: 100
-                }}>
-                  <button onClick={() => setLang('en')} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: lang === 'en' ? 'var(--color-bg-alt)' : 'none', cursor: 'pointer', fontSize: '0.85rem' }}>English</button>
-                  <button onClick={() => setLang('ar')} style={{ width: '100%', padding: '8px 12px', textAlign: 'right', border: 'none', background: lang === 'ar' ? 'var(--color-bg-alt)' : 'none', cursor: 'pointer', fontSize: '0.85rem' }}>العربية</button>
-                  <button onClick={() => setLang('fr')} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: lang === 'fr' ? 'var(--color-bg-alt)' : 'none', cursor: 'pointer', fontSize: '0.85rem' }}>Français</button>
-                </div>
-              )}
+              <AnimatePresence>
+                {langOpen && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    style={{
+                      position: 'absolute', top: '100%', right: 0, minWidth: 120,
+                      background: 'white', boxShadow: 'var(--shadow-lg)',
+                      borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
+                      padding: '4px', zIndex: 100, marginTop: 4
+                    }}
+                  >
+                    <button onClick={() => setLang('en')} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: lang === 'en' ? 'var(--color-bg-alt)' : 'none', cursor: 'pointer', fontSize: '0.85rem' }}>English</button>
+                    <button onClick={() => setLang('ar')} style={{ width: '100%', padding: '8px 12px', textAlign: 'right', border: 'none', background: lang === 'ar' ? 'var(--color-bg-alt)' : 'none', cursor: 'pointer', fontSize: '0.85rem' }}>العربية</button>
+                    <button onClick={() => setLang('fr')} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: lang === 'fr' ? 'var(--color-bg-alt)' : 'none', cursor: 'pointer', fontSize: '0.85rem' }}>Français</button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <a href={CATALOG_LINK} target="_blank" rel="noopener noreferrer" className="nav-cta" style={{ gap: 6 }}>
@@ -156,33 +174,41 @@ export default function Navbar() {
       </div>
 
       {/* Mobile menu */}
-      {open && (
-        <div style={{
-          position: 'fixed', top: 72, left: 0, right: 0, background: 'white',
-          padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 4,
-          borderBottom: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)', zIndex: 999
-        }}>
-          {NAV_ITEMS.map((item) => (
-            item.children ? (
-              <div key={item.label}>
-                <div style={{ padding: '10px 0', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-light)' }}>{item.label}</div>
-                {item.children.map(c => (
-                  <Link key={c.href} to={c.href} className="nav-link" style={{ display: 'block', padding: '10px 16px' }}>
-                    {c.label}
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <Link key={item.label} to={item.href} className={`nav-link ${isActive(item.href) ? 'active' : ''}`} style={{ display: 'block', textAlign: 'left', padding: '12px 4px' }}>
-                {item.label}
-              </Link>
-            )
-          ))}
-          <a href={CATALOG_LINK} target="_blank" rel="noopener noreferrer" className="nav-cta" style={{ textAlign: 'center', marginTop: 8 }}>
-            📄 View Catalog
-          </a>
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              position: 'fixed', top: 80, left: 0, right: 0, background: 'white',
+              padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 4,
+              borderBottom: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)', zIndex: 999
+            }}
+          >
+            {NAV_ITEMS.map((item) => (
+              item.children ? (
+                <div key={item.label}>
+                  <div style={{ padding: '10px 0', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-light)' }}>{item.label}</div>
+                  {item.children.map(c => (
+                    <Link key={c.href} to={c.href} className="nav-link" style={{ display: 'block', padding: '10px 16px' }}>
+                      {c.label}
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <Link key={item.label} to={item.href} className={`nav-link ${isActive(item.href) ? 'active' : ''}`} style={{ display: 'block', textAlign: 'left', padding: '12px 4px' }}>
+                  {item.label}
+                </Link>
+              )
+            ))}
+            <a href={CATALOG_LINK} target="_blank" rel="noopener noreferrer" className="nav-cta" style={{ textAlign: 'center', marginTop: 8 }}>
+              📄 View Catalog
+            </a>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         @media (max-width: 1023px) {

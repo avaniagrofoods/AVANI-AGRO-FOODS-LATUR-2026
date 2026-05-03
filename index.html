@@ -11,6 +11,13 @@
 
     gtag('config', 'G-GNKT58TMBT');
   </script>
+
+  <!-- Apollo.io B2B Intelligence & Form Enrichment -->
+  <script>
+    (function initApolloInbound() {
+      var TIMEOUT_MS = 15000; var timeoutId; var style = document.createElement('style'); style.id = 'apollo-form-prehide-css'; style.textContent = 'form:has(input[type="email" i]),form:has(input[name="email" i]),.hs-form-iframe{position:relative!important}form:has(input[type="email" i])::before,form:has(input[name="email" i])::before,.hs-form-iframe::before{content:"";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;width:50px;height:50px;margin:auto;border:2.5px solid #e1e1e1;border-top:2.5px solid #9ea3a6;border-radius:50%;animation:spin 1s linear infinite;background-color:transparent;pointer-events:auto;z-index:999999;opacity:1}form:has(input[type="email" i]) *,form:has(input[name="email" i]) *,.hs-form-iframe *{opacity:0!important;user-select:none!important;pointer-events:none!important}@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}'; (document.head || document.documentElement).appendChild(style); function cleanup() { var styleEl = document.getElementById('apollo-form-prehide-css'); if (styleEl) styleEl.remove(); if (timeoutId) clearTimeout(timeoutId); } timeoutId = setTimeout(function () { console.warn('[Apollo] Form enrichment timeout after 5s - revealing forms. Check network and console for errors.'); cleanup(); }, TIMEOUT_MS); var nocache = Math.random().toString(36).substring(7); var script = document.createElement('script'); script.src = 'https://assets.apollo.io/js/apollo-inbound.js?nocache=' + nocache; script.defer = true; script.onerror = function () { console.error('[Apollo] Failed to load form enrichment script'); cleanup(); }; script.onload = function () { try { window.ApolloInbound.formEnrichment.init({ appId: '69f5f2d6a704d400199f639d', onReady: function () { cleanup(); }, onError: function (err) { console.error('[Apollo] Form enrichment init error:', err); cleanup(); } }); } catch (err) { console.error('[Apollo] Error initializing form enrichment:', err); cleanup(); } }; document.head.appendChild(script);
+    })();
+  </script>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/logo.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -18,19 +25,93 @@
   <!-- Primary SEO -->
   <title>AVANI AGRO FOODS | Premium Moringa & Red Onion Powder Exporter | Latur, India</title>
   <meta name="description"
-    content="Avani Agro Foods – India's premier exporter of Moringa Powder and Red Onion Powder. B2B bulk orders, affiliate program, and global export. Latur, Maharashtra." />
+    content="Avani Agro Foods – India's premier exporter of Moringa Powder and Red Onion Powder. B2B bulk orders, affiliate program, and global export. Latur, Maharashtra. Certified quality and sustainable farming." />
   <meta name="keywords"
-    content="moringa powder exporter india, red onion powder bulk, moringa powder B2B, avani agro foods latur, moringa export maharashtra, buy moringa powder wholesale" />
+    content="moringa powder exporter india, red onion powder bulk, moringa powder B2B, avani agro foods latur, moringa export maharashtra, buy moringa powder wholesale, organic moringa powder india" />
+  
   <!-- Open Graph -->
   <meta property="og:title" content="AVANI AGRO FOODS | Premium Moringa & Red Onion Powder" />
   <meta property="og:description"
     content="India's leading exporter of premium Moringa and Red Onion Powder. Certified quality, global shipping, affiliate program." />
-  <meta property="og:image" content="/og-image.jpg" />
+  <meta property="og:image" content="https://www.avaniagrofoods.com/og-image.jpg" />
+  <meta property="og:url" content="https://www.avaniagrofoods.com/" />
   <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Avani Agro Foods" />
+
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="AVANI AGRO FOODS – Export, Affiliate & B2B" />
+  <meta name="twitter:description" content="Premium Moringa & Red Onion Powder Exporter from Latur, India. Global shipping and B2B wholesale." />
+  <meta name="twitter:image" content="https://www.avaniagrofoods.com/og-image.jpg" />
+
   <link rel="canonical" href="https://www.avaniagrofoods.com/" />
+
+  <!-- Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Avani Agro Foods",
+      "url": "https://www.avaniagrofoods.com",
+      "logo": "https://www.avaniagrofoods.com/logo.png",
+      "description": "Premium Moringa & Red Onion Powder Exporter from Latur, India.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Latur",
+        "addressRegion": "Maharashtra",
+        "postalCode": "413512",
+        "addressCountry": "IN"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+91-7219053645",
+        "contactType": "Sales",
+        "areaServed": "Worldwide",
+        "availableLanguage": ["English", "Hindi", "Marathi"]
+      },
+      "sameAs": [
+        "https://www.facebook.com/avaniagrofoods",
+        "https://www.linkedin.com/company/avani-agro-foods"
+      ]
+    }
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "Avani Agro Foods",
+      "image": "https://www.avaniagrofoods.com/og-image.jpg",
+      "@id": "https://www.avaniagrofoods.com",
+      "url": "https://www.avaniagrofoods.com",
+      "telephone": "+917219053645",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Latur",
+        "addressLocality": "Latur",
+        "postalCode": "413512",
+        "addressRegion": "Maharashtra",
+        "addressCountry": "IN"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 18.4088,
+        "longitude": 76.5604
+      },
+      "openingHoursSpecification": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday"
+        ],
+        "opens": "09:00",
+        "closes": "19:00"
+      }
+    }
+  </script>
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

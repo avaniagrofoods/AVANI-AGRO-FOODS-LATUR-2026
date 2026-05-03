@@ -1,11 +1,29 @@
 import { WHATSAPP_NUMBER } from '../data/links'
 
-export default function WhatsAppBubble({ message = "Hi! I'm interested in wholesale pricing for Moringa Powder." }) {
-  const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`
+export default function WhatsAppBubble({ message = "Hi! I'm interested in bulk pricing for Avani Agro products." }) {
+  
+  const handleClick = () => {
+    // Track conversion in Google Analytics
+    if (window.gtag) {
+      window.gtag('event', 'generate_lead', {
+        'service': 'whatsapp',
+        'value': 1.0,
+        'currency': 'USD',
+        'event_category': 'conversion',
+        'event_label': 'WhatsApp Bubble Click',
+        'page_location': window.location.href
+      });
+    }
+  }
+
+  // Add page context to the message so you know what they are looking at
+  const contextualMessage = `${message}\n\n(Inquiry from: ${window.location.href})`;
+  const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(contextualMessage)}`
   
   return (
     <a
       href={url}
+      onClick={handleClick}
       target="_blank"
       rel="noopener noreferrer"
       id="whatsapp-bubble"

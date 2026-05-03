@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -71,11 +72,25 @@ export default function Home() {
         position: 'relative', overflow: 'hidden', paddingTop: 80
       }}>
         {/* Ambient blobs */}
-        <div style={{ position: 'absolute', top: '10%', right: '5%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(34,197,94,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: '5%', left: '10%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,68,68,0.03) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <motion.div 
+          animate={{ scale: [1, 1.2, 1], opacity: [0.05, 0.1, 0.05] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          style={{ position: 'absolute', top: '10%', right: '5%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(34,197,94,0.15) 0%, transparent 70%)', pointerEvents: 'none' }} 
+        />
+        <motion.div 
+          animate={{ scale: [1.2, 1, 1.2], opacity: [0.03, 0.06, 0.03] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          style={{ position: 'absolute', bottom: '5%', left: '10%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(239,68,68,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} 
+        />
 
         <div className="container" style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center', direction: isRTL ? 'rtl' : 'ltr' }}>
-          <div style={{ textAlign: isRTL ? 'right' : 'left' }}>
+          <motion.div 
+            initial={{ opacity: 0, x: -40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            style={{ textAlign: isRTL ? 'right' : 'left' }}
+          >
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 30, padding: '6px 16px', marginBottom: 24 }}>
               <Globe size={14} color="var(--color-primary)" />
               <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--color-primary)' }}>{activeTab === 'Global' ? 'Exporting Globally' : 'Market Specific Export'}</span>
@@ -106,18 +121,25 @@ export default function Home() {
                 <span key={b} style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-light)', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)', borderRadius: 30, padding: '5px 12px' }}>{b}</span>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* Hero visual */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             {PRODUCTS_PREVIEW.map((p, i) => (
-              <div key={p.name} style={{
-                borderRadius: 'var(--radius-lg)', overflow: 'hidden',
-                background: 'white', border: '1px solid var(--color-border)',
-                boxShadow: 'var(--shadow-lg)',
-                transform: i === 1 ? 'translateY(24px)' : 'translateY(-12px)',
-                transition: 'transform 0.3s ease'
-              }}>
+              <motion.div 
+                key={p.name}
+                initial={{ opacity: 0, y: i === 1 ? 40 : -40 }}
+                whileInView={{ opacity: 1, y: i === 1 ? 24 : -12 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: 0.2 * i }}
+                whileHover={{ y: i === 1 ? 14 : -22, transition: { duration: 0.3 } }}
+                className="glass-card"
+                style={{
+                  overflow: 'hidden',
+                  background: 'white',
+                  transition: 'all 0.3s ease'
+                }}
+              >
                 <div style={{ position: 'relative' }}>
                   <img src={p.img} alt={p.name} style={{ width: '100%', height: 160, objectFit: 'cover' }} />
                   <div style={{ position: 'absolute', top: 10, left: 10, fontSize: '0.65rem', fontWeight: 700, background: 'var(--color-accent)', color: 'white', borderRadius: 30, padding: '3px 10px' }}>{p.badge}</div>
@@ -129,7 +151,7 @@ export default function Home() {
                     <span key={t} style={{ display: 'inline-block', fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', background: 'rgba(34,197,94,0.1)', color: 'var(--color-primary)', borderRadius: 30, padding: '2px 8px', marginRight: 4, marginBottom: 4 }}>{t}</span>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -149,7 +171,12 @@ export default function Home() {
       {/* ── STATS ── */}
       <section style={{ background: 'var(--color-primary)', padding: '64px 0' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24 }}>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24 }}
+          >
             {STATS.map(({ label, value, icon: Icon }) => (
               <div key={label} style={{ textAlign: 'center', padding: '32px', background: 'rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.2)' }}>
                 <Icon size={32} color="white" style={{ marginBottom: 12 }} />
@@ -157,21 +184,34 @@ export default function Home() {
                 <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 700 }}>{label}</div>
               </div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* ── PRODUCTS ── */}
       <section style={{ padding: '96px 0', background: 'white' }}>
         <div className="container">
-          <div className="section-header">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="section-header"
+          >
             <div className="section-tag"><Leaf size={12} /> Products</div>
             <h2 className="section-title">Export-Grade Products</h2>
             <p className="section-desc">Two premium agri products, globally certified, ready for B2B wholesale and export.</p>
-          </div>
+          </motion.div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 32 }}>
-            {PRODUCTS_PREVIEW.map(p => (
-              <div key={p.name} className="card card-hover" style={{ overflow: 'hidden' }}>
+            {PRODUCTS_PREVIEW.map((p, idx) => (
+              <motion.div 
+                key={p.name}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.2 }}
+                className="card card-hover" 
+                style={{ overflow: 'hidden' }}
+              >
                 <div style={{ position: 'relative' }}>
                   <img src={p.img} alt={p.name} style={{ width: '100%', height: 220, objectFit: 'cover' }} />
                   <div style={{ position: 'absolute', top: 16, left: 16, background: 'var(--color-accent)', color: 'white', fontSize: '0.7rem', fontWeight: 800, borderRadius: 30, padding: '4px 12px' }}>{p.badge}</div>
@@ -188,12 +228,17 @@ export default function Home() {
                     <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi! I need pricing for ${p.name}`} target="_blank" rel="noopener noreferrer" className="btn" style={{ flex: 1, justifyContent: 'center' }}>Get Quote</a>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-          <div style={{ textAlign: 'center', marginTop: 40 }}>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            style={{ textAlign: 'center', marginTop: 40 }}
+          >
             <Link to="/products" className="btn btn-primary" style={{ gap: 8 }}>View All Product Details <ArrowRight size={16} /></Link>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -224,8 +269,16 @@ export default function Home() {
                   AFFILIATE_LINKS.AMAZON.GLOBAL,
                   AFFILIATE_LINKS.AMAZON.KULI_KULI,
                   AFFILIATE_LINKS.IHERB.US,
-                ].map(link => (
-                  <div key={link.name} className="card card-hover" style={{ padding: '32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                ].map((link, idx) => (
+                  <motion.div 
+                    key={link.name}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="glass-card card-hover" 
+                    style={{ padding: '32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'white' }}
+                  >
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
                         <span className="badge">{link.platform}</span>
@@ -237,7 +290,7 @@ export default function Home() {
                     <a href={link.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', gap: 8 }}>
                       Shop on {link.platform} <ExternalLink size={14} />
                     </a>
-                  </div>
+                  </motion.div>
                 ))}
                 {/* Future Provision Links */}
                 {AFFILIATE_LINKS.FUTURE.filter(l => !l.placeholder).map(link => (
@@ -286,19 +339,32 @@ export default function Home() {
       {/* ── WHY US ── */}
       <section style={{ padding: '96px 0', background: 'white' }}>
         <div className="container">
-          <div className="section-header">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="section-header"
+          >
             <div className="section-tag">Why Avani Agro Foods</div>
             <h2 className="section-title">Your Trusted Export Partner</h2>
-          </div>
+          </motion.div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
-            {WHY_US.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="card card-hover" style={{ padding: '32px 28px' }}>
+            {WHY_US.map(({ icon: Icon, title, desc }, idx) => (
+              <motion.div 
+                key={title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                className="card card-hover" 
+                style={{ padding: '32px 28px' }}
+              >
                 <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(26,77,46,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
                   <Icon size={24} color="var(--color-primary)" />
                 </div>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 10 }}>{title}</h3>
                 <p style={{ color: 'var(--color-text-light)', fontSize: '0.9rem', lineHeight: 1.7, margin: 0 }}>{desc}</p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -307,13 +373,26 @@ export default function Home() {
       {/* ── TESTIMONIALS ── */}
       <section style={{ padding: '96px 0', background: 'white' }}>
         <div className="container">
-          <div className="section-header">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="section-header"
+          >
             <div className="section-tag">Testimonials</div>
             <h2 className="section-title">Trusted by Partners Globally</h2>
-          </div>
+          </motion.div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 28 }}>
-            {TESTIMONIALS.map(t => (
-              <div key={t.name} className="card" style={{ padding: '32px 28px' }}>
+            {TESTIMONIALS.map((t, idx) => (
+              <motion.div 
+                key={t.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                className="card" 
+                style={{ padding: '32px 28px' }}
+              >
                 <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
                   {Array(t.rating).fill(0).map((_, i) => <Star key={i} size={16} fill="#e6a817" color="#e6a817" />)}
                 </div>
@@ -327,7 +406,7 @@ export default function Home() {
                     <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>{t.role} — {t.location}</div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>

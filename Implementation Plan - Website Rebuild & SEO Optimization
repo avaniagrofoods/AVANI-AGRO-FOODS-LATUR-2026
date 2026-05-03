@@ -1,0 +1,31 @@
+# Implementation Plan - Website Rebuild & SEO Optimization
+
+The goal is to resolve the recurring issues with the Avani Agro Foods website, optimize it for search engines, and elevate the design to a premium, "auto-mode" ready state.
+
+## 1. Stability & Error Resilience
+- [ ] **Global Error Boundary**: Implement a React Error Boundary to prevent white-screen crashes.
+- [ ] **Icon Verification**: Audit all components for `lucide-react` imports to ensure no `ReferenceError` occurs.
+- [ ] **Environment Variable Check**: Ensure all required VITE_ variables are handled gracefully if missing.
+
+## 2. SEO & Meta Optimization
+- [ ] **Canonical URL Fix**: Standardize on `https://www.avaniagrofoods.com` across `robots.txt`, `sitemap.xml`, and the `SEO` component.
+- [ ] **JSON-LD Schema**: Add structured data to `index.html` for `Organization`, `LocalBusiness`, and `AggregateRating`.
+- [ ] **Meta Tag Audit**: Ensure every page has a unique Title and Meta Description that passes verification.
+- [ ] **Semantic HTML**: Replace generic `div` containers with `main`, `section`, `article`, and `aside` where appropriate.
+
+## 3. Premium Design Refresh
+- [ ] **Glassmorphism**: Apply a modern, semi-transparent backdrop-filter effect to the Navbar and main UI cards.
+- [ ] **Animations**: Integrate `framer-motion` for smooth page transitions and micro-interactions.
+- [ ] **Typography**: Refine the design system to use 'Outfit' as the primary heading font and 'Inter' for body text.
+- [ ] **Color Palette**: Shift towards a more curated, harmonious palette using HSL variables.
+
+## 4. "Auto Mode" & Deployment
+- [ ] **Optimized Vercel Config**: Refine `vercel.json` for better caching and error handling.
+- [ ] **Automated Sitemap**: Ensure the sitemap is always up-to-date with the latest pages.
+- [ ] **Production Health Check**: Add a `/health` or `/status` route to verify deployment integrity.
+
+## 5. Timeline
+1. **Phase 1**: Stability & Build Fixes (Immediate)
+2. **Phase 2**: SEO & Content Verification
+3. **Phase 3**: Design Polish & Animations
+4. **Phase 4**: Deployment & Verification

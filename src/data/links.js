@@ -71,7 +71,7 @@ export const AFFILIATE_LINKS = {
   ]
 };
 
-export const CATALOG_LINK = "https://drive.google.com/file/d/1ZYjwH8dmgFCLwzARXE2zvZA2VyNOcxtG/view?usp=sharing";
+export const CATALOG_LINK = "https://na2.hubs.ly/H05fSbJ0";
 export const ZOHO_CRM_DASHBOARD = "https://crmplus.zoho.in/avaniagrofoods/index.do/cxapp/crm/org60068319712/tab/Home/begin";
 export const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1X2TTc9iQ2IWCTQV0RknH37A3lmIFaaC0ImT4rfBPuLI/edit?gid=0#gid=0";
 export const WHATSAPP_NUMBER = "917219053645";
