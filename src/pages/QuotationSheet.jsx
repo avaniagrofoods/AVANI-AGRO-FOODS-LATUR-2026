@@ -1,6 +1,7 @@
 import SEO from '../components/SEO'
 import PasswordGate from '../components/PasswordGate'
 import { FileDown, ShieldCheck, Mail, Phone, ExternalLink } from 'lucide-react'
+import { BUSINESS_INFO } from '../data/links'
 
 export default function QuotationSheet() {
   const content = (
@@ -53,11 +54,11 @@ export default function QuotationSheet() {
       </div>
 
       <div style={{ marginTop: 48, display: 'flex', gap: 24, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
-        <a href="mailto:sales@avaniagrofoods.com" className="btn" style={{ gap: 8, fontSize: '0.85rem' }}>
+        <a href={`mailto:${BUSINESS_INFO.email}`} className="btn" style={{ gap: 8, fontSize: '0.85rem' }}>
           <Mail size={16} /> Contact Sales
         </a>
-        <a href="tel:+917219053645" className="btn" style={{ gap: 8, fontSize: '0.85rem' }}>
-          <Phone size={16} /> Call Expert
+        <a href={`https://wa.me/${BUSINESS_INFO.whatsapp}`} target="_blank" rel="noopener noreferrer" className="btn" style={{ gap: 8, fontSize: '0.85rem' }}>
+          <Phone size={16} /> WhatsApp ({BUSINESS_INFO.phone})
         </a>
       </div>
     </div>
@@ -68,10 +69,11 @@ export default function QuotationSheet() {
       <SEO 
         title="B2B Quotation Sheet — Confidential Access"
         description="Access the official global standard quotation sheet for Avani Agro Foods products. Secure area for verified B2B partners."
+        noindex={true}
       />
       <div className="page-top" style={{ minHeight: '100vh', background: '#f5f7f5', padding: '120px 0' }}>
         <div className="container" style={{ maxWidth: 900 }}>
-          <PasswordGate password="Samarth@1356">
+          <PasswordGate title="B2B Quotation Sheet" description="Authorized B2B partner access required to view current pricing schedules.">
             {content}
           </PasswordGate>
         </div>

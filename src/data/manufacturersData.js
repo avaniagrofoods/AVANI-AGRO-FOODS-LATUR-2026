@@ -75,4 +75,3 @@ export const MANUFACTURERS = {
   ]
 };
 
-export const DIRECTORY_PASSWORD = "Samarth@1356";

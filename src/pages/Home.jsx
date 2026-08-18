@@ -11,19 +11,19 @@ import LeadMagnet from '../components/LeadMagnet'
 import { useLanguage } from '../context/LanguageContext'
 
 const STATS = [
-  { label: 'Export Countries', value: '25+', icon: Globe },
+  { label: 'Target Export Markets', value: '25+', icon: Globe },
   { label: 'Affiliates Active', value: '120+', icon: Users },
-  { label: 'Products', value: '2 Premium', icon: Package },
-  { label: 'Revenue Goal', value: '₹1 Crore', icon: TrendingUp },
+  { label: 'Premium Products', value: '2', icon: Package },
+  { label: 'Founded', value: '2024', icon: TrendingUp },
 ]
 
 const PRODUCTS_PREVIEW = [
   {
     name: 'Moringa Powder',
-    subtitle: 'Organic Export Grade A',
-    desc: 'The #1 superfood globally — 7x Vitamin C, 4x Calcium. FSSAI/APEDA certified, heavy-metal tested.',
+    subtitle: 'Export Grade — Moringa oleifera',
+    desc: 'The #1 superfood globally — 7x Vitamin C, 4x Calcium. Sourced from partner FSSAI-registered processors. COA on every batch.',
     img: '/moringa.png',
-    tags: ['60-100 Mesh', '<7% Moisture', 'FSSAI Certified'],
+    tags: ['60–100 Mesh', '≤7% Moisture', 'COA Provided'],
     badge: '🌿 Bestseller',
     link: '/products#moringa'
   },
@@ -32,17 +32,17 @@ const PRODUCTS_PREVIEW = [
     subtitle: 'Dehydrated Export Grade',
     desc: 'Sharp & aromatic. Perfect for food manufacturers — 24 months shelf life, consistent pungency, no cold chain.',
     img: '/onion.png',
-    tags: ['60-80 Mesh', 'HS 0712.20.00', 'EU Safe'],
+    tags: ['60–80 Mesh', 'HS 0712.20.00', '24 Month Shelf Life'],
     badge: '🧅 High Demand',
     link: '/products#onion'
   }
 ]
 
 const WHY_US = [
-  { icon: Shield, title: 'Quality Certified', desc: 'FSSAI, APEDA, ISO compliant. NABL lab-tested with full CoA on every batch.' },
-  { icon: Globe, title: 'Direct Export', desc: 'No middlemen. Farm to port. FOB/CIF quotes from Nhava Sheva & Chennai ports.' },
-  { icon: Zap, title: 'Fast Turnaround', desc: 'Ready stock for samples. 14-21 day lead time for bulk orders.' },
-  { icon: BarChart3, title: 'Affiliate Support', desc: '15-20% commissions on B2B referrals. Real-time tracking dashboard.' },
+  { icon: Shield, title: 'Quality Documentation', desc: 'Full COA on every batch. Products sourced from partner manufacturers with FSSAI registration and lab-tested quality.' },
+  { icon: Globe, title: 'Direct Export Coordination', desc: 'FOB/CIF quotes from Nhava Sheva & Chennai. We coordinate documentation, sampling and shipment.' },
+  { icon: Zap, title: 'Fast Turnaround', desc: 'Ready stock for samples. 14–21 day lead time for bulk orders.' },
+  { icon: BarChart3, title: 'Affiliate Support', desc: '15–20% commissions on B2B referrals. Real-time tracking dashboard.' },
   { icon: Award, title: 'Premium Packaging', desc: 'Nitrogen-flushed bags. Custom white-label available. OEM accepted.' },
   { icon: Users, title: 'Dedicated Support', desc: 'WhatsApp + Email support. Pre-shipment samples always available.' },
 ]
@@ -61,7 +61,7 @@ export default function Home() {
     <>
       <SEO
         title="Premium Moringa & Onion Powder Exporter from India"
-        description="Avani Agro Foods — India's premium Moringa Powder & Red Onion Powder exporter. FSSAI/APEDA certified. Export to USA, UK, UAE & 25+ countries. B2B, wholesale & affiliate program."
+        description="Avani Agro Foods — Moringa Powder & Red Onion Powder exporter from Latur, Maharashtra, India. Bulk B2B orders, global export, COA on every batch. Contact for FOB/CIF pricing."
         keywords="moringa powder export india, red onion powder wholesale, moringa powder bulk buy, B2B agri export india, Latur Maharashtra export"
       />
 

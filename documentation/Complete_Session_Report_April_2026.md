@@ -24,7 +24,7 @@ This document serves as a permanent record of all changes, logic updates, and te
 2.  **Auto-Redirect:** A success message appears stating: *"Redirecting to Home page in 5 seconds..."*.
 3.  **Admin Override:** A subtle link labeled **"Admin: View Quotation"** is visible during these 5 seconds.
 4.  **Security:** Clicking the link triggers a `PasswordGate`.
-    *   **Password:** `Samarth@1356`
+    *   **Password:** `[CONFIGURED IN VERCEL ENVIRONMENT VARIABLES]`
 5.  **Professional Printing:** Upon unlocking, the `QuotationBuilder` renders.
     *   **Print Optimization:** Custom `@media print` CSS ensures the quotation is centered, removes shadows, and fits perfectly on A4 paper for PDF saving.
 

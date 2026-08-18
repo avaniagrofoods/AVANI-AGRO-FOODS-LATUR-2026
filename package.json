@@ -7,12 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dummy": "node integration_check.js && timeout 5 && node integration_check.js",
+    "deploy": "npm run build && vercel --prod --confirm"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
     "framer-motion": "^11.3.0",
     "lucide-react": "^0.451.0",
+    "puppeteer": "^25.0.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^10.1.0",

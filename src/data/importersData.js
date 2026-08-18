@@ -42,4 +42,3 @@ export const IMPORTERS = [
   { id: 30, name: "PlantX Life Inc", location: "Vancouver, BC, Canada", products: "Plant-Based Foods, Moringa", importCountries: "India, USA, EU", website: "plantx.com", email: "wholesale@plantx.com", contact: "+1 604 999 1234" }
 ];
 
-export const DIRECTORY_PASSWORD = "Samarth@1356";

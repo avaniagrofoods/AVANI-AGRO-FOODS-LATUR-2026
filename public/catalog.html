@@ -1,0 +1,2148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Avani Agro Foods – Premium B2B Product Catalog</title>
+  
+  <!-- Primary SEO Meta Tags -->
+  <meta name="description" content="Avani Agro Foods - Exporter of Premium Moringa Powder & Red Onion Powder. Certified Quality from Latur, India. Request quotes & calculate shipping configurations.">
+  <meta name="keywords" content="moringa powder exporter, red onion powder exporter, avani agro foods latur, b2b agro exports india">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons for B2B look -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* ── DESIGN SYSTEM & CONSTANTS ── */
+    :root {
+      --primary-dark: #12372A;
+      --primary-mid: #1E4D38;
+      --primary-light: #2D6A4F;
+      --accent-gold: #AD8B3A;
+      --accent-gold-light: #D4AF37;
+      --accent-terracotta: #D35400;
+      --cream-bg: #FCFBF7;
+      --cream-card: #FAF6ED;
+      --white: #FFFFFF;
+      --dark-slate: #2C3E50;
+      --text-main: #334155;
+      --text-muted: #64748B;
+      --border-color: #E2E8F0;
+      --border-accent: rgba(173, 139, 58, 0.2);
+      
+      --serif: 'Playfair Display', Georgia, serif;
+      --sans: 'Outfit', sans-serif;
+      
+      --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      --shadow-premium: 0 15px 35px -5px rgba(18, 55, 42, 0.08), 0 5px 15px -5px rgba(0, 0, 0, 0.04);
+      --shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.03);
+      --radius-lg: 20px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    /* ── BASE STYLES ── */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: #F1EFE9;
+      font-family: var(--sans);
+      color: var(--text-main);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── FLOATING NAVIGATION & TOOLBAR ── */
+    .top-toolbar {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 800px;
+      background: rgba(18, 55, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 50px;
+      padding: 10px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      box-shadow: 0 10px 30px rgba(18, 55, 42, 0.3);
+      transition: var(--transition-smooth);
+    }
+
+    .top-toolbar:hover {
+      background: rgba(18, 55, 42, 0.95);
+      box-shadow: 0 15px 35px rgba(18, 55, 42, 0.4);
+    }
+
+    .toolbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--white);
+    }
+
+    .toolbar-logo img {
+      height: 32px;
+      width: 32px;
+      object-fit: contain;
+      border-radius: 50%;
+      background: var(--white);
+      padding: 2px;
+    }
+
+    .toolbar-brand {
+      font-family: var(--serif);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .view-mode-pill {
+      display: flex;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 30px;
+      padding: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .mode-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.7);
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition-smooth);
+    }
+
+    .mode-btn.active {
+      background: var(--accent-gold);
+      color: var(--white);
+      box-shadow: 0 4px 10px rgba(173, 139, 58, 0.3);
+    }
+
+    .print-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--white);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 20px;
+      transition: var(--transition-smooth);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .print-btn:hover {
+      background: var(--white);
+      color: var(--primary-dark);
+      border-color: var(--white);
+    }
+
+    /* ── CONTAINER PAGE CONTROL ── */
+    .catalog-wrapper {
+      max-width: 1120px;
+      margin: 100px auto 40px;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+      transition: var(--transition-smooth);
+    }
+
+    /* ── DUAL VIEW IMPLEMENTATION ── */
+    /* 1. Responsive Web View Mode */
+    .catalog-wrapper.web-view {
+      max-width: 1200px;
+    }
+
+    .catalog-wrapper.web-view .catalog-section {
+      width: 100%;
+      min-height: auto;
+      height: auto;
+      border-radius: var(--radius-lg);
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-premium);
+      overflow: hidden;
+    }
+
+    /* 2. Slide/PDF Presentation Mode */
+    .catalog-wrapper.slide-view {
+      max-width: 1080px;
+      padding: 0;
+      gap: 20px;
+    }
+
+    .catalog-wrapper.slide-view .catalog-section {
+      width: 1080px;
+      height: 1080px;
+      min-height: 1080px;
+      border-radius: 0;
+      border: 1px solid #D1CAC0;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+      margin-bottom: 0;
+      position: relative;
+    }
+
+    /* ── COMMON SECTION WRITING ── */
+    .catalog-section {
+      background: var(--white);
+      transition: var(--transition-smooth);
+      position: relative;
+    }
+
+    .gold-shimmer-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, var(--primary-dark), var(--accent-gold), var(--primary-light), var(--accent-gold), var(--primary-dark));
+      background-size: 200% auto;
+      animation: shimmerBar 4s linear infinite;
+      z-index: 10;
+    }
+
+    @keyframes shimmerBar {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+
+    /* ══════════════════════════════
+       1. COVER PAGE COMPONENT
+    ══════════════════════════════ */
+    .section-cover {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, #0d291e 100%);
+      color: var(--white);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover-grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(173, 139, 58, 0.15) 1px, transparent 1px);
+      background-size: 30px 30px;
+      opacity: 0.7;
+      z-index: 1;
+    }
+
+    .cover-circle-deco {
+      position: absolute;
+      right: -150px;
+      bottom: -150px;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      border: 2px solid rgba(173, 139, 58, 0.1);
+      z-index: 2;
+    }
+
+    .cover-circle-deco::after {
+      content: '';
+      position: absolute;
+      inset: 40px;
+      border-radius: 50%;
+      border: 1px dashed rgba(173, 139, 58, 0.2);
+    }
+
+    .cover-top {
+      position: relative;
+      z-index: 5;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cover-logo-area {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .cover-logo-icon {
+      width: 60px;
+      height: 60px;
+      background: var(--white);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--accent-gold);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+
+    .cover-logo-icon img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+    }
+
+    .cover-brand-title {
+      font-family: var(--serif);
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1.1;
+    }
+
+    .cover-brand-sub {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--accent-gold);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .cover-tag-badge {
+      background: rgba(173, 139, 58, 0.15);
+      border: 1px solid var(--accent-gold);
+      color: var(--accent-gold-light);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font-weight: 700;
+      padding: 10px 24px;
+      border-radius: 50px;
+      backdrop-filter: blur(10px);
+    }
+
+    .cover-middle {
+      position: relative;
+      z-index: 5;
+      margin: auto 0;
+      padding: 40px 0;
+    }
+
+    .cover-eyebrow {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.35em;
+      color: var(--accent-gold-light);
+      font-weight: 700;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cover-eyebrow::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--accent-gold), transparent);
+      max-width: 150px;
+    }
+
+    .cover-title {
+      font-family: var(--serif);
+      font-size: 74px;
+      font-weight: 900;
+      line-height: 1.05;
+      margin-bottom: 24px;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .cover-title span {
+      background: linear-gradient(135deg, var(--accent-gold-light) 0%, #F3E5AB 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-style: italic;
+    }
+
+    .cover-desc {
+      font-size: 16px;
+      color: #E2E8F0;
+      line-height: 1.8;
+      max-width: 600px;
+      margin-bottom: 40px;
+    }
+
+    .cover-chips-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      max-width: 750px;
+    }
+
+    .cover-chip-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      backdrop-filter: blur(8px);
+      transition: var(--transition-smooth);
+    }
+
+    .cover-chip-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--accent-gold);
+      transform: translateY(-3px);
+    }
+
+    .cover-chip-card i {
+      font-size: 18px;
+      color: var(--accent-gold-light);
+    }
+
+    .cover-chip-txt {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .cover-bottom {
+      position: relative;
+      z-index: 5;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cover-meta-grid {
+      display: flex;
+      gap: 40px;
+    }
+
+    .cover-meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .meta-lbl {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--accent-gold-light);
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    .meta-val {
+      font-size: 14px;
+      color: var(--white);
+      font-weight: 500;
+    }
+
+    .cover-director-info {
+      text-align: right;
+    }
+
+    .director-name {
+      font-family: var(--serif);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    .director-role {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--accent-gold);
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    /* ══════════════════════════════
+       2. PRODUCT PAGES & SLIDES
+    ══════════════════════════════ */
+    .section-product {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 60px 80px;
+      min-height: 1080px;
+      background: var(--cream-bg);
+    }
+
+    .prod-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 20px;
+    }
+
+    .prod-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .prod-brand-logo {
+      width: 36px;
+      height: 36px;
+      background: var(--white);
+      border-radius: 50%;
+      border: 1px solid var(--accent-gold);
+      padding: 1px;
+    }
+
+    .prod-brand-txt {
+      font-family: var(--serif);
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--primary-dark);
+    }
+
+    .prod-slide-num {
+      background: var(--primary-dark);
+      color: var(--white);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 16px;
+      border-radius: 30px;
+      letter-spacing: 0.1em;
+    }
+
+    .prod-main-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1.3fr;
+      gap: 40px;
+      align-items: start;
+      margin: 40px 0;
+      flex: 1;
+    }
+
+    .prod-left-visual {
+      position: relative;
+    }
+
+    .prod-img-frame {
+      width: 100%;
+      height: 380px;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-premium);
+      border: 3px solid var(--white);
+      position: relative;
+    }
+
+    .prod-img-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s ease;
+    }
+
+    .prod-img-frame:hover img {
+      transform: scale(1.05);
+    }
+
+    .prod-badge {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: var(--accent-gold);
+      color: var(--white);
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      z-index: 5;
+    }
+
+    .prod-hs-badge {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(18, 55, 42, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--white);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      z-index: 5;
+    }
+
+    .prod-summary-box {
+      background: var(--cream-card);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      margin-top: 24px;
+    }
+
+    .summary-heading {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--accent-gold);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .summary-text {
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text-main);
+    }
+
+    .prod-right-details {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .prod-meta {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--accent-terracotta);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .prod-title {
+      font-family: var(--serif);
+      font-size: 46px;
+      font-weight: 900;
+      color: var(--primary-dark);
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    .prod-tagline {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--primary-mid);
+      margin-bottom: 24px;
+      font-style: italic;
+    }
+
+    /* ── TABS FOR B2B SPECIFICATIONS ── */
+    .tab-header {
+      display: flex;
+      border-bottom: 2px solid var(--border-color);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      padding: 10px 16px;
+      cursor: pointer;
+      position: relative;
+      transition: var(--transition-smooth);
+    }
+
+    .tab-btn.active {
+      color: var(--primary-dark);
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--primary-dark);
+    }
+
+    .tab-panel {
+      display: none;
+      animation: tabFadeIn 0.4s ease;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    @keyframes tabFadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* SPEC TABLES */
+    .spec-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .spec-table tr {
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .spec-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .spec-table td {
+      padding: 10px 0;
+    }
+
+    .spec-table td.label {
+      color: var(--text-muted);
+      font-weight: 600;
+      width: 45%;
+    }
+
+    .spec-table td.value {
+      color: var(--primary-dark);
+      font-weight: 700;
+      text-align: right;
+    }
+
+    /* HIGHLIGHTS GRID */
+    .highlights-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .highlight-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      background: rgba(30, 77, 56, 0.03);
+      padding: 10px 12px;
+      border-radius: 8px;
+      border-left: 3px solid var(--primary-mid);
+    }
+
+    .highlight-item i {
+      color: var(--primary-light);
+      font-size: 14px;
+      margin-top: 2px;
+    }
+
+    .highlight-item span {
+      font-weight: 500;
+    }
+
+    /* CERTIFICATIONS & SHIPPING CHIPS */
+    .chips-flex {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .cert-chip {
+      background: #F0FDF4;
+      border: 1px solid #BBF7D0;
+      color: #15803D;
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .shipping-box {
+      background: #FFFDF5;
+      border: 1px dashed var(--accent-gold);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+    }
+
+    .shipping-box-left {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .shipping-lbl {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+
+    .shipping-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--primary-dark);
+    }
+
+    .prod-footer {
+      border-top: 1px solid var(--border-color);
+      padding-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .prod-actions {
+      display: flex;
+      gap: 14px;
+    }
+
+    .p-btn-quote {
+      background: var(--primary-dark);
+      color: var(--white);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 24px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(18, 55, 42, 0.2);
+      transition: var(--transition-smooth);
+    }
+
+    .p-btn-quote:hover {
+      background: var(--accent-gold);
+      transform: translateY(-2px);
+    }
+
+    .p-btn-calc {
+      background: var(--white);
+      color: var(--primary-dark);
+      border: 1px solid var(--primary-dark);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 24px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition-smooth);
+    }
+
+    .p-btn-calc:hover {
+      background: #F8FAF8;
+      transform: translateY(-2px);
+    }
+
+    .prod-footer-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* ══════════════════════════════
+       3. B2B CARGO CALCULATOR
+    ══════════════════════════════ */
+    .section-calculator {
+      padding: 60px 80px;
+      background: #FAF9F5;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .calc-title-area {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .calc-eyebrow {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--accent-gold);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .calc-heading {
+      font-family: var(--serif);
+      font-size: 40px;
+      font-weight: 900;
+      color: var(--primary-dark);
+    }
+
+    .calc-container-grid {
+      display: grid;
+      grid-template-columns: 1.12fr 1fr;
+      gap: 50px;
+      align-items: start;
+      flex: 1;
+    }
+
+    .calc-form-card {
+      background: var(--white);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 30px;
+      box-shadow: var(--shadow-premium);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+
+    .calc-select, .calc-input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--primary-dark);
+      background: #F8FAF9;
+      outline: none;
+      transition: var(--transition-smooth);
+    }
+
+    .calc-select:focus, .calc-input:focus {
+      border-color: var(--primary-light);
+      background: var(--white);
+      box-shadow: 0 0 0 4px rgba(45, 106, 79, 0.1);
+    }
+
+    .calc-input-row {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 12px;
+    }
+
+    .calc-results-card {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, #0d291e 100%);
+      color: var(--white);
+      border-radius: var(--radius-lg);
+      padding: 35px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      box-shadow: var(--shadow-premium);
+    }
+
+    .res-heading {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--accent-gold-light);
+      font-weight: 700;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 12px;
+      margin-bottom: 24px;
+    }
+
+    .res-data-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 14px;
+    }
+
+    .res-data-row:last-of-type {
+      border-bottom: none;
+    }
+
+    .res-lbl {
+      color: rgba(255,255,255,0.75);
+      font-weight: 500;
+    }
+
+    .res-val {
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    .res-val.highlight {
+      color: var(--accent-gold-light);
+      font-size: 18px;
+    }
+
+    /* VISUAL CARGO CONTAINER LOAD */
+    .cargo-visual-container {
+      margin: 24px 0;
+    }
+
+    .cargo-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 8px;
+    }
+
+    .cargo-track {
+      height: 20px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 30px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .cargo-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-gold), var(--accent-gold-light));
+      border-radius: 30px;
+      transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .cargo-label-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--white);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+    .calc-wa-btn {
+      width: 100%;
+      background: #25D366;
+      color: var(--white);
+      border: none;
+      padding: 16px;
+      border-radius: var(--radius-md);
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 6px 20px rgba(37, 211, 102, 0.3);
+      transition: var(--transition-smooth);
+      margin-top: 24px;
+    }
+
+    .calc-wa-btn:hover {
+      background: #20BA56;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(37, 211, 102, 0.4);
+    }
+
+    /* ══════════════════════════════
+       4. CONTACT PAGE
+    ══════════════════════════════ */
+    .section-contact {
+      padding: 60px 80px;
+      background: var(--cream-bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 1080px;
+    }
+
+    .contact-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .contact-title {
+      font-family: var(--serif);
+      font-size: 46px;
+      font-weight: 900;
+      color: var(--primary-dark);
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 60px;
+      flex: 1;
+      align-items: center;
+    }
+
+    .contact-card-info {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    .c-item {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .c-icon {
+      width: 50px;
+      height: 50px;
+      background: var(--primary-dark);
+      color: var(--white);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(18,55,42,0.15);
+    }
+
+    .c-text-area {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .c-lbl {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+
+    .c-val {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--primary-dark);
+      line-height: 1.5;
+    }
+
+    .c-val a {
+      color: var(--primary-dark);
+      text-decoration: none;
+      transition: var(--transition-smooth);
+    }
+
+    .c-val a:hover {
+      color: var(--accent-gold);
+    }
+
+    .contact-right-panel {
+      background: var(--white);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      box-shadow: var(--shadow-premium);
+      text-align: center;
+    }
+
+    .qr-title {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin-bottom: 12px;
+    }
+
+    .qr-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .logo-container {
+      width: 130px;
+      height: 130px;
+      margin: 0 auto 24px;
+      background: var(--cream-card);
+      border: 2px dashed var(--accent-gold);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-container img {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+    }
+
+    .c-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .c-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius-md);
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: var(--transition-smooth);
+    }
+
+    .c-btn-primary {
+      background: var(--primary-dark);
+      color: var(--white);
+      box-shadow: 0 4px 12px rgba(18, 55, 42, 0.2);
+    }
+
+    .c-btn-primary:hover {
+      background: var(--accent-gold);
+    }
+
+    .c-btn-outline {
+      background: var(--white);
+      color: var(--primary-dark);
+      border: 1px solid var(--primary-dark);
+    }
+
+    .c-btn-outline:hover {
+      background: #F8FAF8;
+    }
+
+    .contact-footer {
+      border-top: 1px solid var(--border-color);
+      padding-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cf-brand {
+      font-family: var(--serif);
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--primary-dark);
+    }
+
+    .cf-tagline {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .cf-tagline span {
+      color: var(--accent-terracotta);
+      font-weight: 700;
+    }
+
+    .disclaimer-box {
+      font-size: 9px;
+      color: var(--text-muted);
+      background: rgba(0,0,0,0.02);
+      border: 1px solid rgba(0,0,0,0.05);
+      border-radius: 6px;
+      padding: 12px;
+      text-align: justify;
+      line-height: 1.4;
+      margin-top: 20px;
+    }
+
+    /* ══════════════════════════════
+       RESPONSIVE ADAPTATIONS (MOBILE)
+    ══════════════════════════════ */
+    @media (max-width: 1024px) {
+      .catalog-wrapper.slide-view {
+        max-width: 100%;
+        padding: 0 20px;
+      }
+      .catalog-wrapper.slide-view .catalog-section {
+        width: 100%;
+        height: auto;
+        min-height: auto;
+        border-radius: var(--radius-lg);
+        padding: 40px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .top-toolbar {
+        width: 95%;
+        padding: 10px 16px;
+      }
+      .view-mode-pill {
+        display: none; /* Hide toggle on mobile */
+      }
+      
+      .section-cover, .section-product, .section-calculator, .section-contact {
+        padding: 30px 20px;
+      }
+      
+      .cover-title {
+        font-size: 40px;
+      }
+      
+      .cover-chips-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .prod-main-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+
+      .prod-title {
+        font-size: 32px;
+      }
+      
+      .calc-container-grid, .contact-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+
+      .calc-heading, .contact-title {
+        font-size: 28px;
+      }
+      
+      .cover-meta-grid {
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .cover-bottom {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+      }
+      
+      .cover-director-info {
+        text-align: left;
+      }
+      
+      .prod-footer {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+      }
+    }
+
+    /* ══════════════════════════════
+       PRINT STYLES (PDF MEDIA BREAKS)
+    ══════════════════════════════ */
+    @media print {
+      body {
+        background: var(--white);
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      
+      .top-toolbar {
+        display: none !important;
+      }
+      
+      .catalog-wrapper {
+        margin: 0 !important;
+        padding: 0 !important;
+        gap: 0 !important;
+        max-width: 1080px !important;
+      }
+      
+      .catalog-section {
+        width: 1080px !important;
+        height: 1080px !important;
+        min-height: 1080px !important;
+        page-break-after: always !important;
+        page-break-inside: avoid !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        position: relative !important;
+      }
+      
+      /* Ensure tab panels print standard specification blocks */
+      .tab-header {
+        display: none !important;
+      }
+      .tab-panel {
+        display: none !important;
+      }
+      .tab-panel.active {
+        display: block !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── FLOATING TOOLBAR ── -->
+  <header class="top-toolbar">
+    <a href="/" class="toolbar-logo">
+      <img src="/logo.png" alt="Avani Agro Logo" onerror="this.src='https://images.unsplash.com/photo-1599424755106-a83d47cebd51?w=100&q=80'">
+      <span class="toolbar-brand">Avani Agro Foods</span>
+    </a>
+    
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <div class="view-mode-pill">
+        <button class="mode-btn active" onclick="switchView('web')">
+          <i class="fa-solid fa-laptop"></i> Web View
+        </button>
+        <button class="mode-btn" onclick="switchView('slide')">
+          <i class="fa-solid fa-file-pdf"></i> PDF Slide View
+        </button>
+      </div>
+      
+      <button class="print-btn" onclick="triggerPrint()">
+        <i class="fa-solid fa-print"></i> Save PDF
+      </button>
+    </div>
+  </header>
+
+  <!-- ── MAIN CATALOG WRAPPER ── -->
+  <main id="catalogWrapper" class="catalog-wrapper web-view">
+
+    <!-- ════════════════════════ 1. COVER PAGE ════════════════════════ -->
+    <section class="catalog-section section-cover" id="cover">
+      <div class="gold-shimmer-top"></div>
+      <div class="cover-grid-bg"></div>
+      <div class="cover-circle-deco"></div>
+      
+      <div class="cover-top">
+        <div class="cover-logo-area">
+          <div class="cover-logo-icon">
+            <img src="/logo.png" alt="Avani" onerror="this.src='https://images.unsplash.com/photo-1599424755106-a83d47cebd51?w=100&q=80'">
+          </div>
+          <div>
+            <h1 class="cover-brand-title">Avani Agro Foods</h1>
+            <div class="cover-brand-sub">Premium Exports &middot; Latur</div>
+          </div>
+        </div>
+        <div class="cover-tag-badge">Product Catalog 2026-27</div>
+      </div>
+      
+      <div class="cover-middle">
+        <div class="cover-eyebrow">Export-Grade Quality</div>
+        <h2 class="cover-title">Premium<br>Agricultural<br><span>Superfoods</span></h2>
+        <div class="cover-desc">
+          Directly sourced from the nutrient-rich soils of Maharashtra, India. Sourced ethically, processed under state-of-the-art standards, and globally certified for premium food ingredient and herbal export grade markets.
+        </div>
+        
+        <div class="cover-chips-grid">
+          <div class="cover-chip-card">
+            <i class="fa-solid fa-seedling"></i>
+            <div class="cover-chip-txt">Moringa Powder (Grade A)</div>
+          </div>
+          <div class="cover-chip-card">
+            <i class="fa-solid fa-pepper-hot"></i>
+            <div class="cover-chip-txt">Red Onion Powder</div>
+          </div>
+          <div class="cover-chip-card">
+            <i class="fa-solid fa-shield-halved"></i>
+            <div class="cover-chip-txt">FSSAI & APEDA Certified</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="cover-bottom">
+        <div class="cover-meta-grid">
+          <div class="cover-meta-item">
+            <span class="meta-lbl">Website</span>
+            <span class="meta-val">www.avaniagrofoods.com</span>
+          </div>
+          <div class="cover-meta-item">
+            <span class="meta-lbl">Email Sales</span>
+            <span class="meta-val">sales@avaniagrofoods.com</span>
+          </div>
+          <div class="cover-meta-item">
+            <span class="meta-lbl">Global Trade Office</span>
+            <span class="meta-val">Latur, Maharashtra, India</span>
+          </div>
+        </div>
+        
+        <div class="cover-director-info">
+          <div class="director-name">Sachin Shinde</div>
+          <div class="director-role">Founder & Export Director</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════ 2. MORINGA POWDER ════════════════════════ -->
+    <section class="catalog-section section-product" id="moringa">
+      <div class="gold-shimmer-top"></div>
+      
+      <div class="prod-header">
+        <div class="prod-brand">
+          <img src="/logo.png" alt="Avani" class="prod-brand-logo" onerror="this.src='https://images.unsplash.com/photo-1599424755106-a83d47cebd51?w=100&q=80'">
+          <span class="prod-brand-txt">Avani Agro Foods</span>
+        </div>
+        <div class="prod-slide-num">Portfolio 01 / 02</div>
+      </div>
+      
+      <div class="prod-main-grid">
+        <div class="prod-left-visual">
+          <div class="prod-img-frame">
+            <img src="/moringa.png" alt="Moringa Powder" onerror="this.src='https://images.unsplash.com/photo-1587843063984-b0a701cb1802?w=800&q=80'">
+            <div class="prod-badge">🌿 Highly Recommended</div>
+            <div class="prod-hs-badge">HS Code: 0712.90.90</div>
+          </div>
+          
+          <div class="prod-summary-box">
+            <div class="summary-heading">Nurtured by Nature</div>
+            <p class="summary-text">
+              Grown organically in Maharashtra. Sun-dried and milled at low heat thresholds to secure perfect green pigmentation, high calcium density, and powerful antioxidant attributes.
+            </p>
+          </div>
+        </div>
+        
+        <div class="prod-right-details">
+          <div class="prod-meta">Herbal Supplement · Export Grade A</div>
+          <h3 class="prod-title">Moringa Powder</h3>
+          <div class="prod-tagline">"The World's Most Nutrient-Dense Superfood"</div>
+          
+          <!-- TAB HEADERS -->
+          <div class="tab-header">
+            <button class="tab-btn active" onclick="switchTab(this, 'moringa-overview')">Overview</button>
+            <button class="tab-btn" onclick="switchTab(this, 'moringa-specs')">Chemical Specs</button>
+            <button class="tab-btn" onclick="switchTab(this, 'moringa-shipping')">Packaging & MOQ</button>
+          </div>
+          
+          <!-- TAB PANELS -->
+          <div class="tab-panel active" id="moringa-overview">
+            <div class="highlights-grid" style="margin-bottom: 20px;">
+              <div class="highlight-item">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>7x more Vitamin C than oranges</span>
+              </div>
+              <div class="highlight-item">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>4x more Calcium than milk</span>
+              </div>
+              <div class="highlight-item">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>3x more Iron than spinach</span>
+              </div>
+              <div class="highlight-item">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>100% Pure, Zero Additives</span>
+              </div>
+            </div>
+            
+            <div class="chips-flex">
+              <span class="cert-chip"><i class="fa-solid fa-award"></i> FSSAI</span>
+              <span class="cert-chip"><i class="fa-solid fa-award"></i> APEDA</span>
+              <span class="cert-chip"><i class="fa-solid fa-award"></i> NABL Tested</span>
+            </div>
+          </div>
+          
+          <div class="tab-panel" id="moringa-specs">
+            <table class="spec-table">
+              <tr>
+                <td class="label">Origin Country</td>
+                <td class="value">India (Maharashtra)</td>
+              </tr>
+              <tr>
+                <td class="label">Mesh Fineness</td>
+                <td class="value">60 - 100 mesh</td>
+              </tr>
+              <tr>
+                <td class="label">Moisture Content</td>
+                <td class="value">&lt; 7.0%</td>
+              </tr>
+              <tr>
+                <td class="label">Protein Density</td>
+                <td class="value">27% - 30% (dry base)</td>
+              </tr>
+              <tr>
+                <td class="label">ORAC Value</td>
+                <td class="value">157,000 μmol TE/100g</td>
+              </tr>
+              <tr>
+                <td class="label">Color Profile</td>
+                <td class="value">Vibrant deep forest green</td>
+              </tr>
+            </table>
+          </div>
+          
+          <div class="tab-panel" id="moringa-shipping">
+            <table class="spec-table">
+              <tr>
+                <td class="label">Pack Formats</td>
+                <td class="value">100g/250g Retail, 25kg Bulk Bag</td>
+              </tr>
+              <tr>
+                <td class="label">Primary MOQ</td>
+                <td class="value">25 kg (Samples on Request)</td>
+              </tr>
+              <tr>
+                <td class="label">Average Shelf-Life</td>
+                <td class="value">24 months</td>
+              </tr>
+              <tr>
+                <td class="label">Export Seaports</td>
+                <td class="value">JNPT, Mumbai, India</td>
+              </tr>
+            </table>
+          </div>
+          
+          <!-- SHIPPING FOOTER BOX -->
+          <div class="shipping-box">
+            <div class="shipping-box-left">
+              <span class="shipping-lbl">FOB Base Price</span>
+              <span class="shipping-val">From USD 3.50 / kg</span>
+            </div>
+            <div class="shipping-box-left" style="align-items: flex-end;">
+              <span class="shipping-lbl">Minimum Order Qty</span>
+              <span class="shipping-val" style="color: var(--accent-terracotta);">25 kg</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="prod-footer">
+        <div class="prod-actions">
+          <a href="#calculator" class="p-btn-quote" onclick="preselectCalculator('moringa')">
+            <i class="fa-solid fa-calculator"></i> Calculate Cargo
+          </a>
+          <a href="https://wa.me/917219053645?text=Hello!%20I%20am%20interested%20in%20importing%20Premium%20Moringa%20Powder." class="p-btn-calc" target="_blank">
+            <i class="fa-brands fa-whatsapp"></i> Chat WhatsApp
+          </a>
+        </div>
+        <span class="prod-footer-meta">sales@avaniagrofoods.com &middot; avaniagrofoods.com</span>
+      </div>
+    </section>
+
+    <!-- ════════════════════════ 3. RED ONION POWDER ════════════════════════ -->
+    <section class="catalog-section section-product" id="onion">
+      <div class="gold-shimmer-top"></div>
+      
+      <div class="prod-header">
+        <div class="prod-brand">
+          <img src="/logo.png" alt="Avani" class="prod-brand-logo" onerror="this.src='https://images.unsplash.com/photo-1599424755106-a83d47cebd51?w=100&q=80'">
+          <span class="prod-brand-txt">Avani Agro Foods</span>
+        </div>
+        <div class="prod-slide-num">Portfolio 02 / 02</div>
+      </div>
+      
+      <div class="prod-main-grid">
+        <div class="prod-left-visual">
+          <div class="prod-img-frame">
+            <img src="/onion.png" alt="Red Onion Powder" onerror="this.src='https://images.unsplash.com/photo-1620574387735-3624d75b2dbc?w=800&q=80'">
+            <div class="prod-badge" style="background-color: var(--accent-terracotta);">🧅 Consistent Pungency</div>
+            <div class="prod-hs-badge">HS Code: 0712.20.00</div>
+          </div>
+          
+          <div class="prod-summary-box">
+            <div class="summary-heading">Authentic Culinary Strength</div>
+            <p class="summary-text">
+              Manufactured using handpicked red onions of variety N-53 from India. Dehydrated professionally to safeguard natural organoleptic values, full pungency, and sharp aroma.
+            </p>
+          </div>
+        </div>
+        
+        <div class="prod-right-details">
+          <div class="prod-meta">Food Ingredient · Premium Dehydrated</div>
+          <h3 class="prod-title">Red Onion Powder</h3>
+          <div class="prod-tagline">"Consistent Flavor Profile &middot; 24-Month Preservation"</div>
+          
+          <!-- TAB HEADERS -->
+          <div class="tab-header">
+            <button class="tab-btn active" onclick="switchTab(this, 'onion-overview')">Overview</button>
+            <button class="tab-btn" onclick="switchTab(this, 'onion-specs')">Chemical Specs</button>
+            <button class="tab-btn" onclick="switchTab(this, 'onion-shipping')">Packaging & MOQ</button>
+          </div>
+          
+          <!-- TAB PANELS -->
+          <div class="tab-panel active" id="onion-overview">
+            <div class="highlights-grid" style="margin-bottom: 20px;">
+              <div class="highlight-item">
+                <i class="fa-solid fa-circle-check" style="color: var(--accent-terracotta);"></i>
+                <span>12:1 Yield Concentration</span>
+              </div>
+              <div class="highlight-item">
+                <i class="fa-solid fa-circle-check" style="color: var(--accent-terracotta);"></i>
+                <span>Consistent Seasonal Strength</span>
+              </div>
+              <div class="highlight-item">
+                <i class="fa-solid fa-circle-check" style="color: var(--accent-terracotta);"></i>
+                <span>No Cold Storage Necessary</span>
+              </div>
+              <div class="highlight-item">
+                <i class="fa-solid fa-circle-check" style="color: var(--accent-terracotta);"></i>
+                <span>High Quercetin retention</span>
+              </div>
+            </div>
+            
+            <div class="chips-flex">
+              <span class="cert-chip" style="background:#FFF5F5; border-color:#FEB2B2; color:#C53030;"><i class="fa-solid fa-award"></i> EU MRL Standard</span>
+              <span class="cert-chip" style="background:#FFF5F5; border-color:#FEB2B2; color:#C53030;"><i class="fa-solid fa-award"></i> FSSAI</span>
+              <span class="cert-chip" style="background:#FFF5F5; border-color:#FEB2B2; color:#C53030;"><i class="fa-solid fa-award"></i> NABL Certified</span>
+            </div>
+          </div>
+          
+          <div class="tab-panel" id="onion-specs">
+            <table class="spec-table">
+              <tr>
+                <td class="label">Agronomic Variety</td>
+                <td class="value">Red Onion (Bhima Shakti / N-53)</td>
+              </tr>
+              <tr>
+                <td class="label">Mesh Fineness</td>
+                <td class="value">60 - 80 mesh</td>
+              </tr>
+              <tr>
+                <td class="label">Moisture Content</td>
+                <td class="value">&lt; 7.0%</td>
+              </tr>
+              <tr>
+                <td class="label">Pungency Value</td>
+                <td class="value">90+ Pyruvic Acid</td>
+              </tr>
+              <tr>
+                <td class="label">Color Profile</td>
+                <td class="value">Light pink to light purple-red</td>
+              </tr>
+              <tr>
+                <td class="label">Additives / Fillers</td>
+                <td class="value">None — 100% Dehydrated Onion</td>
+              </tr>
+            </table>
+          </div>
+          
+          <div class="tab-panel" id="onion-shipping">
+            <table class="spec-table">
+              <tr>
+                <td class="label">Pack Formats</td>
+                <td class="value">500g/1kg Packs, 25kg/50kg Export Bags</td>
+              </tr>
+              <tr>
+                <td class="label">Primary MOQ</td>
+                <td class="value">100 kg</td>
+              </tr>
+              <tr>
+                <td class="label">Average Shelf-Life</td>
+                <td class="value">24 months (Nitrogen Flushed)</td>
+              </tr>
+              <tr>
+                <td class="label">Shipping Origin</td>
+                <td class="value">JNPT, Mumbai or Airport Dispatch</td>
+              </tr>
+            </table>
+          </div>
+          
+          <!-- SHIPPING FOOTER BOX -->
+          <div class="shipping-box" style="background-color: #FFFDF9; border-color: rgba(211,84,0,0.3);">
+            <div class="shipping-box-left">
+              <span class="shipping-lbl">FOB Base Price</span>
+              <span class="shipping-val">From USD 2.00 / kg</span>
+            </div>
+            <div class="shipping-box-left" style="align-items: flex-end;">
+              <span class="shipping-lbl">Minimum Order Qty</span>
+              <span class="shipping-val" style="color: var(--accent-terracotta);">100 kg</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="prod-footer">
+        <div class="prod-actions">
+          <a href="#calculator" class="p-btn-quote" onclick="preselectCalculator('onion')">
+            <i class="fa-solid fa-calculator"></i> Calculate Cargo
+          </a>
+          <a href="https://wa.me/917219053645?text=Hello!%20I%20am%20interested%20in%20importing%20Premium%20Red%20Onion%20Powder." class="p-btn-calc" target="_blank">
+            <i class="fa-brands fa-whatsapp"></i> Chat WhatsApp
+          </a>
+        </div>
+        <span class="prod-footer-meta">sales@avaniagrofoods.com &middot; avaniagrofoods.com</span>
+      </div>
+    </section>
+
+    <!-- ════════════════════════ 4. B2B CARGO & CONTAINER CALCULATOR ════════════════════════ -->
+    <section class="catalog-section section-calculator" id="calculator">
+      <div class="gold-shimmer-top"></div>
+      
+      <div class="calc-title-area">
+        <span class="calc-eyebrow">Cargo Logistics Planner</span>
+        <h3 class="calc-heading">B2B Volume & Container Calculator</h3>
+      </div>
+      
+      <div class="calc-container-grid">
+        <!-- Form Inputs Card -->
+        <div class="calc-form-card">
+          <div class="form-group">
+            <label for="calc-product">Select Product</label>
+            <select id="calc-product" class="calc-select" onchange="runCalculator()">
+              <option value="moringa">Moringa Powder (Export Grade A)</option>
+              <option value="onion">Red Onion Powder (Dehydrated)</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="calc-quantity">Order Quantity</label>
+            <div class="calc-input-row">
+              <input type="number" id="calc-quantity" class="calc-input" value="1000" min="1" oninput="runCalculator()">
+              <select id="calc-unit" class="calc-select" onchange="runCalculator()">
+                <option value="kg">Kilograms (kg)</option>
+                <option value="mt">Metric Tons (MT)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="calc-packsize">Target Packing Bags</label>
+            <select id="calc-packsize" class="calc-select" onchange="runCalculator()">
+              <option value="25">25 kg Export Bulk Bag (Standard)</option>
+              <option value="50">50 kg Heavy Export Bag</option>
+              <option value="5">5 kg Food-Grade Bag</option>
+              <option value="1">1 kg B2B Silver Foil Pouch</option>
+              <option value="0.25">250g Retail Package</option>
+            </select>
+          </div>
+          
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Calculations based on:</label>
+            <p style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
+              Standard sea container loading parameters & FOB India baseline price rates. Subject to shipping index fluctuations.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Form Output Results Card -->
+        <div class="calc-results-card">
+          <div>
+            <div class="res-heading">Estimated Trade Specification</div>
+            
+            <div class="res-data-row">
+              <span class="res-lbl">Total Weight</span>
+              <span class="res-val" id="res-weight">1,000 kg</span>
+            </div>
+            
+            <div class="res-data-row">
+              <span class="res-lbl">Required Packages</span>
+              <span class="res-val" id="res-packages">40 Bags (25kg each)</span>
+            </div>
+            
+            <div class="res-data-row">
+              <span class="res-lbl">Baseline FOB Value</span>
+              <span class="res-val highlight" id="res-fob">USD $3,500.00</span>
+            </div>
+            
+            <div class="res-data-row">
+              <span class="res-lbl">Shipping Method</span>
+              <span class="res-val" id="res-shipping">Sea Freight (LCL Cargo)</span>
+            </div>
+          </div>
+          
+          <!-- Progress Bar occupancy container -->
+          <div class="cargo-visual-container">
+            <div class="cargo-meta">
+              <span>Container Load Share (20ft FCL)</span>
+              <span id="cargo-percent">5.0%</span>
+            </div>
+            <div class="cargo-track">
+              <div id="cargo-bar" class="cargo-bar" style="width: 5%"></div>
+              <div id="cargo-bar-lbl" class="cargo-label-overlay">LCL Loading (5%)</div>
+            </div>
+          </div>
+          
+          <button class="calc-wa-btn" onclick="sendWhatsappQuote()">
+            <i class="fa-brands fa-whatsapp"></i> Send Quotation Inquiry
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════ 5. CONTACT & CERTIFICATIONS PAGE ════════════════════════ -->
+    <section class="catalog-section section-contact" id="contact">
+      <div class="gold-shimmer-top"></div>
+      
+      <div class="contact-header">
+        <span class="calc-eyebrow">Global Trade Gateway</span>
+        <h3 class="contact-title">Let's Establish Trade Relations</h3>
+      </div>
+      
+      <div class="contact-grid">
+        <div class="contact-card-info">
+          
+          <div class="c-item">
+            <div class="c-icon"><i class="fa-solid fa-map-location-dot"></i></div>
+            <div class="c-text-area">
+              <span class="c-lbl">Export House Location</span>
+              <span class="c-val">Avani Agro Foods,<br>Old Barshi Road, Kulswamininagar,<br>5 No Chauk, Next to Sai School,<br>Latur - 413512, Maharashtra, India</span>
+            </div>
+          </div>
+          
+          <div class="c-item">
+            <div class="c-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
+            <div class="c-text-area">
+              <span class="c-lbl">Sales & B2B Inquiries</span>
+              <span class="c-val"><a href="mailto:sales@avaniagrofoods.com">sales@avaniagrofoods.com</a></span>
+            </div>
+          </div>
+
+          <div class="c-item">
+            <div class="c-icon"><i class="fa-brands fa-whatsapp"></i></div>
+            <div class="c-text-area">
+              <span class="c-lbl">Direct Helpline (Sachin Shinde)</span>
+              <span class="c-val"><a href="https://wa.me/917219053645">+91 7219053645</a></span>
+            </div>
+          </div>
+          
+        </div>
+        
+        <div class="contact-right-panel">
+          <div class="logo-container">
+            <img src="/logo.png" alt="Avani Logo" onerror="this.src='https://images.unsplash.com/photo-1599424755106-a83d47cebd51?w=100&q=80'">
+          </div>
+          
+          <h4 class="qr-title">Avani Agro Foods</h4>
+          <p class="qr-desc">Partner with India's premier Moringa & Dehydrated Onion Powder supply chain network.</p>
+          
+          <div class="c-actions">
+            <a href="mailto:sales@avaniagrofoods.com?subject=B2B%20Importer%20Quotation%20Request" class="c-btn c-btn-primary">
+              <i class="fa-solid fa-envelope"></i> Email Official RFP
+            </a>
+            <a href="https://wa.me/917219053645" class="c-btn c-btn-outline" target="_blank">
+              <i class="fa-brands fa-whatsapp"></i> Direct Connect Whatsapp
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <div class="contact-footer">
+          <span class="cf-brand">Avani Agro Foods</span>
+          <span class="cf-tagline">From Latur to the World &middot; <span>Premium Quality Assurance</span></span>
+        </div>
+        
+        <div class="disclaimer-box">
+          <strong>B2B Trade Disclaimer:</strong> Baseline FOB cargo rates are index estimates based on standard sea port parameters in Mumbai. MOQ conditions must align for contract processing. Lab data reports represent certified NABL guidelines for organic Moringa purity and Red Onion pyruvic concentration indexes. Destination customs compliance requirements, import duties, and port-clearance protocols remain under the responsibility of the primary consignee importer.
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── TECHNICAL SCRIPTS AND LOGIC ── -->
+  <script>
+    // ── LAYOUT VIEW MODE SWITCHER ──
+    function switchView(mode) {
+      const wrapper = document.getElementById('catalogWrapper');
+      const buttons = document.querySelectorAll('.mode-btn');
+      
+      buttons.forEach(btn => btn.classList.remove('active'));
+      
+      if (mode === 'web') {
+        wrapper.className = "catalog-wrapper web-view";
+        event.currentTarget.classList.add('active');
+      } else {
+        wrapper.className = "catalog-wrapper slide-view";
+        event.currentTarget.classList.add('active');
+        // Smooth scroll to top when entering slide view
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function triggerPrint() {
+      // Switch to slide view first to format it perfectly for PDF
+      const wrapper = document.getElementById('catalogWrapper');
+      const isCurrentlyWeb = wrapper.classList.contains('web-view');
+      
+      if (isCurrentlyWeb) {
+        switchView('slide');
+        // Wait a split second for layout reflow before opening print dialog
+        setTimeout(() => {
+          window.print();
+        }, 300);
+      } else {
+        window.print();
+      }
+    }
+
+    // ── ACCORDION TABS CONTROLLER ──
+    function switchTab(btn, panelId) {
+      // Find parent container of the tab panel set
+      const parent = btn.closest('.prod-right-details');
+      
+      // Deactivate siblings tabs
+      const tabHeader = parent.querySelector('.tab-header');
+      tabHeader.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      
+      // Deactivate sibling panels
+      parent.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      
+      // Activate target
+      btn.classList.add('active');
+      parent.querySelector('#' + panelId).classList.add('active');
+    }
+
+    // ── LIVE CARGO LOGISTICS CALCULATOR ──
+    const PRODUCT_PRICES = {
+      moringa: 3.50, // USD per kg base rate
+      onion: 2.00    // USD per kg base rate
+    };
+
+    // Standard 20ft container FCL sea weight limit in kg
+    const MAX_20FT_FCL_KG = 20000;
+
+    function runCalculator() {
+      const product = document.getElementById('calc-product').value;
+      const quantityVal = parseFloat(document.getElementById('calc-quantity').value) || 0;
+      const unit = document.getElementById('calc-unit').value;
+      const packSize = parseFloat(document.getElementById('calc-packsize').value);
+      
+      // Convert to standard weight in kilograms
+      let weightKg = quantityVal;
+      if (unit === 'mt') {
+        weightKg = quantityVal * 1000;
+      }
+      
+      // 1. Total Weight Result display
+      document.getElementById('res-weight').innerText = weightKg.toLocaleString() + " kg" + (weightKg >= 1000 ? ` (${(weightKg/1000).toFixed(2)} MT)` : "");
+      
+      // 2. Package calculation
+      const packageCount = Math.ceil(weightKg / packSize);
+      let packType = "Bags";
+      if (packSize < 1) {
+        packType = "Retail Packs";
+      } else if (packSize <= 5) {
+        packType = "Pouches";
+      }
+      document.getElementById('res-packages').innerText = `${packageCount.toLocaleString()} ${packType} (${packSize < 1 ? (packSize * 1000) + "g" : packSize + "kg"} each)`;
+      
+      // 3. Price FOB estimation
+      const basePrice = PRODUCT_PRICES[product];
+      // B2B discount algorithm for larger volumes
+      let discountRate = 1.0;
+      if (weightKg >= 10000) {
+        discountRate = 0.90; // 10% discount for orders >= 10 MT
+      } else if (weightKg >= 5000) {
+        discountRate = 0.93; // 7% discount
+      } else if (weightKg >= 1000) {
+        discountRate = 0.96; // 4% discount
+      }
+      
+      const calculatedFOB = weightKg * basePrice * discountRate;
+      document.getElementById('res-fob').innerText = "USD $" + calculatedFOB.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }) + (discountRate < 1.0 ? " (Volume Discounted)" : "");
+      
+      // 4. Shipping method determination
+      let shipMethod = "Courier Air Cargo / Express";
+      if (weightKg >= 500) {
+        shipMethod = "Sea Freight (LCL Cargo)";
+      }
+      if (weightKg >= 18000) {
+        shipMethod = "Sea Freight (20ft FCL Container)";
+      }
+      document.getElementById('res-shipping').innerText = shipMethod;
+      
+      // 5. Visual container loading progress bar
+      let fclPercent = (weightKg / MAX_20FT_FCL_KG) * 100;
+      if (fclPercent > 100) fclPercent = 100;
+      
+      const cargoBar = document.getElementById('cargo-bar');
+      const cargoPercentText = document.getElementById('cargo-percent');
+      const cargoBarLabel = document.getElementById('cargo-bar-lbl');
+      
+      cargoBar.style.width = fclPercent.toFixed(1) + "%";
+      cargoPercentText.innerText = fclPercent.toFixed(1) + "%";
+      
+      let overlayText = `LCL Loading (${fclPercent.toFixed(1)}%)`;
+      if (fclPercent >= 90) {
+        overlayText = `20ft Container Full FCL (${fclPercent.toFixed(1)}%)`;
+      } else if (fclPercent >= 50) {
+        overlayText = `Half Container Load (${fclPercent.toFixed(1)}%)`;
+      } else if (weightKg < 500) {
+        overlayText = `Air Cargo Sample Size`;
+      }
+      cargoBarLabel.innerText = overlayText;
+    }
+
+    function preselectCalculator(productName) {
+      document.getElementById('calc-product').value = productName;
+      runCalculator();
+    }
+
+    // ── SEND PRE-FILLED WHATSAPP INQUIRY ──
+    function sendWhatsappQuote() {
+      const productSelect = document.getElementById('calc-product');
+      const productName = productSelect.options[productSelect.selectedIndex].text;
+      const quantityVal = parseFloat(document.getElementById('calc-quantity').value) || 0;
+      const unit = document.getElementById('calc-unit').value.toUpperCase();
+      const packSelect = document.getElementById('calc-packsize');
+      const packName = packSelect.options[packSelect.selectedIndex].text;
+      
+      const weightText = document.getElementById('res-weight').innerText;
+      const packageText = document.getElementById('res-packages').innerText;
+      const fobValue = document.getElementById('res-fob').innerText;
+      const cargoPercent = document.getElementById('cargo-percent').innerText;
+      const shippingMethod = document.getElementById('res-shipping').innerText;
+      
+      // Construct rich professional whatsapp message
+      const message = `Hello Sachin Shinde (Avani Agro Foods),%0A%0AI would like to request an official B2B export quotation based on the following custom catalog calculation:%0A%0A` +
+        `• *Product:* ${productName}%0A` +
+        `• *Target Quantity:* ${quantityVal} ${unit} (Total: ${weightText})%0A` +
+        `• *Preferred Packaging:* ${packName}%0A` +
+        `• *Total Packages:* ${packageText}%0A` +
+        `• *Estimated FOB baseline:* ${fobValue}%0A` +
+        `• *20ft Container occupancy:* ${cargoPercent}%0A` +
+        `• *Recommended Logistics:* ${shippingMethod}%0A%0A` +
+        `Please confirm baseline availability, lead time, and seaport dispatch details. Thank you!`;
+      
+      const whatsappUrl = `https://wa.me/917219053645?text=${message}`;
+      window.open(whatsappUrl, '_blank');
+    }
+
+    // Run calculator on initial load
+    window.onload = function() {
+      runCalculator();
+    };
+  </script>
+</body>
+</html>

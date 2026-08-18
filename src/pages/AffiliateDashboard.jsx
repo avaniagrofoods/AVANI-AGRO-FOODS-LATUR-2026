@@ -46,7 +46,7 @@ export default function AffiliateDashboard() {
 
   return (
     <>
-      <SEO title="Affiliate Dashboard" description="Avani Agro Foods affiliate dashboard. Track your clicks, commissions, and access all affiliate links." />
+      <SEO title="Affiliate Dashboard" description="Avani Agro Foods affiliate dashboard. Track your clicks, commissions, and access all affiliate links." noindex={true} />
 
       <div className="page-top">
         <div style={{ background: 'linear-gradient(135deg, var(--color-primary-dark), var(--color-primary))', padding: '72px 0' }}>

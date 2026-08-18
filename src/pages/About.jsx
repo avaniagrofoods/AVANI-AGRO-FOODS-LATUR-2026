@@ -4,16 +4,16 @@ import { Globe, Award, Target, Leaf, MapPin, Phone, Mail, ArrowRight } from 'luc
 import { Link } from 'react-router-dom'
 
 const TIMELINE = [
-  { year: '2024', event: 'Avani Agro Foods founded in Latur, Maharashtra' },
-  { year: '2025', event: 'First export shipment to UAE; FSSAI & APEDA registration' },
-  { year: '2025', event: 'Moringa Powder & Red Onion Powder product lines established' },
-  { year: '2026', event: 'Affiliate program launched; B2B export scaling begins' },
-  { year: '2026', event: 'Target: ₹1 Crore revenue — 25+ export countries' },
+  { year: '2024', event: 'Avani Agro Foods founded in Latur, Maharashtra by Sachin Shinde. Udyam Registration obtained.' },
+  { year: '2025', event: 'First export coordination to UAE; manufacturing partnerships established with FSSAI & APEDA registered processors.' },
+  { year: '2025', event: 'Moringa Powder & Red Onion Powder product lines established with partner manufacturers.' },
+  { year: '2026', event: 'Affiliate programme launched; B2B export coordination scaling begins.' },
+  { year: '2026', event: 'Target: ₹1 Crore revenue — expanding to 25+ export markets.' },
 ]
 
 const VALUES = [
-  { icon: Award, title: 'Quality First', desc: 'Every batch is NABL lab tested. We never compromise on quality.' },
-  { icon: Globe, title: 'Export Excellence', desc: 'We understand international standards — EU, US, UAE compliance built in.' },
+  { icon: Award, title: 'Quality First', desc: 'Every batch is sourced from partner manufacturers with documented quality controls and COA reports.' },
+  { icon: Globe, title: 'Export Excellence', desc: 'We coordinate international standards — EU, US, UAE compliance built into sourcing and documentation.' },
   { icon: Target, title: 'Transparent Business', desc: 'Fair pricing, honest communication, and complete documentation always.' },
   { icon: Leaf, title: 'Sustainable Sourcing', desc: 'Directly sourced from Maharashtra farms with ethical procurement practices.' },
 ]
@@ -56,7 +56,7 @@ export default function About() {
                 <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginBottom: 24, textAlign: 'center' }}>Founder & Export Director — Avani Agro Foods</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
                   {[
-                    { icon: MapPin, text: 'Latur, Maharashtra, India' },
+                    { icon: MapPin, text: 'Old Barshi Road, Kulswamininagar, Latur – 413512' },
                     { icon: Phone, text: '+91 7219053645' },
                     { icon: Mail, text: 'sales@avaniagrofoods.com' },
                   ].map(({ icon: Icon, text }) => (
@@ -143,10 +143,19 @@ export default function About() {
         {/* Certifications */}
         <div style={{ padding: '72px 0', background: 'white' }}>
           <div className="container" style={{ textAlign: 'center' }}>
-            <div className="section-tag" style={{ justifyContent: 'center' }}>Certifications</div>
-            <h2 className="section-title">Trusted, Certified, Compliant</h2>
-            <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap', marginTop: 40 }}>
-              {['🏅 FSSAI Registered', '🌾 APEDA Member', '📋 IEC Holder', '✅ ISO Compliant', '🌿 HACCP Standards'].map(cert => (
+            <div className="section-tag" style={{ justifyContent: 'center' }}>Compliance & Registration</div>
+            <h2 className="section-title">Committed to Quality &amp; Compliance</h2>
+            <p style={{ color: 'var(--color-text-light)', maxWidth: 600, margin: '0 auto 40px', fontSize: '0.95rem', lineHeight: 1.7 }}>
+              AVANI AGRO FOODS is Udyam registered. Our manufacturing partners hold FSSAI, APEDA, IEC and GST registrations — ensuring every product we export meets Indian and international regulatory standards.
+            </p>
+            <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap', marginTop: 0 }}>
+              {[
+                '🏅 Udyam Registered (Own)',
+                '🤝 Partner FSSAI Certified',
+                '🌾 Partner APEDA Compliant',
+                '📋 Partner IEC Holders',
+                '✅ Partner GST Registered',
+              ].map(cert => (
                 <div key={cert} className="card" style={{ padding: '20px 32px', fontSize: '1rem', fontWeight: 700 }}>{cert}</div>
               ))}
             </div>

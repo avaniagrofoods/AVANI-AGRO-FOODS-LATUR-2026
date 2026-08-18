@@ -11,12 +11,13 @@ import SEO from '../components/SEO'
 import { STRIPE_LINKS } from '../data/links'
 import { sendB2BRegistrationEmail } from '../lib/emailjs'
 import { logB2BRegistration } from '../lib/googleSheets'
+import { trackB2BTrialStart } from '../lib/analytics'
 
 const PLANS = [
   {
     region: '🇮🇳 India',
     plans: [
-      { id: 'in_free', name: 'Trial', period: '6 Months', price: 'Free', desc: 'Try B2B store access', link: null, isFree: true },
+      { id: 'in_free', name: 'Trial', period: '1 Month', price: 'Free', desc: 'Try B2B store access', link: null, isFree: true },
       { id: 'in_monthly', name: 'Standard', period: 'Monthly', price: '₹4,999', desc: 'Full business networking', link: STRIPE_LINKS.INDIA.MONTHLY },
       { id: 'in_yearly', name: 'Premium', period: '1 Year', price: '₹39,999', desc: 'Best for growing exporters', link: STRIPE_LINKS.INDIA.YEARLY }
     ]
@@ -24,7 +25,7 @@ const PLANS = [
   {
     region: '🌎 Global',
     plans: [
-      { id: 'glb_free', name: 'Trial', period: '6 Months', price: 'Free', desc: 'Try international access', link: null, isFree: true },
+      { id: 'glb_free', name: 'Trial', period: '1 Month', price: 'Free', desc: 'Try international access', link: null, isFree: true },
       { id: 'glb_monthly', name: 'Export Pro', period: 'Monthly', price: '$99', desc: 'Full global network access', link: STRIPE_LINKS.GLOBAL.MONTHLY },
       { id: 'glb_yearly', name: 'Enterprise', period: '1 Year', price: '$899', desc: 'Priority global trade listing', link: STRIPE_LINKS.GLOBAL.YEARLY }
     ]
@@ -94,6 +95,9 @@ export default function B2BRegistration() {
         console.warn('Email notification failed but data was logged to sheets:', emailError)
       }
       
+      // 3. Track B2B Trial Analytics Event
+      trackB2BTrialStart(selectedPlan?.name || 'B2B Registration', companyInfo?.country || 'India')
+
       setSubmitted(true)
       setStep(5)
     } catch (error) {
@@ -297,7 +301,7 @@ export default function B2BRegistration() {
             >
               <Zap color="var(--color-primary)" />
               <div style={{ fontSize: '0.9rem' }}>
-                <strong>New: 6-Month Free Trial!</strong> You can now explore the network and list your business for free for the first 6 months. No credit card required.
+                <strong>New: 1-Month Free Trial!</strong> You can now explore the network and list your business for free for the first month. No credit card required.
               </div>
             </motion.div>
           </motion.div>
@@ -511,8 +515,8 @@ export default function B2BRegistration() {
 
           <div style={{ marginTop: 60, display: 'flex', justifyContent: 'center', gap: 40 }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontWeight: 800, fontSize: '1.2rem' }}>140+</div>
-              <div style={{ fontSize: '0.7rem', color: '#888', textTransform: 'uppercase' }}>Verified Partners</div>
+              <div style={{ fontWeight: 800, fontSize: '1.2rem' }}>Growing</div>
+              <div style={{ fontSize: '0.7rem', color: '#888', textTransform: 'uppercase' }}>B2B Network</div>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontWeight: 800, fontSize: '1.2rem' }}>24/7</div>

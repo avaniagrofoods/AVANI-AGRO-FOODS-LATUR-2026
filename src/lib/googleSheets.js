@@ -47,6 +47,15 @@ export async function logAffiliateEvent(data) {
     existing.push({ ...payload });
     localStorage.setItem('aff_events', JSON.stringify(existing));
 
+    // 3. IMPORTANT: SYNC TO WHATSAPP AUTOMATION (Picky Assist)
+    try {
+      fetch('/api/save-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(e => console.error('[WhatsApp Sync] Failed:', e));
+    } catch (e) {}
+
     return { success: true };
   } catch (err) {
     console.error('[Sheets] Failed to log event:', err);

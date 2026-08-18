@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Printer, Plus, Trash2, Download } from 'lucide-react'
+import { BUSINESS_INFO } from '../data/links'
 
 const defaultItems = [
   { id: 1, description: 'Premium Moringa Powder — Export Grade A', hscode: '0712.90.90', quantity: 100, unit: 'KG', rate: 350, amount: 35000 },
@@ -99,10 +100,10 @@ export default function QuotationBuilder({ defaultName = '', defaultEmail = '', 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))', color: 'white', padding: '32px', borderRadius: 'var(--radius-md)' }}>
         <div>
           <img src="/logo.jpeg" alt="Logo" style={{ height: 56, marginBottom: 12, borderRadius: 8 }} onError={e => e.target.style.display='none'} />
-          <div style={{ fontWeight: 900, fontSize: '1.3rem' }}>AVANI AGRO FOODS</div>
-          <div style={{ opacity: 0.8, fontSize: '0.8rem' }}>Latur, Maharashtra, India — 413512</div>
-          <div style={{ opacity: 0.8, fontSize: '0.8rem' }}>+91 7219053645 | sales@avaniagrofoods.com</div>
-          <div style={{ opacity: 0.8, fontSize: '0.8rem' }}>FSSAI | APEDA | IEC Registered</div>
+          <div style={{ fontWeight: 900, fontSize: '1.3rem' }}>{BUSINESS_INFO.name}</div>
+          <div style={{ opacity: 0.8, fontSize: '0.8rem' }}>{BUSINESS_INFO.address.full}</div>
+          <div style={{ opacity: 0.8, fontSize: '0.8rem' }}>{BUSINESS_INFO.phone} | {BUSINESS_INFO.email}</div>
+          <div style={{ opacity: 0.8, fontSize: '0.8rem' }}>Udyam Registered | Partner FSSAI &amp; APEDA Compliant</div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', opacity: 0.7, marginBottom: 6 }}>Proforma Invoice</div>

@@ -1,35 +1,70 @@
-// Production build trigger: 2026-05-01 SEO & Reference Fix
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
+import { useEffect, lazy, Suspense } from 'react'
 import { LanguageProvider } from './context/LanguageContext'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import WhatsAppBubble from './components/WhatsAppBubble'
+import AffiliateAuthGuard from './components/AffiliateAuthGuard'
+import { Loader2 } from 'lucide-react'
 
+// Eagerly loaded primary public pages
 import Home from './pages/Home'
 import About from './pages/About'
 import Products from './pages/Products'
-import B2BStore from './pages/B2BStore'
-import B2BRegistration from './pages/B2BRegistration'
-import Affiliate from './pages/Affiliate'
-import AffiliateDashboard from './pages/AffiliateDashboard'
-import Blog from './pages/Blog'
-import BlogPost from './pages/BlogPost'
 import Contact from './pages/Contact'
-import FreeAiTools from './pages/FreeAiTools'
-import Manufacturers from './pages/Manufacturers'
-import Importers from './pages/Importers'
-import Privacy from './pages/Privacy'
-import Disclaimer from './pages/Disclaimer'
-import AffiliateDisclaimer from './pages/AffiliateDisclaimer'
-import QuotationSheet from './pages/QuotationSheet'
-import AdminQuotations from './pages/AdminQuotations'
-import AffiliateDirectory from './pages/AffiliateDirectory'
 
-function ScrollToTop() {
-  const location = window.location
+// Lazy-loaded routes for performance & chunk splitting
+const B2BRegistration = lazy(() => import('./pages/B2BRegistration'))
+const B2BStore = lazy(() => import('./pages/B2BStore'))
+const ManufacturerRequirements = lazy(() => import('./pages/ManufacturerRequirements'))
+const ExportCompliance = lazy(() => import('./pages/ExportCompliance'))
+const Affiliate = lazy(() => import('./pages/Affiliate'))
+const AffiliateLogin = lazy(() => import('./pages/AffiliateLogin'))
+const AffiliateDashboard = lazy(() => import('./pages/AffiliateDashboard'))
+const AffiliateDirectory = lazy(() => import('./pages/AffiliateDirectory'))
+const Blog = lazy(() => import('./pages/Blog'))
+const BlogPost = lazy(() => import('./pages/BlogPost'))
+const Manufacturers = lazy(() => import('./pages/Manufacturers'))
+const Importers = lazy(() => import('./pages/Importers'))
+const FreeAiTools = lazy(() => import('./pages/FreeAiTools'))
+const QuotationSheet = lazy(() => import('./pages/QuotationSheet'))
+const AdminQuotations = lazy(() => import('./pages/AdminQuotations'))
+const Privacy = lazy(() => import('./pages/Privacy'))
+const Terms = lazy(() => import('./pages/Terms'))
+const Disclaimer = lazy(() => import('./pages/Disclaimer'))
+const AffiliateDisclaimer = lazy(() => import('./pages/AffiliateDisclaimer'))
+
+function PageLoading() {
+  return (
+    <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+      <Loader2 size={32} color="var(--color-primary)" className="animate-spin" />
+    </div>
+  )
+}
+
+function RouteChangeHandler() {
+  const location = useLocation()
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    // Update canonical tag dynamically
+    let canonicalTag = document.querySelector('link[rel="canonical"]')
+    if (!canonicalTag) {
+      canonicalTag = document.createElement('link')
+      canonicalTag.rel = 'canonical'
+      document.head.appendChild(canonicalTag)
+    }
+    const rawPath = location.pathname
+    const cleanPath = rawPath === '/' ? '/' : rawPath.replace(/\/$/, '')
+    canonicalTag.href = `https://www.avaniagrofoods.com${cleanPath === '/' ? '/' : cleanPath}`
+
+    // Fire GA4 page_view on route change (SPA navigation)
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'page_view', {
+        page_path: location.pathname,
+        page_title: document.title,
+      })
+    }
   }, [location.pathname])
   return null
 }
@@ -38,38 +73,71 @@ export default function App() {
   return (
     <Router>
       <LanguageProvider>
-        <ScrollToTop />
+        <RouteChangeHandler />
         <Navbar />
         <main>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/b2b" element={<B2BRegistration />} />
-            <Route path="/b2b/store" element={<B2BStore />} />
-            <Route path="/b2b/register" element={<B2BRegistration />} />
-            <Route path="/affiliate" element={<Affiliate />} />
-            <Route path="/affiliate/dashboard" element={<AffiliateDashboard />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:slug" element={<BlogPost />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/tools" element={<FreeAiTools />} />
-            <Route path="/manufacturers" element={<Manufacturers />} />
-            <Route path="/importers" element={<Importers />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/disclaimer" element={<Disclaimer />} />
-            <Route path="/affiliate-disclaimer" element={<AffiliateDisclaimer />} />
-            <Route path="/quotation-sheet" element={<QuotationSheet />} />
-            <Route path="/admin/quotations" element={<AdminQuotations />} />
-            <Route path="/affiliate/directory" element={<AffiliateDirectory />} />
-            <Route path="*" element={
-              <div className="page-top" style={{ textAlign: 'center', padding: '140px 24px' }}>
-                <h1 style={{ fontSize: '6rem', fontWeight: 900, color: 'var(--color-primary)', marginBottom: 16 }}>404</h1>
-                <p style={{ fontSize: '1.2rem', color: 'var(--color-text-light)', marginBottom: 32 }}>Page not found</p>
-                <a href="/" className="btn btn-primary">← Back to Home</a>
-              </div>
-            } />
-          </Routes>
+          <Suspense fallback={<PageLoading />}>
+            <Routes>
+              {/* Primary Pages */}
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/contact" element={<Contact />} />
+
+              {/* B2B & Export Pages */}
+              <Route path="/b2b" element={<B2BRegistration />} />
+              <Route path="/b2b/store" element={<B2BStore />} />
+              <Route path="/b2b/register" element={<B2BRegistration />} />
+              <Route path="/manufacturer-requirements" element={<ManufacturerRequirements />} />
+              <Route path="/export-compliance" element={<ExportCompliance />} />
+
+              {/* Affiliate Routes — protected client-side and edge-side */}
+              <Route path="/affiliate-login" element={<AffiliateLogin />} />
+              <Route path="/affiliate" element={
+                <AffiliateAuthGuard>
+                  <Affiliate />
+                </AffiliateAuthGuard>
+              } />
+              <Route path="/affiliate/dashboard" element={
+                <AffiliateAuthGuard>
+                  <AffiliateDashboard />
+                </AffiliateAuthGuard>
+              } />
+              <Route path="/affiliate/directory" element={
+                <AffiliateAuthGuard>
+                  <AffiliateDirectory />
+                </AffiliateAuthGuard>
+              } />
+
+              {/* Directories & Tools */}
+              <Route path="/manufacturers" element={<Manufacturers />} />
+              <Route path="/importers" element={<Importers />} />
+              <Route path="/tools" element={<FreeAiTools />} />
+
+              {/* Blog */}
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
+
+              {/* Quotations & Admin */}
+              <Route path="/quotation-sheet" element={<QuotationSheet />} />
+              <Route path="/admin/quotations" element={<AdminQuotations />} />
+
+              {/* Legal Pages */}
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/disclaimer" element={<Disclaimer />} />
+              <Route path="/affiliate-disclaimer" element={<AffiliateDisclaimer />} />
+
+              {/* 404 Catch-All */}
+              <Route path="*" element={
+                <div className="page-top" style={{ textAlign: 'center', padding: '140px 24px' }}>
+                  <h1 style={{ fontSize: '5rem', fontWeight: 900, color: 'var(--color-primary)', marginBottom: 16 }}>404</h1>
+                  <p style={{ fontSize: '1.2rem', color: 'var(--color-text-light)', marginBottom: 32 }}>Page not found</p>
+                  <a href="/" className="btn btn-primary">← Return to Homepage</a>
+                </div>
+              } />
+            </Routes>
+          </Suspense>
         </main>
         <Footer />
         <WhatsAppBubble />

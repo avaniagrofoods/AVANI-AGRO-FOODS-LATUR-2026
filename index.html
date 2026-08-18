@@ -1,92 +1,74 @@
 <!DOCTYPE html>
-<!-- Build: 2026-05-03-v1.0.1 -->
+<!-- Build: 2026-08-18-v2.0.0 -->
 <html lang="en">
 
 <head>
-  <!-- Google tag (gtag.js) -->
+  <!-- Google Tag Manager -->
+  <!-- TODO: Replace GTM-XXXXXXX with your actual GTM container ID from tagmanager.google.com -->
+  <!-- <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-XXXXXXX');</script> -->
+
+  <!-- Google Analytics 4 — Active -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-GNKT58TMBT"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag() { dataLayer.push(arguments); }
     gtag('js', new Date());
-
-    gtag('config', 'G-GNKT58TMBT');
+    gtag('config', 'G-GNKT58TMBT', {
+      send_page_view: true,
+      cookie_flags: 'SameSite=None;Secure'
+    });
   </script>
 
-  <!-- Apollo.io B2B Intelligence & Form Enrichment -->
-  <script>
-    (function initApolloInbound() {
-      var TIMEOUT_MS = 5000;
-      var style = document.createElement('style');
-      style.id = 'apollo-form-prehide-css';
-      style.textContent = 'form:has(input[type="email" i]),form:has(input[name="email" i]),.hs-form-iframe{position:relative!important}form:has(input[type="email" i])::before,form:has(input[name="email" i])::before,.hs-form-iframe::before{content:"";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;width:40px;height:40px;margin:auto;border:2px solid #e1e1e1;border-top:2px solid #1a4d2e;border-radius:50%;animation:spin 1s linear infinite;z-index:9999;opacity:1}form:has(input[type="email" i]) *,form:has(input[name="email" i]) *,.hs-form-iframe *{opacity:0.1!important;pointer-events:none!important}@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}';
-      (document.head || document.documentElement).appendChild(style);
-      function cleanup() {
-        var styleEl = document.getElementById('apollo-form-prehide-css');
-        if (styleEl) styleEl.remove();
-        if (window.apolloTimeoutId) clearTimeout(window.apolloTimeoutId);
-      }
-      window.apolloTimeoutId = setTimeout(function () {
-        console.warn('[Apollo] Enrichment timeout - revealing forms.');
-        cleanup();
-      }, TIMEOUT_MS);
-      var script = document.createElement('script');
-      script.src = 'https://assets.apollo.io/js/apollo-inbound.js?nocache=' + Math.random().toString(36).substring(7);
-      script.defer = true;
-      script.onerror = cleanup;
-      script.onload = function () {
-        try {
-          if (window.ApolloInbound && window.ApolloInbound.formEnrichment) {
-            window.ApolloInbound.formEnrichment.init({
-              appId: '69f5f2d6a704d400199f639d',
-              onReady: cleanup,
-              onError: cleanup
-            });
-          } else { cleanup(); }
-        } catch (e) { cleanup(); }
-      };
-      document.head.appendChild(script);
-    })();
-  </script>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/logo.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#1a4d2e">
+
   <!-- Primary SEO -->
-  <title>AVANI AGRO FOODS | Premium Moringa & Red Onion Powder Exporter | Latur, India</title>
+  <title>AVANI AGRO FOODS | Moringa &amp; Red Onion Powder Exporter | Latur, India</title>
   <meta name="description"
-    content="Avani Agro Foods – India's premier exporter of Moringa Powder and Red Onion Powder. B2B bulk orders, affiliate program, and global export. Latur, Maharashtra. Certified quality and sustainable farming." />
+    content="Avani Agro Foods – Moringa Powder and Red Onion Powder exporter based in Latur, Maharashtra, India. Bulk B2B orders, global export, partner-certified quality. Old Barshi Road, Latur 413512." />
   <meta name="keywords"
-    content="moringa powder exporter india, red onion powder bulk, moringa powder B2B, avani agro foods latur, moringa export maharashtra, buy moringa powder wholesale, organic moringa powder india" />
-  
+    content="moringa powder exporter india, red onion powder bulk, moringa powder B2B, avani agro foods latur, moringa export maharashtra, buy moringa powder wholesale, red onion powder supplier india" />
+  <link rel="canonical" href="https://www.avaniagrofoods.com/" />
+
+  <!-- Robots -->
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+
   <!-- Open Graph -->
-  <meta property="og:title" content="AVANI AGRO FOODS | Premium Moringa & Red Onion Powder" />
+  <meta property="og:title" content="AVANI AGRO FOODS | Moringa &amp; Red Onion Powder Exporter" />
   <meta property="og:description"
-    content="India's leading exporter of premium Moringa and Red Onion Powder. Certified quality, global shipping, affiliate program." />
+    content="Moringa Powder and Red Onion Powder exporter from Latur, India. Bulk B2B orders, global shipping, affiliate programme. Partner-certified quality." />
   <meta property="og:image" content="https://www.avaniagrofoods.com/og-image.jpg" />
   <meta property="og:url" content="https://www.avaniagrofoods.com/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Avani Agro Foods" />
+  <meta property="og:locale" content="en_IN" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="AVANI AGRO FOODS – Export, Affiliate & B2B" />
-  <meta name="twitter:description" content="Premium Moringa & Red Onion Powder Exporter from Latur, India. Global shipping and B2B wholesale." />
+  <meta name="twitter:title" content="AVANI AGRO FOODS – Export, Affiliate &amp; B2B" />
+  <meta name="twitter:description" content="Moringa &amp; Red Onion Powder Exporter from Latur, India. Global shipping and B2B wholesale." />
   <meta name="twitter:image" content="https://www.avaniagrofoods.com/og-image.jpg" />
 
-  <link rel="canonical" href="https://www.avaniagrofoods.com/" />
-
-  <!-- Structured Data (JSON-LD) -->
+  <!-- Structured Data: Organization -->
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "Organization",
       "name": "Avani Agro Foods",
+      "alternateName": "AVANI AGRO FOODS",
       "url": "https://www.avaniagrofoods.com",
       "logo": "https://www.avaniagrofoods.com/logo.png",
-      "description": "Premium Moringa & Red Onion Powder Exporter from Latur, India.",
+      "description": "Moringa Powder and Red Onion Powder exporter based in Latur, Maharashtra, India.",
+      "foundingDate": "2024",
+      "founder": {
+        "@type": "Person",
+        "name": "Sachin Shinde"
+      },
       "address": {
         "@type": "PostalAddress",
+        "streetAddress": "Old Barshi Road, Kulswamininagar, 5 No Chauk, Next to Sai School",
         "addressLocality": "Latur",
         "addressRegion": "Maharashtra",
         "postalCode": "413512",
@@ -95,6 +77,7 @@
       "contactPoint": {
         "@type": "ContactPoint",
         "telephone": "+91-7219053645",
+        "email": "sales@avaniagrofoods.com",
         "contactType": "Sales",
         "areaServed": "Worldwide",
         "availableLanguage": ["English", "Hindi", "Marathi"]
@@ -105,6 +88,8 @@
       ]
     }
   </script>
+
+  <!-- Structured Data: LocalBusiness -->
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -114,9 +99,10 @@
       "@id": "https://www.avaniagrofoods.com",
       "url": "https://www.avaniagrofoods.com",
       "telephone": "+917219053645",
+      "email": "sales@avaniagrofoods.com",
       "address": {
         "@type": "PostalAddress",
-        "streetAddress": "Latur",
+        "streetAddress": "Old Barshi Road, Kulswamininagar, 5 No Chauk, Next to Sai School",
         "addressLocality": "Latur",
         "postalCode": "413512",
         "addressRegion": "Maharashtra",
@@ -129,33 +115,42 @@
       },
       "openingHoursSpecification": {
         "@type": "OpeningHoursSpecification",
-        "dayOfWeek": [
-          "Monday",
-          "Tuesday",
-          "Wednesday",
-          "Thursday",
-          "Friday",
-          "Saturday"
-        ],
+        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
         "opens": "09:00",
         "closes": "19:00"
-      }
+      },
+      "priceRange": "Contact for Quote"
     }
   </script>
+
+  <!-- Structured Data: WebSite -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Avani Agro Foods",
+      "alternateName": "AVANI AGRO FOODS",
+      "url": "https://www.avaniagrofoods.com",
+      "inLanguage": "en-IN",
+      "description": "Premium Moringa Powder and Red Onion Powder exporter based in Latur, Maharashtra, India."
+    }
+  </script>
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet" />
-  <!-- GA4 Placeholder -->
-  <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script> -->
 </head>
 
 <body>
+  <!-- Google Tag Manager (noscript) -->
+  <!-- <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-XXXXXXX" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript> -->
+
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
-  <!-- Zoho CRM Webform Analytics -->
-  <script id="wf_anal" src="https://crm.zohopublic.in/crm/WebFormAnalyticsServeServlet?rid=09924f2d10870baf3c4fc5f7ac5b1b454d947e345c88945fffe996d0cb12e62e5f3c329a6e9c0be40c8ea0aa1fdf65edgid2970537a70f1e22b836b1c7a1081d500d11c4c0ae30e38fc1ccbfd54631ccec5gidac583c94d3c206ff6db799d96dbbf8fe70197654a6be7a7677a424db563bf027gidf24c681b83dfb823aef53413a29574b9293d91ffcb609a0c0690d4436c52c6b3&tw=7b22b1912e13b3b10adaa9a4cdff03cb9ff13d297b6499e6f9f9aaec39173133"></script>
+  <!-- HubSpot CRM -->
+  <script id="hubspot" async defer src="https://js.hs-scripts.com/246074335.js"></script>
 </body>
 </html>

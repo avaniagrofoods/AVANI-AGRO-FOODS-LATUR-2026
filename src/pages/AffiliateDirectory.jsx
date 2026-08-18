@@ -1,30 +1,16 @@
 import { useState, useEffect } from 'react'
 import SEO from '../components/SEO'
-import { Lock, Users, CheckCircle, Trash2, ShieldCheck, Search, Filter, Download, ExternalLink } from 'lucide-react'
+import PasswordGate from '../components/PasswordGate'
+import { Users, CheckCircle, Trash2, ShieldCheck, Search, Filter, Download, ExternalLink } from 'lucide-react'
 
 export default function AffiliateDirectory() {
-  const [password, setPassword] = useState('')
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [error, setError] = useState('')
   const [affiliates, setAffiliates] = useState([])
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    if (isAuthenticated) {
-      const stored = JSON.parse(localStorage.getItem('affiliates') || '[]')
-      setAffiliates(stored)
-    }
-  }, [isAuthenticated])
-
-  const handleLogin = (e) => {
-    e.preventDefault()
-    if (password === 'Samarth@1356') {
-      setIsAuthenticated(true)
-      setError('')
-    } else {
-      setError('Invalid admin password')
-    }
-  }
+    const stored = JSON.parse(localStorage.getItem('affiliates') || '[]')
+    setAffiliates(stored)
+  }, [])
 
   const handleApprove = (id) => {
     const updated = affiliates.map(a => 
@@ -43,143 +29,143 @@ export default function AffiliateDirectory() {
   }
 
   const filteredAffiliates = affiliates.filter(a => 
-    a.name?.toLowerCase().includes(search.toLowerCase()) || 
+    a.name?.toLowerCase().includes(search.toLowerCase()) ||
     a.email?.toLowerCase().includes(search.toLowerCase()) ||
     a.affId?.toLowerCase().includes(search.toLowerCase())
   )
 
-  if (!isAuthenticated) {
-    return (
-      <div className="page-top" style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)' }}>
-        <SEO title="Admin Login — Affiliate Directory" description="Authorized access only." />
-        <div className="card" style={{ maxWidth: 400, width: '100%', padding: '48px 32px', textAlign: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
-          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(26,77,46,0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-            <Lock size={32} />
-          </div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 8 }}>Admin Access</h1>
-          <p style={{ color: 'var(--color-text-light)', marginBottom: 32, fontSize: '0.9rem' }}>Please enter the directory password to continue.</p>
-          
-          <form onSubmit={handleLogin}>
-            <input 
-              type="password" 
-              className="input" 
-              placeholder="Enter Password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{ textAlign: 'center', fontSize: '1.1rem', letterSpacing: '4px', marginBottom: 16 }}
-              required
-            />
-            {error && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginBottom: 16, fontWeight: 600 }}>{error}</p>}
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-              Access Directory
-            </button>
-          </form>
-        </div>
-      </div>
-    )
+  const handleExportCSV = () => {
+    if (affiliates.length === 0) return alert('No affiliates to export.')
+    const headers = ['Affiliate ID', 'Name', 'Email', 'Phone', 'Platform', 'Joined Date', 'Status']
+    const rows = affiliates.map(a => [
+      a.affId,
+      `"${a.name}"`,
+      a.email,
+      a.phone,
+      `"${a.platform || 'General'}"`,
+      a.date || 'N/A',
+      a.status || 'Pending'
+    ])
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n')
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement('a')
+    link.setAttribute('href', encodedUri)
+    link.setAttribute('download', `avani_affiliates_${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   return (
-    <>
-      <SEO title="Affiliate Directory — Admin" description="Manage your global affiliate network." />
-      <div className="page-top" style={{ background: '#f8fafc', minHeight: '100vh', padding: '100px 24px 60px' }}>
-        <div className="container">
-          
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40, flexWrap: 'wrap', gap: 24 }}>
-            <div>
-              <div className="section-tag" style={{ background: 'rgba(26,77,46,0.1)', color: 'var(--color-primary)' }}>
-                <ShieldCheck size={14} /> Admin Control Panel
+    <div className="page-top" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+      <PasswordGate title="Affiliate Admin Directory" description="Authorized admin access required to manage affiliate partners.">
+        <SEO title="Affiliate Partner Directory (Admin)" description="Confidential directory of registered Avani Agro Foods affiliate partners." />
+        
+        <div style={{ background: 'linear-gradient(135deg, var(--color-primary-dark), var(--color-primary))', padding: '60px 0', color: 'white' }}>
+          <div className="container">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
+              <div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.1)', padding: '4px 12px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 600, marginBottom: 12 }}>
+                  <ShieldCheck size={14} /> Confidential Admin Access
+                </div>
+                <h1 style={{ fontSize: '2.2rem', fontWeight: 900, marginBottom: 8 }}>Affiliate Partner Directory</h1>
+                <p style={{ opacity: 0.8, fontSize: '0.95rem' }}>Review, manage, and verify all registered B2B and retail affiliate accounts.</p>
               </div>
-              <h1 style={{ fontSize: '2.5rem', fontWeight: 900, marginTop: 8 }}>Affiliate Directory</h1>
-              <p style={{ color: 'var(--color-text-light)', marginTop: 8 }}>Managing {affiliates.length} registered partners</p>
-            </div>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button className="btn" style={{ background: 'white', border: '1px solid var(--color-border)', fontSize: '0.85rem' }}>
-                <Download size={16} /> Export CSV
-              </button>
+              <div>
+                <button 
+                  onClick={handleExportCSV}
+                  className="btn" 
+                  style={{ background: 'white', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
+                >
+                  <Download size={16} /> Export CSV
+                </button>
+              </div>
             </div>
           </div>
+        </div>
 
+        <div className="container" style={{ padding: '40px 24px' }}>
           {/* Stats Bar */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20, marginBottom: 32 }}>
-            {[
-              { label: 'Total Registrations', value: affiliates.length, icon: Users, color: 'var(--color-primary)' },
-              { label: 'Pending Approval', value: affiliates.filter(a => !a.status).length, icon: Filter, color: '#e6a817' },
-              { label: 'Active Affiliates', value: affiliates.filter(a => a.status === 'Approved').length, icon: CheckCircle, color: '#10b981' }
-            ].map((s, i) => (
-              <div key={i} className="card" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: 20 }}>
-                <div style={{ width: 48, height: 48, borderRadius: '12px', background: `${s.color}15`, color: s.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <s.icon size={24} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 900 }}>{s.value}</div>
-                </div>
+            <div className="card" style={{ padding: '24px' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>Total Registered</div>
+              <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--color-primary)', marginTop: 4 }}>{affiliates.length}</div>
+            </div>
+            <div className="card" style={{ padding: '24px' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>Approved Active</div>
+              <div style={{ fontSize: '2rem', fontWeight: 900, color: '#16a34a', marginTop: 4 }}>
+                {affiliates.filter(a => a.status === 'Approved').length}
               </div>
-            ))}
+            </div>
+            <div className="card" style={{ padding: '24px' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>Pending Verification</div>
+              <div style={{ fontSize: '2rem', fontWeight: 900, color: '#d97706', marginTop: 4 }}>
+                {affiliates.filter(a => a.status !== 'Approved').length}
+              </div>
+            </div>
           </div>
 
-          {/* Table Card */}
-          <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--color-border)' }}>
-            <div style={{ padding: '24px', borderBottom: '1px solid var(--color-border)', background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-              <div style={{ position: 'relative', maxWidth: 400, width: '100%' }}>
-                <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-light)' }} />
+          {/* Table Container */}
+          <div className="card" style={{ padding: '32px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+              <div style={{ position: 'relative', width: '100%', maxWidth: 360 }}>
+                <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-light)' }} />
                 <input 
                   type="text" 
                   className="input" 
-                  placeholder="Search by name, email or ID..." 
+                  placeholder="Search by name, email, ID..." 
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  style={{ paddingLeft: 48, background: '#f1f5f9', border: 'none' }}
+                  style={{ paddingLeft: 42, width: '100%' }}
                 />
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-light)' }}>
+                Showing <strong>{filteredAffiliates.length}</strong> of {affiliates.length} partners
               </div>
             </div>
 
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                 <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--color-border)' }}>
-                    {['Affiliate Info', 'Platform', 'Registration Date', 'Status', 'Actions'].map(h => (
-                      <th key={h} style={{ padding: '16px 24px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
-                    ))}
+                  <tr style={{ borderBottom: '2px solid var(--color-border)', background: '#f8fafc' }}>
+                    <th style={{ padding: '16px 20px', fontWeight: 800 }}>Affiliate ID</th>
+                    <th style={{ padding: '16px 20px', fontWeight: 800 }}>Partner Details</th>
+                    <th style={{ padding: '16px 20px', fontWeight: 800 }}>Platform / Bio</th>
+                    <th style={{ padding: '16px 20px', fontWeight: 800 }}>Status</th>
+                    <th style={{ padding: '16px 20px', fontWeight: 800 }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAffiliates.length > 0 ? filteredAffiliates.map((aff, i) => (
-                    <tr key={aff.affId} style={{ borderBottom: i === filteredAffiliates.length - 1 ? 'none' : '1px solid #f1f5f9', background: 'white', transition: 'background 0.2s' }} className="table-row-hover">
-                      <td style={{ padding: '20px 24px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, var(--color-primary), #2d8f5c)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '0.8rem' }}>
-                            {aff.name?.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>{aff.name}</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)' }}>{aff.email}</div>
-                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-primary)', marginTop: 4, fontFamily: 'monospace' }}>{aff.affId}</div>
-                          </div>
+                  {filteredAffiliates.length > 0 ? filteredAffiliates.map((aff) => (
+                    <tr key={aff.affId} style={{ borderBottom: '1px solid var(--color-border)' }} className="table-row-hover">
+                      <td style={{ padding: '20px', fontWeight: 700, color: 'var(--color-primary)' }}>
+                        {aff.affId}
+                      </td>
+                      <td style={{ padding: '20px' }}>
+                        <div style={{ fontWeight: 800 }}>{aff.name}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)' }}>{aff.email}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)' }}>{aff.phone}</div>
+                      </td>
+                      <td style={{ padding: '20px', maxWidth: 260 }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{aff.platform || 'General Referral'}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {aff.audience || 'N/A'}
                         </div>
                       </td>
-                      <td style={{ padding: '20px 24px' }}>
-                        <span className="badge" style={{ background: '#f1f5f9', color: 'var(--color-text-dark)', border: '1px solid #e2e8f0' }}>{aff.platform}</span>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: 4 }}>{aff.followers || 'No followers data'}</div>
-                      </td>
-                      <td style={{ padding: '20px 24px', fontSize: '0.85rem', color: 'var(--color-text-light)' }}>
-                        {new Date(aff.joinedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </td>
-                      <td style={{ padding: '20px 24px' }}>
+                      <td style={{ padding: '20px' }}>
                         <span style={{ 
+                          display: 'inline-block',
                           padding: '4px 12px', 
-                          borderRadius: '20px', 
-                          fontSize: '0.7rem', 
-                          fontWeight: 800, 
-                          background: aff.status === 'Approved' ? '#d1fae5' : '#fef3c7', 
-                          color: aff.status === 'Approved' ? '#065f46' : '#92400e' 
+                          borderRadius: 20, 
+                          fontSize: '0.75rem', 
+                          fontWeight: 800,
+                          background: aff.status === 'Approved' ? '#dcfce7' : '#fef3c7',
+                          color: aff.status === 'Approved' ? '#15803d' : '#b45309'
                         }}>
                           {aff.status || 'Pending'}
                         </span>
                       </td>
-                      <td style={{ padding: '20px 24px' }}>
+                      <td style={{ padding: '20px' }}>
                         <div style={{ display: 'flex', gap: 8 }}>
                           {aff.status !== 'Approved' && (
                             <button 
@@ -220,13 +206,13 @@ export default function AffiliateDirectory() {
             </div>
           </div>
         </div>
-      </div>
+      </PasswordGate>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .table-row-hover:hover {
           background-color: #f8fafc !important;
         }
       `}} />
-    </>
+    </div>
   )
 }

@@ -29,7 +29,7 @@ To ensure operational stability, the following "Vercel Check" enforcement was im
 ## 4. Integration Verification
 - **Zoho CRM:** Web-to-Lead forms mapped and tracking script active in `index.html`.
 - **WhatsApp:** Global link `+91 7219053645` active on all CTA buttons.
-- **B2B Store:** Membership gate verified (Access Code: `Samarth@1356`).
+- **B2B Store:** Membership gate verified (Access Code: `[CONFIGURED IN VERCEL ENV]`).
 - **Google Sheets:** Webhook logging active for Affiliate and B2B registrations.
 
 ---

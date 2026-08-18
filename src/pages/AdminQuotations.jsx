@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Trash2, Mail, User, Building, MapPin, ArrowRight, CheckCircle, ExternalLink } from 'lucide-react'
 import PasswordGate from '../components/PasswordGate'
 import QuotationBuilder from '../components/QuotationBuilder'
+import SEO from '../components/SEO'
 
 export default function AdminQuotations() {
   const [enquiries, setEnquiries] = useState([])
@@ -38,8 +39,8 @@ export default function AdminQuotations() {
 
   return (
     <div className="page-top" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+      <SEO title="Admin Control Center" noindex={true} />
       <PasswordGate 
-        password="Samarth@1356" 
         title="Admin Control Center" 
         description="Access restricted to authorized personnel. Manage received enquiries and generate proforma quotations."
       >

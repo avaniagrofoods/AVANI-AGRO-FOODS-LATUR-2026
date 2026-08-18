@@ -14,12 +14,12 @@ This document contains all critical technical data, credentials, and workflow lo
 
 | Item | Value |
 | :--- | :--- |
-| **Quotation Sheet Password** | `Samarth@1356` |
+| **Quotation / Affiliate Password** | `[CONFIGURED SECURELY IN VERCEL ENV: AFFILIATE_PASSWORD]` |
 | **Zoho CRM ID** | `avaniagrofoods1356@gmail.com` |
 | **Zoho CRM User ID** | `60068319098` |
-| **CRM Password** | `Samarth@1356` |
-| **Admin Email** | `avaniagrofoods1356@gmail.com` |
-| **Support WhatsApp** | `+91 72190 53645` |
+| **CRM Password** | `[CONFIGURED SECURELY IN PASSWORD MANAGER]` |
+| **Admin Email** | `sales@avaniagrofoods.com` |
+| **Support WhatsApp** | `+91 7219053645` |
 
 ## 3. Automated Workflows ("Auto Mode")
 

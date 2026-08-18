@@ -1,0 +1,9 @@
+# Vercel Ignore Rules
+node_modules
+.git
+dist
+scratch
+documentation
+remix_*
+social_media_records
+*.log

@@ -15,13 +15,9 @@ export default function B2BStore() {
   const [password, setPassword] = useState('')
 
   const handleUnlock = () => {
-    if (password === 'Samarth@1356') {
-      setIsPaid(true)
-      setShowLogin(false)
-      alert('Access Granted! Global Importers unlocked.')
-    } else {
-      alert('Incorrect Membership Code.')
-    }
+    // Paid access is granted after B2B subscription via /b2b/register
+    // Redirect user to registration/upgrade page
+    window.location.href = '/b2b/register'
   }
 
   // Filter logic: Free users only see "reg_" (registrations), Paid see all
