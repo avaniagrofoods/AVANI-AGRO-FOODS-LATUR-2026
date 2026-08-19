@@ -35,18 +35,19 @@ export const BUSINESS_INFO = {
 export const WHATSAPP_NUMBER = BUSINESS_INFO.whatsapp      // '917219053645'
 export const OWNER_EMAIL = BUSINESS_INFO.email
 
-// ── Stripe Payment Links (TEST MODE — replace with live before go-live) ──
-// TODO: Replace test links with production Stripe payment links before launch.
+// ── Stripe Payment Links (DISABLED — B2B Direct RFQ / Quotation Model Active) ──
+export const STRIPE_ENABLED = false;
+
 export const STRIPE_LINKS = {
   INDIA: {
-    MONTHLY:     'https://buy.stripe.com/test_6oUbJ34yb8hX5SffFd9sk00',
-    YEARLY:      'https://buy.stripe.com/test_4gMaEZ0hV9m1fsPct19sk01',
-    THREE_YEARS: 'https://buy.stripe.com/test_14A00lfcP9m1cgD1On9sk02',
+    MONTHLY:     null,
+    YEARLY:      null,
+    THREE_YEARS: null,
   },
   GLOBAL: {
-    MONTHLY:     'https://buy.stripe.com/test_5kQ28taWz55L1BZ3Wv9sk03',
-    YEARLY:      'https://buy.stripe.com/test_00w3cx9Sv9m1dkH9gP9sk04',
-    THREE_YEARS: 'https://buy.stripe.com/test_14A3cx6GjdCh2G3gJh9sk05',
+    MONTHLY:     null,
+    YEARLY:      null,
+    THREE_YEARS: null,
   },
 }
 

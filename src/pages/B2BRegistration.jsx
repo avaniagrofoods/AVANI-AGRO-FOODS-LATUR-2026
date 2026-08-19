@@ -55,8 +55,8 @@ export default function B2BRegistration() {
   }
 
   const handleNextStep = () => {
-    if (step === 2 && selectedPlan?.isFree) {
-      setStep(4) // Skip payment for free plan
+    if (step === 2) {
+      setStep(4) // Direct partner verification without online payment checkout
     } else {
       setStep(prev => prev + 1)
     }
@@ -64,7 +64,7 @@ export default function B2BRegistration() {
   }
 
   const handleBackStep = () => {
-    if (step === 4 && selectedPlan?.isFree) {
+    if (step === 4) {
       setStep(2)
     } else {
       setStep(prev => prev - 1)

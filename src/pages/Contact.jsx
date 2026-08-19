@@ -46,7 +46,28 @@ export default function Contact() {
       // 1. EmailJS Notification
       await sendContactEmail(form)
 
-      // 2. Google Sheets Logging
+      // 2. Serverless Lead Capture & Automated Quotation Trigger
+      try {
+        await fetch('/api/save-lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: `${form.firstName} ${form.lastName}`.trim(),
+            email: form.email,
+            phone: form.phone,
+            company: form.company,
+            country: form.country,
+            product: form.inquiryType,
+            quantity: 100,
+            currency: 'USD',
+            incoterm: 'CIF',
+            message: form.message,
+            source: 'Website_Contact_RFQ'
+          })
+        });
+      } catch (err) { console.error('Save Lead API Error:', err); }
+
+      // 2b. Google Sheets Logging Fallback
       try { await logInquiry(form) } catch (err) { console.error('Sheets Error:', err) }
 
       // 3. HubSpot CRM Submission

@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Avani Agro Foods - Sachin Shinde Story",
+  "description": "A cinematic founder story and quality showcase for Avani Agro Foods, specializing in high-quality Moringa products for export, shows factory processes like process, quality, packaging, applications, before/after, export prep, machines, farmer sourcing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

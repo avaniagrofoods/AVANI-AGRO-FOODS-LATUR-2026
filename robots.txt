@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /DIRECTORY/
+Disallow: /AFFILIATE/
+Disallow: /B2B-Indian-Manufacturers-DB/
+Disallow: /Global-Importers-DB/
+
+# Sitemap (optional)
+# Sitemap: https://www.avaniagrofoods.com/sitemap.xml
