@@ -102,7 +102,7 @@ export default async function handler(req, res) {
         incoterm
       });
       quoteId = quote.quoteId;
-      quoteStatus = 'GENERATED';
+      quoteStatus = 'REVIEW_REQUIRED';
     } catch (calcErr) {
       console.warn('[Quotation Engine] Calculation deferred:', calcErr.message);
     }

@@ -137,7 +137,7 @@ export function calculateQuotation(input) {
     grandTotal,
     paymentTerms: '30% Advance T/T with Purchase Order, 70% against B/L copy (or Irrevocable L/C at sight)',
     deliveryTerms: `${incoterm} - 15 to 20 working days from order confirmation`,
-    status: 'GENERATED',
+    status: input.status || 'REVIEW_REQUIRED',
     createdAt: new Date().toISOString()
   };
 }
