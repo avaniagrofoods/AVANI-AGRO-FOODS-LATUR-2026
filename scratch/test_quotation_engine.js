@@ -21,7 +21,7 @@ async function testEngine() {
   console.log('Calculated Quote:', JSON.stringify(quote, null, 2));
 
   // Generate Excel
-  const xlsxBuffer = await generateExcelQuotation(quote, 'AvaniExport@2026');
+  const xlsxBuffer = await generateExcelQuotation(quote, process.env.MASTER_GATE_PASSWORD || 'Samarth@1356');
   fs.writeFileSync('scratch/test_quote.xlsx', xlsxBuffer);
   console.log(`Generated Excel: scratch/test_quote.xlsx (${xlsxBuffer.length} bytes)`);
 

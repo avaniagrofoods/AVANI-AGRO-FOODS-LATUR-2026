@@ -40,7 +40,8 @@ export default async function handler(req, res) {
     }
 
     if (action === 'download-xlsx') {
-      const xlsxBuffer = await generateExcelQuotation(quote, 'AvaniExport@2026');
+      const xlsxPassword = process.env.MASTER_GATE_PASSWORD || 'Samarth@1356';
+      const xlsxBuffer = await generateExcelQuotation(quote, xlsxPassword);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', `attachment; filename="Quotation_${quote.quoteId}.xlsx"`);
       return res.status(200).send(xlsxBuffer);

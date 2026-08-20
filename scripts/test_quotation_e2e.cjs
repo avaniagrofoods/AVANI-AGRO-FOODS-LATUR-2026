@@ -58,7 +58,7 @@ async function runE2ETest() {
   recordStep(8, 'Quotation Number Generated', hasQuoteId ? 'PASS' : 'FAIL', `Quotation ID: ${quote.quoteId}`);
 
   // STEP 9 & 10: XLSX Generation & Password Protection
-  const xlsxBuffer = await generateExcelQuotation(quote, 'AvaniExport@2026');
+  const xlsxBuffer = await generateExcelQuotation(quote, process.env.MASTER_GATE_PASSWORD || 'Samarth@1356');
   const xlsxValid = xlsxBuffer && xlsxBuffer.length > 5000;
   fs.writeFileSync('scratch/e2e_quote.xlsx', xlsxBuffer);
   recordStep(9, 'XLSX Quotation Generated', xlsxValid ? 'PASS' : 'FAIL', `File size: ${xlsxBuffer.length} bytes`);

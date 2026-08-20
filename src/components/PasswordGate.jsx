@@ -13,13 +13,13 @@ export default function PasswordGate({
   const [loading, setLoading] = useState(false)
   const [checkingSession, setCheckingSession] = useState(true)
 
-  // Verify existing session on mount
+  // Verify existing session on mount via server-side session cookie
   useEffect(() => {
     let isMounted = true
 
     async function checkAuth() {
       try {
-        const res = await fetch('/api/affiliate-auth', {
+        const res = await fetch('/api/verify-gate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
@@ -29,7 +29,7 @@ export default function PasswordGate({
           setAuthenticated(true)
         }
       } catch (err) {
-        // Fallback gracefully on local dev if API is unreachable
+        // Fallback gracefully if API is unreachable
       } finally {
         if (isMounted) setCheckingSession(false)
       }
@@ -47,7 +47,7 @@ export default function PasswordGate({
     setError('')
 
     try {
-      const res = await fetch('/api/affiliate-auth', {
+      const res = await fetch('/api/verify-gate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',

@@ -15,7 +15,11 @@ function verifyCookieFormat(signedValue) {
   if (lastDot === -1) return false
   const value = signedValue.slice(0, lastDot)
   const signature = signedValue.slice(lastDot + 1)
-  return (value.startsWith('avani_sess_') || value.startsWith('affiliate_authenticated_')) && signature.length > 10
+  return (
+    value.startsWith('avani_affiliate_sess_') ||
+    value.startsWith('avani_sess_') ||
+    value.startsWith('affiliate_authenticated_')
+  ) && signature.length > 10
 }
 
 export default function middleware(request) {
@@ -33,10 +37,10 @@ export default function middleware(request) {
     cookieHeader.split(';').map(c => {
       const [k, ...v] = c.trim().split('=')
       return [k.trim(), decodeURIComponent(v.join('='))]
-    })
+    }).filter(([k]) => Boolean(k))
   )
 
-  const sessionCookie = cookies['affiliate_session']
+  const sessionCookie = cookies['avani_affiliate_session'] || cookies['affiliate_session']
 
   if (!sessionCookie || !verifyCookieFormat(sessionCookie)) {
     // Redirect unauthenticated requests to login page
@@ -45,7 +49,7 @@ export default function middleware(request) {
 
     const headers = new Headers({
       'Location': loginUrl.toString(),
-      'Set-Cookie': 'affiliate_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Strict',
+      'Set-Cookie': 'avani_affiliate_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Strict',
     })
 
     return new Response(null, {

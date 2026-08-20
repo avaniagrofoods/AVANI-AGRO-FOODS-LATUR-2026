@@ -145,7 +145,7 @@ export function calculateQuotation(input) {
 /**
  * Generates password-protected XLSX Workbook Buffer
  */
-export async function generateExcelQuotation(quote, password = 'AvaniExport@2026') {
+export async function generateExcelQuotation(quote, password = process.env.MASTER_GATE_PASSWORD || 'Samarth@1356') {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'AVANI AGRO FOODS';
   workbook.created = new Date();

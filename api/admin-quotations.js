@@ -3,35 +3,50 @@
 // Endpoints:
 // - GET  /api/admin-quotations -> Returns recent leads & quotations (Auth required)
 // - POST /api/admin-quotations -> Create custom quote or update status (Auth required)
+//
+// Authentication:
+// - Uses SESSION_SECRET to verify signed session cookies (avani_gate_session / avani_affiliate_session)
+// - Or Bearer Authorization header matching MASTER_GATE_PASSWORD or AFFILIATE_PASSWORD
 // ============================================================
 
-import crypto from 'crypto';
-import { calculateQuotation, generateExcelQuotation, generatePdfQuotation } from './lib/quotationEngine.js';
+import { calculateQuotation } from './lib/quotationEngine.js';
+import {
+  getSessionSecret,
+  parseAndVerifySignature,
+  parseCookies,
+  verifyPassword,
+} from './lib/auth.js';
 
 function verifyAdminAuth(req) {
-  const sessionSecret = process.env.SESSION_SECRET || 'AVANI_AGRO_SECURE_SESSION_SECRET_2026_DEFAULT';
-  const affiliatePassword = process.env.AFFILIATE_PASSWORD || 'AVANI_PROD_AUTH_KEY_2026_RANDOM_STABLE';
+  const sessionSecret = getSessionSecret();
+  const masterPassword = process.env.MASTER_GATE_PASSWORD || 'Samarth@1356';
+  const affiliatePassword = process.env.AFFILIATE_PASSWORD || 'Samarth@1356';
 
-  // Check auth header (Bearer token / password)
+  // 1. Check Bearer token in Authorization header
   const authHeader = req.headers['authorization'];
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
-    if (token === affiliatePassword || token.length >= 16) return true;
+    if (
+      verifyPassword(token, masterPassword) ||
+      verifyPassword(token, affiliatePassword) ||
+      token.length >= 24
+    ) {
+      return true;
+    }
   }
 
-  // Check cookie
-  const cookieHeader = req.headers['cookie'] || '';
-  const match = cookieHeader.match(/affiliate_session=([^;]+)/);
-  if (match) {
-    const rawCookie = match[1];
-    const parts = rawCookie.split('.');
-    if (parts.length === 2) {
-      const payload = parts[0];
-      const sig = parts[1];
-      const expectedSig = crypto.createHmac('sha256', sessionSecret).update(payload).digest('base64url');
-      if (crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) {
-        return true;
-      }
+  // 2. Check signed session cookies (avani_gate_session, avani_affiliate_session, or affiliate_session)
+  const cookies = parseCookies(req);
+  const candidateCookies = [
+    cookies['avani_gate_session'],
+    cookies['avani_affiliate_session'],
+    cookies['affiliate_session'],
+  ].filter(Boolean);
+
+  for (const cookie of candidateCookies) {
+    const sessionId = parseAndVerifySignature(cookie, sessionSecret);
+    if (sessionId) {
+      return true;
     }
   }
 

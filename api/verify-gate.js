@@ -1,16 +1,17 @@
 // ============================================================
-// AVANI AGRO FOODS — Affiliate Portal Authentication API
+// AVANI AGRO FOODS — Master Password Gate Authentication API
 // Vercel Serverless Function (Node.js runtime)
-// POST /api/affiliate-auth
+// POST /api/verify-gate
 //
-// Supports:
-//   1. Distributed Server-Side Session Store & Revocation (via Upstash Redis / Vercel KV)
-//   2. Distributed Rate Limiting (via Upstash Redis / Vercel KV)
-//   3. High-Security HMAC Signing using SESSION_SECRET
+// Protects:
+//   - /manufacturers
+//   - /importers
+//   - /admin/quotations (Master Gate view)
+//   - /quotation-sheet
 //
 // Environment variables:
-//   AFFILIATE_PASSWORD — Password for affiliate portal (Samarth@1356)
-//   SESSION_SECRET     — Cryptographic secret for HMAC session signing
+//   MASTER_GATE_PASSWORD — Master password for protected portals (Samarth@1356)
+//   SESSION_SECRET       — Cryptographic secret for HMAC session signing
 // ============================================================
 
 import crypto from 'crypto';
@@ -47,31 +48,28 @@ export default async function handler(req, res) {
   }
 
   const sessionSecret = getSessionSecret();
-  const correctPassword = process.env.AFFILIATE_PASSWORD || 'Samarth@1356';
+  const masterPassword = process.env.MASTER_GATE_PASSWORD || 'Samarth@1356';
   const body = req.body || {};
   const { action, password } = body;
 
   // 1. ACTION: LOGOUT
   if (action === 'logout') {
     const cookies = parseCookies(req);
-    const sessionCookie = cookies['avani_affiliate_session'] || cookies['affiliate_session'];
+    const sessionCookie = cookies['avani_gate_session'];
     const sessionId = parseAndVerifySignature(sessionCookie, sessionSecret);
 
     if (sessionId && hasDistributedKV) {
-      await execKVCommand('DEL', `session:affiliate:${sessionId}`);
+      await execKVCommand('DEL', `session:gate:${sessionId}`);
     }
 
-    res.setHeader('Set-Cookie', [
-      createClearCookie('avani_affiliate_session'),
-      createClearCookie('affiliate_session'),
-    ]);
+    res.setHeader('Set-Cookie', createClearCookie('avani_gate_session'));
     return res.status(200).json({ success: true, message: 'Logged out successfully' });
   }
 
   // 2. ACTION: VERIFY EXISTING SESSION
   if (action === 'verify') {
     const cookies = parseCookies(req);
-    const sessionCookie = cookies['avani_affiliate_session'] || cookies['affiliate_session'];
+    const sessionCookie = cookies['avani_gate_session'];
     const sessionId = parseAndVerifySignature(sessionCookie, sessionSecret);
 
     if (!sessionId) {
@@ -79,7 +77,7 @@ export default async function handler(req, res) {
     }
 
     if (hasDistributedKV) {
-      const sessionData = await execKVCommand('GET', `session:affiliate:${sessionId}`);
+      const sessionData = await execKVCommand('GET', `session:gate:${sessionId}`);
       if (!sessionData) {
         return res.status(401).json({ authenticated: false, message: 'Session revoked or expired' });
       }
@@ -90,7 +88,7 @@ export default async function handler(req, res) {
 
   // 3. ACTION: LOGIN (Password Verification & Session Creation)
   const ip = getClientIp(req);
-  const rateCheck = await checkRateLimit(ip, 'affiliate');
+  const rateCheck = await checkRateLimit(ip, 'gate');
 
   if (rateCheck.limited) {
     return res.status(429).json({
@@ -103,7 +101,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Password is required' });
   }
 
-  const match = verifyPassword(password, correctPassword);
+  const match = verifyPassword(password, masterPassword);
 
   if (!match) {
     return res.status(401).json({
@@ -112,31 +110,31 @@ export default async function handler(req, res) {
     });
   }
 
-  // Reset rate limiting on successful login
-  await resetRateLimit(ip, 'affiliate');
+  // Reset rate limiting on successful password match
+  await resetRateLimit(ip, 'gate');
 
-  // Generate cryptographically random session identifier
-  const rawSessionId = `avani_affiliate_sess_${crypto.randomUUID()}_${Date.now()}`;
+  // Generate cryptographically random session ID and sign with SESSION_SECRET
+  const rawSessionId = `avani_gate_sess_${crypto.randomUUID()}_${Date.now()}`;
   const signedCookieValue = signSessionId(rawSessionId, sessionSecret);
 
   if (hasDistributedKV) {
-    await execKVCommand('SET', `session:affiliate:${rawSessionId}`, JSON.stringify({
+    await execKVCommand('SET', `session:gate:${rawSessionId}`, JSON.stringify({
       created: Date.now(),
       ip,
-      role: 'affiliate',
+      role: 'master_gate',
     }));
-    await execKVCommand('EXPIRE', `session:affiliate:${rawSessionId}`, String(SESSION_TTL_SECONDS));
+    await execKVCommand('EXPIRE', `session:gate:${rawSessionId}`, String(SESSION_TTL_SECONDS));
   }
 
-  // Set secure cookies: avani_affiliate_session (and affiliate_session for backwards compatibility)
-  res.setHeader('Set-Cookie', [
-    createSessionCookie('avani_affiliate_session', signedCookieValue, SESSION_TTL_SECONDS),
-    createSessionCookie('affiliate_session', signedCookieValue, SESSION_TTL_SECONDS),
-  ]);
+  // Set secure cookie: avani_gate_session
+  res.setHeader(
+    'Set-Cookie',
+    createSessionCookie('avani_gate_session', signedCookieValue, SESSION_TTL_SECONDS)
+  );
 
   return res.status(200).json({
     success: true,
     message: 'Authenticated successfully',
-    sessionType: hasDistributedKV ? 'distributed_kv_revocable' : 'stateless_hmac_signed',
+    cookieName: 'avani_gate_session',
   });
 }
