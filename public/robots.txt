@@ -2,20 +2,31 @@ User-agent: *
 
 # Allow all public content
 Allow: /
+Allow: /about
+Allow: /products
+Allow: /contact
+Allow: /b2b
+Allow: /b2b/store
+Allow: /blog
+Allow: /export-compliance
+Allow: /manufacturer-requirements
+Allow: /privacy
+Allow: /terms
+Allow: /disclaimer
 
-# Block private/admin routes from crawlers
+# Block confidential and private portals
 Disallow: /admin/
 Disallow: /admin
+Disallow: /manufacturers
+Disallow: /manufacturers/
+Disallow: /importers
+Disallow: /importers/
 Disallow: /affiliate/dashboard
 Disallow: /affiliate/directory
 Disallow: /affiliate-login
 Disallow: /quotation-sheet
 Disallow: /tools
 Disallow: /api/
-
-# Allow public affiliate landing page (protected by server-side session, not robots)
-Allow: /affiliate$
-Allow: /affiliate/
 
 # Block session/query URLs
 Disallow: /*?*session*

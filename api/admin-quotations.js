@@ -28,8 +28,7 @@ function verifyAdminAuth(req) {
     const token = authHeader.substring(7);
     if (
       verifyPassword(token, masterPassword) ||
-      verifyPassword(token, affiliatePassword) ||
-      token.length >= 24
+      verifyPassword(token, affiliatePassword)
     ) {
       return true;
     }
@@ -57,6 +56,7 @@ export default async function handler(req, res) {
   // Security Headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate');
 
   // Verify Admin Authorization
   if (!verifyAdminAuth(req)) {

@@ -1,8 +1,35 @@
 User-agent: *
-Disallow: /DIRECTORY/
-Disallow: /AFFILIATE/
-Disallow: /B2B-Indian-Manufacturers-DB/
-Disallow: /Global-Importers-DB/
 
-# Sitemap (optional)
-# Sitemap: https://www.avaniagrofoods.com/sitemap.xml
+# Allow all public content
+Allow: /
+Allow: /about
+Allow: /products
+Allow: /contact
+Allow: /b2b
+Allow: /b2b/store
+Allow: /blog
+Allow: /export-compliance
+Allow: /manufacturer-requirements
+Allow: /privacy
+Allow: /terms
+Allow: /disclaimer
+
+# Block confidential and private portals
+Disallow: /admin/
+Disallow: /admin
+Disallow: /manufacturers
+Disallow: /manufacturers/
+Disallow: /importers
+Disallow: /importers/
+Disallow: /affiliate/dashboard
+Disallow: /affiliate/directory
+Disallow: /affiliate-login
+Disallow: /quotation-sheet
+Disallow: /tools
+Disallow: /api/
+
+# Block session/query URLs
+Disallow: /*?*session*
+Disallow: /*?*token*
+
+Sitemap: https://www.avaniagrofoods.com/sitemap.xml

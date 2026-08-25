@@ -5,7 +5,8 @@ export default function PasswordGate({
   children,
   title = "Protected Directory Access",
   description = "Please enter the authorized access password to view this directory.",
-  storageKey = null
+  storageKey = null,
+  onUnlock = null
 }) {
   const [authenticated, setAuthenticated] = useState(false)
   const [input, setInput] = useState('')
@@ -27,6 +28,7 @@ export default function PasswordGate({
         })
         if (res.ok && isMounted) {
           setAuthenticated(true)
+          if (onUnlock) onUnlock()
         }
       } catch (err) {
         // Fallback gracefully if API is unreachable
@@ -57,6 +59,7 @@ export default function PasswordGate({
       if (res.ok) {
         setAuthenticated(true)
         setError('')
+        if (onUnlock) onUnlock()
       } else {
         const data = await res.json().catch(() => ({}))
         if (res.status === 429) {

@@ -13,84 +13,55 @@ export default function AdminQuotations() {
   const [activeTab, setActiveTab] = useState('list') // 'list' or 'builder'
   const [copiedId, setCopiedId] = useState('')
 
-  const loadData = () => {
+  const loadData = async () => {
     setLoading(true)
-    // 1. Load from localStorage
-    const localEnquiries = JSON.parse(localStorage.getItem('avani_enquiries') || '[]')
-    
-    // Sample production-calibrated records
-    const defaultData = [
-      {
-        quoteId: 'AAF-2026-1001',
-        leadId: 'LEAD-20260818-4821',
-        date: '2026-08-18',
-        validUntil: '2026-09-17',
-        customerName: 'Sarah Jenkins',
-        companyName: 'Nordic Organic Superfoods Oy',
-        email: 'sarah@nordicorganic.fi',
-        phone: '+358 40 1234567',
-        country: 'Finland',
-        destination: 'Port of Helsinki',
-        product: 'Moringa Leaf Powder (Food Grade / Organic)',
-        quantity: 500,
+    try {
+      // 1. Fetch authenticated records from server-side admin API
+      let serverQuotes = []
+      try {
+        const res = await fetch('/api/admin-quotations', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+        })
+        if (res.ok) {
+          const json = await res.json()
+          serverQuotes = json.quotations || []
+        }
+      } catch (apiErr) {
+        console.warn('Could not fetch server quotations:', apiErr.message)
+      }
+
+      // 2. Load from localStorage enquiries
+      const localEnquiries = JSON.parse(localStorage.getItem('avani_enquiries') || '[]')
+      const localFormatted = localEnquiries.map((e, idx) => ({
+        quoteId: e.quoteId || `AAF-2026-${1003 + idx}`,
+        leadId: e.id ? `LEAD-${e.id}` : `LEAD-${Date.now()}`,
+        date: new Date().toISOString().split('T')[0],
+        validUntil: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+        customerName: `${e.firstName || ''} ${e.lastName || ''}`.trim() || e.name || 'Direct Buyer',
+        companyName: e.company || 'Direct Buyer',
+        email: e.email,
+        phone: e.phone || '+91 7219053645',
+        country: e.country || 'International',
+        destination: e.country || 'Destination Port',
+        product: e.inquiryType || e.product || 'Moringa Leaf Powder',
+        quantity: e.quantity || 100,
         currency: 'USD',
         incoterm: 'CIF',
-        grandTotal: 2632.80,
-        status: 'SENT',
-        emailStatus: 'DELIVERED',
-        whatsAppStatus: 'SENT',
-        createdAt: '2026-08-18T10:30:00Z'
-      },
-      {
-        quoteId: 'AAF-2026-1002',
-        leadId: 'LEAD-20260818-9182',
-        date: '2026-08-18',
-        validUntil: '2026-09-17',
-        customerName: 'Ahmed Al-Mansoor',
-        companyName: 'Gulf Spices & Food Trading LLC',
-        email: 'ahmed@gulfspices.ae',
-        phone: '+971 50 9876543',
-        country: 'United Arab Emirates',
-        destination: 'Jebel Ali Port, Dubai',
-        product: 'Dehydrated Red Onion Powder (Premium Export Grade)',
-        quantity: 1000,
-        currency: 'USD',
-        incoterm: 'CIF',
-        grandTotal: 9904.50,
-        status: 'REVIEW_REQUIRED',
+        grandTotal: (e.quantity || 100) * 4.82 + 210,
+        status: e.status || 'REVIEW_REQUIRED',
         emailStatus: 'READY',
         whatsAppStatus: 'NOT_CONFIGURED',
-        createdAt: '2026-08-18T14:15:00Z'
-      }
-    ]
+        createdAt: e.timestamp || new Date().toISOString()
+      }))
 
-    // Merge any form submissions
-    const merged = [...localEnquiries.map((e, idx) => ({
-      quoteId: e.quoteId || `AAF-2026-${1003 + idx}`,
-      leadId: e.id ? `LEAD-${e.id}` : `LEAD-${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
-      validUntil: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-      customerName: `${e.firstName || ''} ${e.lastName || ''}`.trim() || e.name || 'Direct Buyer',
-      companyName: e.company || 'Direct Buyer',
-      email: e.email,
-      phone: e.phone || '+91 7219053645',
-      country: e.country || 'International',
-      destination: e.country || 'Destination Port',
-      product: e.inquiryType || e.product || 'Moringa Leaf Powder',
-      quantity: e.quantity || 100,
-      currency: 'USD',
-      incoterm: 'CIF',
-      grandTotal: (e.quantity || 100) * 4.82 + 210,
-      status: e.status || 'REVIEW_REQUIRED',
-      emailStatus: 'READY',
-      whatsAppStatus: 'NOT_CONFIGURED',
-      createdAt: e.timestamp || new Date().toISOString()
-    })), ...defaultData]
-
-    // Deduplicate by quoteId
-    const unique = Array.from(new Map(merged.map(q => [q.quoteId, q])).values())
-    setQuotations(unique)
-    setLoading(false)
+      const merged = [...localFormatted, ...serverQuotes]
+      const unique = Array.from(new Map(merged.map(q => [q.quoteId, q])).values())
+      setQuotations(unique)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
