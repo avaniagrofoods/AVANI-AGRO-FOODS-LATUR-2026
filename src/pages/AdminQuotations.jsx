@@ -162,6 +162,7 @@ export default function AdminQuotations() {
       <PasswordGate 
         title="Export Quotation Control Center" 
         description="Access restricted to authorized personnel. Manage real-time customer leads, generate encrypted Excel & PDF proforma quotations, and track dispatch status."
+        onUnlock={loadData}
       >
         <div className="container" style={{ padding: '60px 24px' }}>
           
