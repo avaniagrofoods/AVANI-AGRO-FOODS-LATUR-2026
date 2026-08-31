@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, Globe, ChevronDown, Languages } from 'lucide-react'
+import { Menu, X, Globe, ChevronDown, Languages, Sparkles, Send } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CATALOG_LINK } from '../data/links'
 import { useLanguage } from '../context/LanguageContext'
@@ -9,17 +9,17 @@ const NAV_ITEMS = [
   { label: 'Home', href: '/' },
   { label: 'About', href: '/about' },
   { label: 'Products', href: '/products' },
+  { label: 'Export Process', href: '/export-process' },
   {
-    label: 'Directory',
+    label: 'Trade Guides',
     children: [
-      { label: '🏭 Manufacturers DB', href: '/manufacturers' },
-      { label: '🌍 Global Importers', href: '/importers' },
+      { label: '🌍 35-Market Compliance Guide', href: '/export-compliance' },
+      { label: '🏭 Manufacturer Requirements', href: '/manufacturer-requirements' },
+      { label: '💼 B2B Trade Directory', href: '/b2b' },
     ]
   },
+  { label: 'Resources & Reviews', href: '/resources' },
   { label: 'Blog', href: '/blog' },
-  { label: 'Affiliate', href: '/affiliate' },
-  { label: 'Free AI Tools', href: '/tools' },
-  { label: 'B2B Store', href: '/b2b' },
   { label: 'Contact', href: '/contact' },
 ]
 
@@ -29,22 +29,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [langOpen, setLangOpen] = useState(false)
-  const [enquiryCount, setEnquiryCount] = useState(0)
   const location = useLocation()
-
-  useEffect(() => {
-    const updateCount = () => {
-      const enquiries = JSON.parse(localStorage.getItem('avani_enquiries') || '[]')
-      setEnquiryCount(enquiries.length)
-    }
-    updateCount()
-    window.addEventListener('enquiry-updated', updateCount)
-    window.addEventListener('storage', updateCount)
-    return () => {
-      window.removeEventListener('enquiry-updated', updateCount)
-      window.removeEventListener('storage', updateCount)
-    }
-  }, [])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -64,12 +49,12 @@ export default function Navbar() {
       <div className="navbar-inner">
         {/* Logo */}
         <Link to="/" className="navbar-logo">
-          <img src="/logo.png" alt="Avani Agro Foods Logo" style={{ height: 48, width: 'auto' }} onError={(e) => { e.target.onerror = null; e.target.src = "/logo.jpeg"; }} />
+          <img src="/logo.png" alt="AVANI AGRO FOODS Logo" style={{ height: 44, width: 'auto' }} onError={(e) => { e.target.onerror = null; e.target.src = "/logo.jpeg"; }} />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div className="navbar-logo-text">
               <span style={{ color: 'var(--color-accent)' }}>AVANI</span> <span>AGRO FOODS</span>
             </div>
-            <div className="navbar-logo-sub">THE GROUP OF HEALTHY LIFESTYLE</div>
+            <div className="navbar-logo-sub">INDIAN AGRICULTURAL EXPORT COORDINATION</div>
           </div>
         </Link>
 
@@ -84,9 +69,14 @@ export default function Navbar() {
           <li>
             <Link to="/products" className={`nav-link ${isActive('/products') ? 'active' : ''}`}>{t.products}</Link>
           </li>
+          <li>
+            <Link to="/export-process" className={`nav-link ${isActive('/export-process') ? 'active' : ''}`}>{t.exportProcess}</Link>
+          </li>
+          
+          {/* Trade Guides Dropdown */}
           <li onMouseEnter={() => setDropdownOpen(true)} onMouseLeave={() => setDropdownOpen(false)} style={{ position: 'relative' }}>
             <button className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              {t.directory} {enquiryCount > 0 && <span style={{ background: '#dc2626', color: 'white', borderRadius: '50%', width: 18, height: 18, fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>{enquiryCount}</span>} <ChevronDown size={14} />
+              Trade Guides <ChevronDown size={14} />
             </button>
             <AnimatePresence>
               {dropdownOpen && (
@@ -95,44 +85,45 @@ export default function Navbar() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
                   style={{
-                    position: 'absolute', top: '100%', left: isRTL ? 'auto' : 0, right: isRTL ? 0 : 'auto', minWidth: 200,
+                    position: 'absolute', top: '100%', left: isRTL ? 'auto' : 0, right: isRTL ? 0 : 'auto', minWidth: 240,
                     background: 'white', boxShadow: 'var(--shadow-lg)',
                     borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
                     padding: '8px 0', zIndex: 100, marginTop: 4
                   }}
                 >
-                  {NAV_ITEMS.find(i => i.label === 'Directory').children.map(c => (
-                    <Link key={c.href} to={c.href} className="nav-link" style={{ display: 'block', padding: '10px 20px', fontSize: '0.85rem' }}>
-                      {c.label}
-                    </Link>
-                  ))}
-                  <div style={{ margin: '8px 0', borderTop: '1px solid var(--color-border)' }} />
-                  <Link to="/admin/quotations" className="nav-link" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', color: 'var(--color-primary)', fontWeight: 700 }}>
-                    <span>📋 Quotations</span>
-                    {enquiryCount > 0 && <span style={{ background: '#dc2626', color: 'white', borderRadius: 20, padding: '2px 8px', fontSize: '0.65rem' }}>{enquiryCount} NEW</span>}
+                  <Link to="/export-compliance" className="nav-link" style={{ display: 'block', padding: '10px 18px', fontSize: '0.85rem' }}>
+                    🌍 35-Market Compliance Guide
+                  </Link>
+                  <Link to="/manufacturer-requirements" className="nav-link" style={{ display: 'block', padding: '10px 18px', fontSize: '0.85rem' }}>
+                    🏭 Manufacturer Requirements
+                  </Link>
+                  <Link to="/b2b" className="nav-link" style={{ display: 'block', padding: '10px 18px', fontSize: '0.85rem' }}>
+                    💼 B2B Directory
                   </Link>
                 </motion.div>
               )}
             </AnimatePresence>
           </li>
+
+          <li>
+            <Link to="/resources" className={`nav-link ${isActive('/resources') || isActive('/affiliate') ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Sparkles size={13} color="var(--color-accent)" /> {t.resources}
+            </Link>
+          </li>
+
           <li>
             <Link to="/blog" className={`nav-link ${isActive('/blog') ? 'active' : ''}`}>{t.blog}</Link>
           </li>
-          <li>
-            <Link to="/affiliate" className={`nav-link ${isActive('/affiliate') ? 'active' : ''}`}>{t.affiliate}</Link>
-          </li>
-          <li>
-            <Link to="/b2b" className={`nav-link ${isActive('/b2b') ? 'active' : ''}`}>{t.b2bStore}</Link>
-          </li>
+
           <li>
             <Link to="/contact" className={`nav-link ${isActive('/contact') ? 'active' : ''}`}>{t.contact}</Link>
           </li>
           
-          <li style={{ marginLeft: isRTL ? 0 : 12, marginRight: isRTL ? 12 : 0, display: 'flex', gap: 12, alignItems: 'center' }}>
+          <li style={{ marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0, display: 'flex', gap: 10, alignItems: 'center' }}>
             {/* Language Switcher */}
             <div onMouseEnter={() => setLangOpen(true)} onMouseLeave={() => setLangOpen(false)} style={{ position: 'relative' }}>
-              <button className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--color-bg-alt)', borderRadius: 20 }}>
-                <Languages size={16} /> <span style={{ textTransform: 'uppercase', fontWeight: 800, fontSize: '0.75rem' }}>{lang}</span>
+              <button className="nav-link" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', background: 'var(--color-bg-alt)', borderRadius: 20, fontSize: '0.75rem' }}>
+                <Languages size={14} /> <span style={{ textTransform: 'uppercase', fontWeight: 800 }}>{lang}</span>
               </button>
               <AnimatePresence>
                 {langOpen && (
@@ -147,17 +138,17 @@ export default function Navbar() {
                       padding: '4px', zIndex: 100, marginTop: 4
                     }}
                   >
-                    <button onClick={() => setLang('en')} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: lang === 'en' ? 'var(--color-bg-alt)' : 'none', cursor: 'pointer', fontSize: '0.85rem' }}>English</button>
-                    <button onClick={() => setLang('ar')} style={{ width: '100%', padding: '8px 12px', textAlign: 'right', border: 'none', background: lang === 'ar' ? 'var(--color-bg-alt)' : 'none', cursor: 'pointer', fontSize: '0.85rem' }}>العربية</button>
-                    <button onClick={() => setLang('fr')} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: lang === 'fr' ? 'var(--color-bg-alt)' : 'none', cursor: 'pointer', fontSize: '0.85rem' }}>Français</button>
+                    <button onClick={() => setLang('en')} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: lang === 'en' ? 'var(--color-bg-alt)' : 'none', cursor: 'pointer', fontSize: '0.82rem' }}>English</button>
+                    <button onClick={() => setLang('ar')} style={{ width: '100%', padding: '8px 12px', textAlign: 'right', border: 'none', background: lang === 'ar' ? 'var(--color-bg-alt)' : 'none', cursor: 'pointer', fontSize: '0.82rem' }}>العربية</button>
+                    <button onClick={() => setLang('fr')} style={{ width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none', background: lang === 'fr' ? 'var(--color-bg-alt)' : 'none', cursor: 'pointer', fontSize: '0.82rem' }}>Français</button>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            <a href={CATALOG_LINK} target="_blank" rel="noopener noreferrer" className="nav-cta" style={{ gap: 6 }}>
-              <Globe size={14} /> {t.viewCatalog}
-            </a>
+            <Link to="/contact" className="nav-cta" style={{ gap: 6, padding: '8px 18px', fontSize: '0.82rem' }}>
+              <Send size={13} /> {t.getQuote}
+            </Link>
           </li>
         </ul>
 
@@ -182,30 +173,25 @@ export default function Navbar() {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.2 }}
             style={{
-              position: 'fixed', top: 80, left: 0, right: 0, background: 'white',
+              position: 'fixed', top: 72, left: 0, right: 0, background: 'white',
               padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 4,
-              borderBottom: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)', zIndex: 999
+              borderBottom: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)', zIndex: 999,
+              maxHeight: 'calc(100vh - 80px)', overflowY: 'auto'
             }}
           >
-            {NAV_ITEMS.map((item) => (
-              item.children ? (
-                <div key={item.label}>
-                  <div style={{ padding: '10px 0', fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-text-light)' }}>{item.label}</div>
-                  {item.children.map(c => (
-                    <Link key={c.href} to={c.href} className="nav-link" style={{ display: 'block', padding: '10px 16px' }}>
-                      {c.label}
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <Link key={item.label} to={item.href} className={`nav-link ${isActive(item.href) ? 'active' : ''}`} style={{ display: 'block', textAlign: 'left', padding: '12px 4px' }}>
-                  {item.label}
-                </Link>
-              )
-            ))}
-            <a href={CATALOG_LINK} target="_blank" rel="noopener noreferrer" className="nav-cta" style={{ textAlign: 'center', marginTop: 8 }}>
-              📄 View Catalog
-            </a>
+            <Link to="/" className={`nav-link ${isActive('/') ? 'active' : ''}`} style={{ padding: '10px 4px' }}>Home</Link>
+            <Link to="/about" className={`nav-link ${isActive('/about') ? 'active' : ''}`} style={{ padding: '10px 4px' }}>About</Link>
+            <Link to="/products" className={`nav-link ${isActive('/products') ? 'active' : ''}`} style={{ padding: '10px 4px' }}>Products</Link>
+            <Link to="/export-process" className={`nav-link ${isActive('/export-process') ? 'active' : ''}`} style={{ padding: '10px 4px' }}>Export Process</Link>
+            <Link to="/export-compliance" className={`nav-link ${isActive('/export-compliance') ? 'active' : ''}`} style={{ padding: '10px 4px' }}>Export Compliance Guide</Link>
+            <Link to="/manufacturer-requirements" className={`nav-link ${isActive('/manufacturer-requirements') ? 'active' : ''}`} style={{ padding: '10px 4px' }}>Manufacturer Onboarding</Link>
+            <Link to="/resources" className={`nav-link ${isActive('/resources') ? 'active' : ''}`} style={{ padding: '10px 4px' }}>Resources &amp; Reviews</Link>
+            <Link to="/blog" className={`nav-link ${isActive('/blog') ? 'active' : ''}`} style={{ padding: '10px 4px' }}>Blog</Link>
+            <Link to="/contact" className={`nav-link ${isActive('/contact') ? 'active' : ''}`} style={{ padding: '10px 4px' }}>Contact &amp; RFQ</Link>
+
+            <Link to="/contact" className="btn btn-primary" style={{ textAlign: 'center', marginTop: 12, justifyContent: 'center' }}>
+              Request a B2B Quote
+            </Link>
           </motion.div>
         )}
       </AnimatePresence>

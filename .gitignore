@@ -33,12 +33,13 @@ dist-ssr
 .env.test.local
 .env.production.local
 
-# Gemini/Antigravity artifacts
+# Gemini/Antigravity artifacts & scratch
 .gemini
 implementation_plan*
 walkthrough*
 task.md
 logo_transparent*
 media__*
+scratch/
 
 .vercel

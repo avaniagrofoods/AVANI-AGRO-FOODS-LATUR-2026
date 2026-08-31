@@ -1,180 +1,230 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
-  <!-- Core Public Pages (15 Canonical URLs) -->
+  <!-- Core Public B2B & Sourcing Pages -->
   <url>
     <loc>https://www.avaniagrofoods.com/</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/about</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/products</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://www.avaniagrofoods.com/export-process</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/contact</loc>
-    <lastmod>2026-08-18</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/b2b</loc>
-    <lastmod>2026-08-18</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/b2b/store</loc>
-    <lastmod>2026-08-18</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/manufacturer-requirements</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/export-compliance</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/blog</loc>
-    <lastmod>2026-08-18</lastmod>
+    <loc>https://www.avaniagrofoods.com/manufacturer-requirements</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/privacy</loc>
-    <lastmod>2026-08-18</lastmod>
+    <loc>https://www.avaniagrofoods.com/b2b</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/terms</loc>
-    <lastmod>2026-08-18</lastmod>
+    <loc>https://www.avaniagrofoods.com/b2b/store</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Resources, Recommended Products & Affiliate Disclosures -->
+  <url>
+    <loc>https://www.avaniagrofoods.com/resources</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/disclaimer</loc>
-    <lastmod>2026-08-18</lastmod>
+    <loc>https://www.avaniagrofoods.com/affiliate-disclosure</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/affiliate-disclaimer</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
 
-  <!-- Published Educational Articles & Export Guides (30 URLs) -->
+  <!-- Legal & Disclaimers -->
+  <url>
+    <loc>https://www.avaniagrofoods.com/privacy</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://www.avaniagrofoods.com/terms</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://www.avaniagrofoods.com/disclaimer</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- Blog Index -->
+  <url>
+    <loc>https://www.avaniagrofoods.com/blog</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- 30 Clean Educational & Sourcing Blog Articles -->
   <url>
     <loc>https://www.avaniagrofoods.com/blog/moringa-powder-benefits-science-backed</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/how-to-choose-quality-moringa-powder</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/red-onion-powder-vs-fresh-onions</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/moringa-powder-dosage-guide</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/10-ways-to-use-moringa-powder</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/dehydrated-onion-powder-production-guide</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/moringa-powder-for-weight-loss</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/moringa-vs-spinach-vs-kale</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/how-to-store-moringa-powder</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/red-onion-powder-food-manufacturing</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/how-to-export-moringa-powder-from-india</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/top-countries-importing-moringa-powder-2026</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/export-documentation-moringa-powder</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/moringa-export-price-analysis-2026</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/fssai-registration-food-export</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/find-international-buyers-moringa</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/moringa-packaging-standards-export</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/fob-cif-cfr-moringa-export</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/quality-certifications-moringa-export</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/air-freight-vs-sea-freight-moringa</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/make-money-moringa-affiliate-guide</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/affiliate-strategies-health-products</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/moringa-affiliate-business-blueprint</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/social-media-health-affiliates</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/content-converts-moringa-affiliate</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/email-marketing-moringa-affiliates</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/seo-affiliate-moringa-keywords</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/high-converting-moringa-reviews</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/instagram-marketing-health-affiliates</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
   <url>
     <loc>https://www.avaniagrofoods.com/blog/scale-moringa-affiliate-income-5000-per-month</loc>
-    <lastmod>2026-08-18</lastmod>
+    <lastmod>2026-08-31</lastmod>
   </url>
 
 </urlset>

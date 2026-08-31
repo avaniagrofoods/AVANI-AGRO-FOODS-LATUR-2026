@@ -4,7 +4,6 @@ import { LanguageProvider } from './context/LanguageContext'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import WhatsAppBubble from './components/WhatsAppBubble'
-import AffiliateAuthGuard from './components/AffiliateAuthGuard'
 import { Loader2 } from 'lucide-react'
 
 // Eagerly loaded primary public pages
@@ -12,16 +11,14 @@ import Home from './pages/Home'
 import About from './pages/About'
 import Products from './pages/Products'
 import Contact from './pages/Contact'
+import ExportProcess from './pages/ExportProcess'
+import AffiliateResources from './pages/AffiliateResources'
 
-// Lazy-loaded routes for performance & chunk splitting
+// Lazy-loaded routes for performance & code splitting
 const B2BRegistration = lazy(() => import('./pages/B2BRegistration'))
 const B2BStore = lazy(() => import('./pages/B2BStore'))
 const ManufacturerRequirements = lazy(() => import('./pages/ManufacturerRequirements'))
 const ExportCompliance = lazy(() => import('./pages/ExportCompliance'))
-const Affiliate = lazy(() => import('./pages/Affiliate'))
-const AffiliateLogin = lazy(() => import('./pages/AffiliateLogin'))
-const AffiliateDashboard = lazy(() => import('./pages/AffiliateDashboard'))
-const AffiliateDirectory = lazy(() => import('./pages/AffiliateDirectory'))
 const Blog = lazy(() => import('./pages/Blog'))
 const BlogPost = lazy(() => import('./pages/BlogPost'))
 const Manufacturers = lazy(() => import('./pages/Manufacturers'))
@@ -78,55 +75,43 @@ export default function App() {
         <main>
           <Suspense fallback={<PageLoading />}>
             <Routes>
-              {/* Primary Pages */}
+              {/* Primary Public B2B Pages */}
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />
               <Route path="/products" element={<Products />} />
+              <Route path="/export-process" element={<ExportProcess />} />
               <Route path="/contact" element={<Contact />} />
 
-              {/* B2B & Export Pages */}
+              {/* Trade & Compliance Guides */}
+              <Route path="/export-compliance" element={<ExportCompliance />} />
+              <Route path="/manufacturer-requirements" element={<ManufacturerRequirements />} />
               <Route path="/b2b" element={<B2BRegistration />} />
               <Route path="/b2b/store" element={<B2BStore />} />
               <Route path="/b2b/register" element={<B2BRegistration />} />
-              <Route path="/manufacturer-requirements" element={<ManufacturerRequirements />} />
-              <Route path="/export-compliance" element={<ExportCompliance />} />
 
-              {/* Affiliate Routes — protected client-side and edge-side */}
-              <Route path="/affiliate-login" element={<AffiliateLogin />} />
-              <Route path="/affiliate" element={
-                <AffiliateAuthGuard>
-                  <Affiliate />
-                </AffiliateAuthGuard>
-              } />
-              <Route path="/affiliate/dashboard" element={
-                <AffiliateAuthGuard>
-                  <AffiliateDashboard />
-                </AffiliateAuthGuard>
-              } />
-              <Route path="/affiliate/directory" element={
-                <AffiliateAuthGuard>
-                  <AffiliateDirectory />
-                </AffiliateAuthGuard>
-              } />
+              {/* Public Resources & Product Recommendations */}
+              <Route path="/resources" element={<AffiliateResources />} />
+              <Route path="/affiliate" element={<AffiliateResources />} />
 
               {/* Directories & Tools */}
               <Route path="/manufacturers" element={<Manufacturers />} />
               <Route path="/importers" element={<Importers />} />
               <Route path="/tools" element={<FreeAiTools />} />
 
-              {/* Blog */}
+              {/* Educational Blog */}
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
 
-              {/* Quotations & Admin */}
+              {/* Secure Quotations & Admin */}
               <Route path="/quotation-sheet" element={<QuotationSheet />} />
               <Route path="/admin/quotations" element={<AdminQuotations />} />
 
-              {/* Legal Pages */}
+              {/* Legal & Compliance Disclosures */}
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/disclaimer" element={<Disclaimer />} />
               <Route path="/affiliate-disclaimer" element={<AffiliateDisclaimer />} />
+              <Route path="/affiliate-disclosure" element={<AffiliateDisclaimer />} />
 
               {/* 404 Catch-All */}
               <Route path="*" element={

@@ -1,12 +1,11 @@
 // ============================================================
 // AVANI AGRO FOODS — Vercel Edge Middleware (Web Standard API)
-// Protects /affiliate/* and private routes with server-side cookie check.
-// Uses standard Web Request/Response APIs (compatible with pure Vite SPA).
-// Password is stored only in Vercel Environment Variables.
+// Secures private administrative routes while allowing public indexing
+// of commercial, export, blog, and resources pages.
 // ============================================================
 
 export const config = {
-  matcher: ['/affiliate/:path*'],
+  matcher: ['/admin/:path*', '/api/admin-:path*'],
 }
 
 function verifyCookieFormat(signedValue) {
@@ -16,9 +15,9 @@ function verifyCookieFormat(signedValue) {
   const value = signedValue.slice(0, lastDot)
   const signature = signedValue.slice(lastDot + 1)
   return (
-    value.startsWith('avani_affiliate_sess_') ||
+    value.startsWith('avani_admin_sess_') ||
     value.startsWith('avani_sess_') ||
-    value.startsWith('affiliate_authenticated_')
+    value.startsWith('admin_authenticated_')
   ) && signature.length > 10
 }
 
@@ -26,8 +25,8 @@ export default function middleware(request) {
   const url = new URL(request.url)
   const pathname = url.pathname
 
-  // Allow public authentication endpoints and pages
-  if (pathname === '/affiliate-login' || pathname.startsWith('/api/')) {
+  // Pass through if not a protected admin path
+  if (!pathname.startsWith('/admin') && !pathname.startsWith('/api/admin-')) {
     return
   }
 
@@ -40,32 +39,33 @@ export default function middleware(request) {
     }).filter(([k]) => Boolean(k))
   )
 
-  const sessionCookie = cookies['avani_affiliate_session'] || cookies['affiliate_session']
+  const sessionCookie = cookies['avani_admin_session'] || cookies['admin_session']
 
   if (!sessionCookie || !verifyCookieFormat(sessionCookie)) {
-    // Redirect unauthenticated requests to login page
-    const loginUrl = new URL('/affiliate-login', request.url)
-    loginUrl.searchParams.set('redirect', pathname)
+    // For API routes, return 401 Unauthorized
+    if (pathname.startsWith('/api/')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized admin access' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
 
-    const headers = new Headers({
-      'Location': loginUrl.toString(),
-      'Set-Cookie': 'avani_affiliate_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Strict',
-    })
+    // For web views, pass to client with security headers (client handles password gate)
+    const headers = new Headers()
+    headers.set('X-Robots-Tag', 'noindex, nofollow')
+    headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
+    headers.set('X-Content-Type-Options', 'nosniff')
+    headers.set('X-Frame-Options', 'SAMEORIGIN')
 
-    return new Response(null, {
-      status: 307,
-      headers,
-    })
+    return new Response(null, { headers })
   }
 
-  // Authorized request: pass through with strict security headers
+  // Authorized admin request
   const headers = new Headers()
   headers.set('X-Robots-Tag', 'noindex, nofollow')
   headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
   headers.set('X-Content-Type-Options', 'nosniff')
   headers.set('X-Frame-Options', 'SAMEORIGIN')
 
-  return new Response(null, {
-    headers,
-  })
+  return new Response(null, { headers })
 }
