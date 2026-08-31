@@ -1,9 +1,12 @@
 User-agent: *
 
-# Allow all public content
+# Allow all public pages
 Allow: /
 Allow: /about
 Allow: /products
+Allow: /catalog
+Allow: /catalog/
+Allow: /trade-coordination
 Allow: /export-process
 Allow: /resources
 Allow: /affiliate
@@ -17,16 +20,20 @@ Allow: /contact
 Allow: /b2b
 Allow: /b2b/store
 Allow: /privacy
+Allow: /privacy-policy
 Allow: /terms
 Allow: /disclaimer
 
 # Block confidential and private administrative portals
+Disallow: /private/
 Disallow: /admin/
 Disallow: /admin
+Disallow: /importers
+Disallow: /manufacturers
 Disallow: /quotation-sheet
 Disallow: /api/
 
-# Block session/query URLs
+# Block session/query parameters
 Disallow: /*?*session*
 Disallow: /*?*token*
 

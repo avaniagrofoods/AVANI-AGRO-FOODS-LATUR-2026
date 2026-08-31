@@ -12,9 +12,11 @@ import About from './pages/About'
 import Products from './pages/Products'
 import Contact from './pages/Contact'
 import ExportProcess from './pages/ExportProcess'
+import Catalog from './pages/Catalog'
+import TradeCoordination from './pages/TradeCoordination'
 import AffiliateResources from './pages/AffiliateResources'
 
-// Lazy-loaded routes for performance & code splitting
+// Lazy-loaded routes for code splitting
 const B2BRegistration = lazy(() => import('./pages/B2BRegistration'))
 const B2BStore = lazy(() => import('./pages/B2BStore'))
 const ManufacturerRequirements = lazy(() => import('./pages/ManufacturerRequirements'))
@@ -79,6 +81,9 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />
               <Route path="/products" element={<Products />} />
+              <Route path="/catalog" element={<Catalog />} />
+              <Route path="/catalog/:slug" element={<Catalog />} />
+              <Route path="/trade-coordination" element={<TradeCoordination />} />
               <Route path="/export-process" element={<ExportProcess />} />
               <Route path="/contact" element={<Contact />} />
 
@@ -89,25 +94,29 @@ export default function App() {
               <Route path="/b2b/store" element={<B2BStore />} />
               <Route path="/b2b/register" element={<B2BRegistration />} />
 
-              {/* Public Resources & Product Recommendations */}
+              {/* Public Resources & References */}
               <Route path="/resources" element={<AffiliateResources />} />
               <Route path="/affiliate" element={<AffiliateResources />} />
 
-              {/* Directories & Tools */}
-              <Route path="/manufacturers" element={<Manufacturers />} />
+              {/* Protected Intelligence Portals (Server-Side Gate Protected) */}
               <Route path="/importers" element={<Importers />} />
+              <Route path="/private/importers" element={<Importers />} />
+              <Route path="/manufacturers" element={<Manufacturers />} />
+              <Route path="/private/manufacturers" element={<Manufacturers />} />
+              <Route path="/admin/quotations" element={<AdminQuotations />} />
+              <Route path="/private/quotations" element={<AdminQuotations />} />
+              <Route path="/quotation-sheet" element={<QuotationSheet />} />
+              
+              {/* Tools */}
               <Route path="/tools" element={<FreeAiTools />} />
 
               {/* Educational Blog */}
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
 
-              {/* Secure Quotations & Admin */}
-              <Route path="/quotation-sheet" element={<QuotationSheet />} />
-              <Route path="/admin/quotations" element={<AdminQuotations />} />
-
               {/* Legal & Compliance Disclosures */}
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/privacy-policy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/disclaimer" element={<Disclaimer />} />
               <Route path="/affiliate-disclaimer" element={<AffiliateDisclaimer />} />

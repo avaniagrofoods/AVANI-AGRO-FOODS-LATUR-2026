@@ -19,15 +19,18 @@ export default function Footer() {
               <img src="/logo.png" alt="AVANI AGRO FOODS" style={{ height: 44, width: 44, objectFit: 'contain', borderRadius: 8, background: 'white', padding: 2 }} onError={e => e.target.style.display = 'none'} />
               <div>
                 <div style={{ fontWeight: 900, fontSize: '1.05rem', color: 'white' }}>AVANI AGRO FOODS</div>
-                <div style={{ fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>Indian Agro Sourcing Coordination</div>
+                <div style={{ fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>Indian Agro Export Coordination</div>
               </div>
             </div>
             
             <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, marginBottom: 20 }}>
-              Indian agricultural export coordination and B2B sourcing business specializing in Moringa Powder and Red Onion Powder. Connecting qualified Indian processors with international buyers.
+              Indian agricultural export coordination and B2B sourcing business. Connecting international importers and food processors with vetted Indian processing partners.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.82rem' }}>
+              <div style={{ color: 'var(--color-accent)', fontWeight: 700 }}>
+                Sachin Shinde — Trade Coordinator
+              </div>
               <a href={`mailto:${email}`} style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.8)' }}>
                 <Mail size={14} color="var(--color-accent)" /> {email}
               </a>
@@ -44,55 +47,56 @@ export default function Footer() {
           {/* Core B2B Navigation */}
           <div>
             <h4 style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-accent)', marginBottom: 18 }}>
-              B2B Export Trade
+              Quick Links
             </h4>
             <nav className="footer-links" style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.85rem' }}>
               <Link to="/">Home</Link>
               <Link to="/about">About AVANI AGRO</Link>
-              <Link to="/products">Export Sourced Products</Link>
-              <Link to="/export-process">6-Stage Export Process</Link>
-              <Link to="/export-compliance">35-Market Compliance Guide</Link>
-              <Link to="/manufacturer-requirements">Manufacturer Onboarding</Link>
+              <Link to="/products">Export Products</Link>
+              <Link to="/catalog">Digital Catalog</Link>
+              <Link to="/trade-coordination">Trade Coordination</Link>
+              <Link to="/export-process">6-Stage Process</Link>
+              <Link to="/export-compliance">35-Market Guide</Link>
+              <Link to="/resources">Resources</Link>
               <Link to="/contact">Request a B2B Quote</Link>
             </nav>
           </div>
 
-          {/* Educational Resources & Reviews (Affiliate Channel) */}
+          {/* Educational Resources & Blog */}
           <div>
             <h4 style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-accent)', marginBottom: 18 }}>
-              Resources &amp; Reviews
+              Guides &amp; Articles
             </h4>
             <nav className="footer-links" style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.85rem' }}>
-              <Link to="/resources" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Sparkles size={13} color="var(--color-accent)" /> All Recommended Products
-              </Link>
-              <Link to="/blog">Agricultural &amp; Trade Blog</Link>
-              <Link to="/affiliate-disclosure">Affiliate &amp; FTC Disclosure</Link>
+              <Link to="/blog">All 15+ Trade Articles</Link>
+              <Link to="/catalog/moringa-powder">Moringa Specifications</Link>
+              <Link to="/catalog/red-onion-powder">Red Onion Specifications</Link>
+              <Link to="/manufacturer-requirements">Manufacturer Checklist</Link>
               <Link to="/b2b">B2B Directory</Link>
             </nav>
             <div style={{ marginTop: 20, padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)', fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
-              *Resources channel features independent reviews and affiliate recommendations from third-party vendors.
+              *AVANI AGRO FOODS coordinates sourcing with independent Indian processors and facilities.
             </div>
           </div>
 
           {/* Legal & Compliance Profile */}
           <div>
             <h4 style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-accent)', marginBottom: 18 }}>
-              Legal &amp; Registration
+              Legal &amp; Transparency
             </h4>
             <nav className="footer-links" style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.85rem' }}>
-              <Link to="/privacy">Privacy Policy</Link>
+              <Link to="/privacy-policy">Privacy Policy</Link>
               <Link to="/terms">Terms &amp; Conditions</Link>
-              <Link to="/disclaimer">Medical &amp; Trade Disclaimer</Link>
+              <Link to="/disclaimer">Disclaimer</Link>
               <Link to="/affiliate-disclosure">Affiliate Disclosure</Link>
             </nav>
 
             <div style={{ marginTop: 20, padding: '16px', background: 'rgba(26,77,46,0.3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(26,77,46,0.5)' }}>
-              <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-accent)', marginBottom: 6 }}>Official Verification</div>
+              <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-accent)', marginBottom: 6 }}>Verified Registration</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)' }}>
                 <span>• Udyam / MSME Registered Firm</span>
                 <span>• Batch Laboratory COA Verification</span>
-                <span>• Sourced via Compliant Partner Processors</span>
+                <span>• Sourced via Qualified Partner Units</span>
               </div>
             </div>
           </div>
@@ -112,13 +116,13 @@ export default function Footer() {
           color: 'rgba(255,255,255,0.5)'
         }}>
           <div>
-            © {year} AVANI AGRO FOODS. Sourcing Coordination &amp; Trade: Latur, Maharashtra, India. Owner: Sachin Shinde.
+            © {year} AVANI AGRO FOODS. Trade Coordinator: Sachin Shinde. Latur, Maharashtra, India.
           </div>
           <div>
-            Third-party product links may earn affiliate commissions. <Link to="/affiliate-disclosure" style={{ color: 'var(--color-accent)' }}>Read disclosure.</Link>
+            <Link to="/affiliate-disclosure" style={{ color: 'var(--color-accent)' }}>Affiliate &amp; Editorial Disclosure</Link>
           </div>
           <div>
-            Indian Agricultural Export Sourcing 🌍
+            Indian Agricultural Export Coordination 🌍
           </div>
         </div>
       </div>

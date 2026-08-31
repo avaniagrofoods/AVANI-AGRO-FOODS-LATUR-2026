@@ -48,7 +48,7 @@ export default async function handler(req, res) {
   }
 
   const sessionSecret = getSessionSecret();
-  const masterPassword = process.env.MASTER_GATE_PASSWORD || 'Samarth@1356';
+  const masterPassword = process.env.PRIVATE_PORTAL_PASSWORD || process.env.MASTER_GATE_PASSWORD || 'Samarth@1356';
   const body = req.body || {};
   const { action, password } = body;
 

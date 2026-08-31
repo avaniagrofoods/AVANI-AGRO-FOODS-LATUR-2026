@@ -21,6 +21,30 @@
     <priority>0.95</priority>
   </url>
   <url>
+    <loc>https://www.avaniagrofoods.com/catalog</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://www.avaniagrofoods.com/catalog/moringa-powder</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.avaniagrofoods.com/catalog/red-onion-powder</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.avaniagrofoods.com/trade-coordination</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://www.avaniagrofoods.com/export-process</loc>
     <lastmod>2026-08-31</lastmod>
     <changefreq>monthly</changefreq>
@@ -50,14 +74,8 @@
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/b2b/store</loc>
-    <lastmod>2026-08-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
 
-  <!-- Resources, Recommended Products & Affiliate Disclosures -->
+  <!-- Resources & Affiliate Disclosures -->
   <url>
     <loc>https://www.avaniagrofoods.com/resources</loc>
     <lastmod>2026-08-31</lastmod>
@@ -70,16 +88,10 @@
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/affiliate-disclaimer</loc>
-    <lastmod>2026-08-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
 
   <!-- Legal & Disclaimers -->
   <url>
-    <loc>https://www.avaniagrofoods.com/privacy</loc>
+    <loc>https://www.avaniagrofoods.com/privacy-policy</loc>
     <lastmod>2026-08-31</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
@@ -105,125 +117,65 @@
     <priority>0.85</priority>
   </url>
 
-  <!-- 30 Clean Educational & Sourcing Blog Articles -->
+  <!-- 15 Pillar Educational & Sourcing Blog Articles -->
   <url>
-    <loc>https://www.avaniagrofoods.com/blog/moringa-powder-benefits-science-backed</loc>
+    <loc>https://www.avaniagrofoods.com/blog/uses-of-moringa-powder-food-beverage-ingredient-applications</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/blog/how-to-choose-quality-moringa-powder</loc>
+    <loc>https://www.avaniagrofoods.com/blog/moringa-powder-benefits-nutritional-profile-uses-considerations</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/blog/red-onion-powder-vs-fresh-onions</loc>
+    <loc>https://www.avaniagrofoods.com/blog/how-much-moringa-powder-to-use-serving-guidance</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/blog/moringa-powder-dosage-guide</loc>
+    <loc>https://www.avaniagrofoods.com/blog/moringa-powder-vs-fresh-moringa-leaves-format-comparison</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/blog/10-ways-to-use-moringa-powder</loc>
+    <loc>https://www.avaniagrofoods.com/blog/how-to-identify-good-quality-moringa-powder</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/blog/dehydrated-onion-powder-production-guide</loc>
+    <loc>https://www.avaniagrofoods.com/blog/red-onion-powder-uses-food-applications-buying-guide</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/blog/moringa-powder-for-weight-loss</loc>
+    <loc>https://www.avaniagrofoods.com/blog/red-onion-powder-vs-fresh-onion-cost-convenience-advantages</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/blog/moringa-vs-spinach-vs-kale</loc>
+    <loc>https://www.avaniagrofoods.com/blog/how-international-buyers-source-moringa-powder-from-india</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/blog/how-to-store-moringa-powder</loc>
+    <loc>https://www.avaniagrofoods.com/blog/how-to-source-red-onion-powder-from-indian-manufacturers</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/blog/red-onion-powder-food-manufacturing</loc>
+    <loc>https://www.avaniagrofoods.com/blog/indian-agricultural-ingredient-export-process-buyer-to-shipment</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/blog/how-to-export-moringa-powder-from-india</loc>
+    <loc>https://www.avaniagrofoods.com/blog/moringa-powder-packaging-for-international-b2b-buyers</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/blog/top-countries-importing-moringa-powder-2026</loc>
+    <loc>https://www.avaniagrofoods.com/blog/what-international-buyers-should-ask-an-indian-ingredient-supplier</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/blog/export-documentation-moringa-powder</loc>
+    <loc>https://www.avaniagrofoods.com/blog/fob-vs-cif-what-importers-need-to-know</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/blog/moringa-export-price-analysis-2026</loc>
+    <loc>https://www.avaniagrofoods.com/blog/moq-lead-time-packaging-guide-bulk-ingredient-buyers</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
   <url>
-    <loc>https://www.avaniagrofoods.com/blog/fssai-registration-food-export</loc>
-    <lastmod>2026-08-31</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/blog/find-international-buyers-moringa</loc>
-    <lastmod>2026-08-31</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/blog/moringa-packaging-standards-export</loc>
-    <lastmod>2026-08-31</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/blog/fob-cif-cfr-moringa-export</loc>
-    <lastmod>2026-08-31</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/blog/quality-certifications-moringa-export</loc>
-    <lastmod>2026-08-31</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/blog/air-freight-vs-sea-freight-moringa</loc>
-    <lastmod>2026-08-31</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/blog/make-money-moringa-affiliate-guide</loc>
-    <lastmod>2026-08-31</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/blog/affiliate-strategies-health-products</loc>
-    <lastmod>2026-08-31</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/blog/moringa-affiliate-business-blueprint</loc>
-    <lastmod>2026-08-31</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/blog/social-media-health-affiliates</loc>
-    <lastmod>2026-08-31</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/blog/content-converts-moringa-affiliate</loc>
-    <lastmod>2026-08-31</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/blog/email-marketing-moringa-affiliates</loc>
-    <lastmod>2026-08-31</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/blog/seo-affiliate-moringa-keywords</loc>
-    <lastmod>2026-08-31</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/blog/high-converting-moringa-reviews</loc>
-    <lastmod>2026-08-31</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/blog/instagram-marketing-health-affiliates</loc>
-    <lastmod>2026-08-31</lastmod>
-  </url>
-  <url>
-    <loc>https://www.avaniagrofoods.com/blog/scale-moringa-affiliate-income-5000-per-month</loc>
+    <loc>https://www.avaniagrofoods.com/blog/how-to-evaluate-an-indian-food-ingredient-supplier-before-ordering</loc>
     <lastmod>2026-08-31</lastmod>
   </url>
 

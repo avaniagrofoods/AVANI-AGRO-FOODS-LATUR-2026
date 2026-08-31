@@ -19,7 +19,7 @@ import {
 
 function verifyAdminAuth(req) {
   const sessionSecret = getSessionSecret();
-  const masterPassword = process.env.MASTER_GATE_PASSWORD || 'Samarth@1356';
+  const masterPassword = process.env.PRIVATE_PORTAL_PASSWORD || process.env.MASTER_GATE_PASSWORD || 'Samarth@1356';
   const affiliatePassword = process.env.AFFILIATE_PASSWORD || 'Samarth@1356';
 
   // 1. Check Bearer token in Authorization header
