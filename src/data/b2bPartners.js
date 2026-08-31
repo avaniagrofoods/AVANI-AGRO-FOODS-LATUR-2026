@@ -7,14 +7,14 @@ export const B2B_PARTNERS = [
   // --- RECENTLY REGISTERED BUSINESSES ---
   {
     id: "reg_001",
-    name: "Samarth Agro exports",
+    name: "Sahyadri Agro Exports",
     industry: "Exporter",
     location: "Maharashtra, India",
     logo: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=200&h=200",
     description: "Premium exporter of dehydrated vegetable powders and organic spices. Specialized in global supply chains for Moringa and Onion products.",
     verified: true,
     specialization: ["Moringa Powder", "Onion Powder", "Turmeric"],
-    contact: { name: "Samarth Shinde", email: "export@samarthagro.com", whatsapp: "+91 91721 90536" },
+    contact: { name: "Sanjay Shinde", email: "export@sahyadriagro.com", whatsapp: "+91 91721 90536" },
     images: ["https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800"]
   },
   {

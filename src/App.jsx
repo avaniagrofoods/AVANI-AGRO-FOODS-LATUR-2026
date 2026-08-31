@@ -16,7 +16,7 @@ import Catalog from './pages/Catalog'
 import TradeCoordination from './pages/TradeCoordination'
 import AffiliateResources from './pages/AffiliateResources'
 
-// Lazy-loaded routes for code splitting
+const PrivateDashboard = lazy(() => import('./pages/PrivateDashboard'))
 const B2BRegistration = lazy(() => import('./pages/B2BRegistration'))
 const B2BStore = lazy(() => import('./pages/B2BStore'))
 const ManufacturerRequirements = lazy(() => import('./pages/ManufacturerRequirements'))
@@ -99,13 +99,15 @@ export default function App() {
               <Route path="/affiliate" element={<AffiliateResources />} />
 
               {/* Protected Intelligence Portals (Server-Side Gate Protected) */}
+              <Route path="/private" element={<PrivateDashboard />} />
+              <Route path="/private/dashboard" element={<PrivateDashboard />} />
               <Route path="/importers" element={<Importers />} />
               <Route path="/private/importers" element={<Importers />} />
               <Route path="/manufacturers" element={<Manufacturers />} />
               <Route path="/private/manufacturers" element={<Manufacturers />} />
               <Route path="/admin/quotations" element={<AdminQuotations />} />
               <Route path="/private/quotations" element={<AdminQuotations />} />
-              <Route path="/quotation-sheet" element={<QuotationSheet />} />
+              <Route path="/quotation-sheet" element={<AdminQuotations />} />
               
               {/* Tools */}
               <Route path="/tools" element={<FreeAiTools />} />

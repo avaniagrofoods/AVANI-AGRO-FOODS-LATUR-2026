@@ -89,6 +89,7 @@ export default function Footer() {
               <Link to="/terms">Terms &amp; Conditions</Link>
               <Link to="/disclaimer">Disclaimer</Link>
               <Link to="/affiliate-disclosure">Affiliate Disclosure</Link>
+              <Link to="/private" style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem' }}>🔒 Business Portal</Link>
             </nav>
 
             <div style={{ marginTop: 20, padding: '16px', background: 'rgba(26,77,46,0.3)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(26,77,46,0.5)' }}>
