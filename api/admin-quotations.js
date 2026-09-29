@@ -121,11 +121,65 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       const { action, quoteData, quoteId, newStatus } = req.body || {};
 
-      if (action === 'generate') {
-        const quote = calculateQuotation(quoteData || {});
+      if (action === 'get-products') {
+        const { PRODUCT_MASTER } = await import('./lib/productMaster.js');
         return res.status(200).json({
           success: true,
-          message: `Quotation ${quote.quoteId} generated successfully.`,
+          products: PRODUCT_MASTER
+        });
+      }
+
+      if (action === 'generate' || action === 'recalculate' || action === 'save') {
+        const quote = calculateQuotation(quoteData || {});
+        
+        // If saving, optionally sync to Google Sheets Quotations tab
+        const GOOGLE_SHEETS_WEBHOOK = process.env.GOOGLE_SHEETS_WEBHOOK || process.env.VITE_GOOGLE_SHEETS_WEBHOOK;
+        if (action === 'save' && GOOGLE_SHEETS_WEBHOOK && !GOOGLE_SHEETS_WEBHOOK.includes('YOUR_DEPLOYMENT_ID')) {
+          try {
+            await fetch(GOOGLE_SHEETS_WEBHOOK, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                targetSheet: 'Quotations',
+                type: 'QUOTATION',
+                quotationId: quote.quoteId,
+                inquiryId: quote.inquiryId || '',
+                quoteDate: quote.date,
+                validityDate: quote.validUntil,
+                buyer: quote.buyerName,
+                company: quote.companyName,
+                country: quote.country,
+                product: quote.items.map(i => i.name).join(' + '),
+                hsCode: quote.items.map(i => i.hscode).join(', '),
+                description: quote.items.map(i => i.description).join(' | '),
+                quantityKg: quote.items.reduce((s, i) => s + (Number(i.quantity) || 0), 0),
+                unit: 'KG',
+                unitRate: quote.items[0]?.rate || 0,
+                currency: quote.currency,
+                subtotal: quote.subtotal,
+                freight: quote.freight,
+                insurance: quote.insurance,
+                documentation: quote.documentation,
+                grandTotal: quote.grandTotal,
+                incoterm: quote.incoterm,
+                destinationPort: quote.destinationPort,
+                paymentTerms: quote.paymentTerms,
+                deliveryTimeline: quote.deliveryTimeline,
+                quotationStatus: quote.status,
+                pdfLink: `/api/quotation?action=download-pdf&id=${quote.quoteId}`,
+                docxLink: `/api/quotation?action=download-docx&id=${quote.quoteId}`,
+                lastUpdated: new Date().toISOString(),
+                updatedBy: 'Admin (Sachin Shinde)'
+              })
+            });
+          } catch (syncErr) {
+            console.warn('[Admin Quotations API] Google Sheet sync deferred:', syncErr.message);
+          }
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: `Quotation ${quote.quoteId} processed successfully.`,
           quote
         });
       }

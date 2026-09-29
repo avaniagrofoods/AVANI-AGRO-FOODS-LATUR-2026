@@ -37,7 +37,7 @@ export const BUSINESS_INFO = {
       slug: 'moringa-powder',
       name: 'Moringa Powder',
       botanicalName: 'Moringa oleifera',
-      hscode: '0712.90.90',
+      hscode: '12119029',
       description: 'Export-grade Moringa oleifera leaf powder coordinated from qualified Maharashtra processor partners.',
       mesh: '80–100 Mesh (Fine Powder)',
       moisture: '≤ 7.0% (typical)',

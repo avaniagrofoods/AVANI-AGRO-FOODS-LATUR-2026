@@ -16,7 +16,7 @@ const PRODUCTS = [
     category: 'Botanical Leaf Powder · Sourcing Coordination',
     description: 'AVANI AGRO FOODS coordinates sourcing of export-grade Moringa oleifera leaf powder from vetted processing facilities in Maharashtra, India. Carefully shade-dried and milled under hygienic controls to protect sensitive chlorophyll, amino acids, and micronutrients.',
     img: '/moringa.png',
-    hscode: '0712.90.90',
+    hscode: '1211.90.29',
     badge: '🌿 Key Botanical Ingredient',
     specs: [
       { label: 'Botanical Name', value: 'Moringa oleifera' },
@@ -26,7 +26,7 @@ const PRODUCTS = [
       { label: 'Crude Protein', value: '25–28% (dry basis)' },
       { label: 'Appearance', value: 'Homogeneous vibrant green' },
       { label: 'Shelf Life', value: '24 months in sealed original packaging' },
-      { label: 'HS Code', value: '0712.90.90' },
+      { label: 'HS Code', value: '1211.90.29 (12119029)' },
     ],
     qualityDocumentation: [
       'Batch Certificate of Analysis (COA)',

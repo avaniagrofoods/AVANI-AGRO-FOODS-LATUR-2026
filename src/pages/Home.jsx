@@ -24,7 +24,7 @@ const PRODUCTS_PREVIEW = [
     subtitle: 'Moringa oleifera Leaf Powder — Export Grade',
     desc: 'Pure dried Moringa oleifera leaf powder sourced from verified processing partners in Maharashtra. Rich in plant protein, polyphenols, and chlorophyll. Coordinated with batch testing reports.',
     img: '/moringa.png',
-    hsCode: 'HS 0712.90.90',
+    hsCode: 'HS 1211.90.29',
     tags: ['80–100 Mesh', '≤ 7% Moisture', 'Batch COA', '25 kg Drums / Bags'],
     badge: '🌿 Key Botanical',
     link: '/products#moringa'
@@ -417,7 +417,7 @@ export default function Home() {
               <div style={{ height: 240, position: 'relative', overflow: 'hidden' }}>
                 <img src="/moringa.png" alt="Moringa Powder Bulk Export" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <div style={{ position: 'absolute', top: 16, left: 16, background: 'var(--color-primary)', color: 'white', fontSize: '0.75rem', fontWeight: 800, padding: '4px 12px', borderRadius: 20 }}>
-                  HS Code: 0712.90.90
+                  HS Code: 1211.90.29
                 </div>
               </div>
               <div style={{ padding: '32px' }}>

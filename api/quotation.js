@@ -7,7 +7,7 @@
 // - POST /api/quotation?action=send-email -> Sends quotation documents to customer
 // ============================================================
 
-import { calculateQuotation, generateExcelQuotation, generatePdfQuotation } from './lib/quotationEngine.js';
+import { calculateQuotation, generateExcelQuotation, generatePdfQuotation, generateDocxQuotation } from './lib/quotationEngine.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -37,6 +37,13 @@ export default async function handler(req, res) {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="Quotation_${quote.quoteId}.pdf"`);
       return res.status(200).send(pdfBuffer);
+    }
+
+    if (action === 'download-docx') {
+      const docxBuffer = await generateDocxQuotation(quote);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename="Quotation_${quote.quoteId}.docx"`);
+      return res.status(200).send(docxBuffer);
     }
 
     if (action === 'download-xlsx') {

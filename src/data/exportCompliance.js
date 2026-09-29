@@ -3,7 +3,7 @@
 // Covering 35 Major International Export Markets across 7 Regions
 //
 // Products Covered:
-//   1. Moringa Powder (Moringa oleifera) — HS Code: 0712.90.90
+//   1. Moringa Powder (Moringa oleifera) — HS Code: 1211.90.29 (12119029)
 //   2. Dehydrated Red Onion Powder — HS Code: 0712.20.00
 //
 // DISCLAIMER & REGULATORY NOTICE:
@@ -20,7 +20,7 @@ export const REGULATORY_DISCLAIMER = `Regulatory notices and import standards ar
 export const AVANI_INTERNAL_STANDARDS = {
   moringa: {
     product: 'Moringa Powder (Moringa oleifera leaves)',
-    hsCode: '0712.90.90',
+    hsCode: '12119029',
     moisture: '≤ 7.0%',
     meshSize: '80–100 mesh',
     foreignMatter: 'Nil',

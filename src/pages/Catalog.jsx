@@ -12,7 +12,7 @@ const CATALOG_ITEMS = [
     slug: 'moringa-powder',
     name: 'Moringa Powder (Export Grade)',
     botanicalName: 'Moringa oleifera',
-    hsCode: '0712.90.90',
+    hsCode: '1211.90.29 (12119029)',
     category: 'Botanical Leaf Powder · Sourcing Coordination',
     img: '/moringa.png',
     overview: 'High-purity dehydrated Moringa oleifera leaf powder coordinated from vetted Indian processing partners in Maharashtra. Screened, dried, and pulverized under hygienic conditions to maintain natural leaf integrity.',

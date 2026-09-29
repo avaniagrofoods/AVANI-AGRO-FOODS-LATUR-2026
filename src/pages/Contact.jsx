@@ -110,20 +110,34 @@ Additional Notes:
 ${form.additionalMessage}
       `.trim()
 
+      // Derive appropriate currency based on buyer country
+      const countryLower = (form.country || '').toLowerCase()
+      let derivedCurrency = 'USD'
+      if (countryLower.includes('india') || countryLower.includes('bharat')) {
+        derivedCurrency = 'INR'
+      } else if (['uk', 'united kingdom', 'britain', 'england', 'scotland'].some(c => countryLower.includes(c))) {
+        derivedCurrency = 'GBP'
+      } else if (['uae', 'dubai', 'abu dhabi', 'sharjah', 'emirates'].some(c => countryLower.includes(c))) {
+        derivedCurrency = 'AED'
+      } else if (['germany', 'netherlands', 'france', 'spain', 'italy', 'europe', 'belgium'].some(c => countryLower.includes(c))) {
+        derivedCurrency = 'EUR'
+      }
+
       // 1. EmailJS Notification
       await sendContactEmail({
         firstName: form.fullName,
         lastName: `(${form.country} - ${form.companyName})`,
         email: form.email,
-        inquiryType: `B2B RFQ: ${form.product} (${form.quantity}kg)`,
+        inquiryType: `B2B RFQ: ${form.product} (${form.quantity})`,
         message: formattedMessage,
         phone: form.phone,
         company: form.companyName
       })
 
-      // 2. Serverless Lead Capture
+      // 2. Serverless Lead Capture & Auto-Quotation Draft
+      let leadResponse = null
       try {
-        await fetch('/api/save-lead', {
+        const res = await fetch('/api/save-lead', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -133,15 +147,24 @@ ${form.additionalMessage}
             company: form.companyName,
             country: form.country,
             product: form.product,
-            quantity: Number(form.quantity) || 500,
-            currency: 'USD',
+            quantity: form.quantity,
+            targetPrice: form.targetPrice,
+            currency: derivedCurrency,
             incoterm: form.incoterm,
             destination: form.destinationPort,
+            meshSize: form.meshSize,
+            moisture: form.moisture,
+            packaging: form.packaging,
             message: formattedMessage,
             source: 'Website_Contact_RFQ'
           })
-        });
-      } catch (err) { console.error('Save Lead API Error:', err); }
+        })
+        if (res.ok) {
+          leadResponse = await res.json()
+        }
+      } catch (err) {
+        console.error('Save Lead API Error:', err)
+      }
 
       // 3. Google Sheets Logging Fallback
       try {
@@ -166,20 +189,34 @@ ${form.additionalMessage}
       } catch {}
 
       // 5. Analytics Event
-      trackContactSubmit(`B2B RFQ: ${form.product}`);
+      trackContactSubmit(`B2B RFQ: ${form.product}`)
 
       setStatus('success')
       setIsSuccess(true)
 
-      // Save to LocalStorage for Admin Dashboard
+      // Save to LocalStorage for Admin Dashboard with linked IDs
+      const generatedInquiryId = leadResponse?.inquiryId || `AAF-INQ-2026-${Math.floor(100000 + Math.random() * 900000)}`
+      const generatedQuoteId = leadResponse?.quoteId || `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`
+
       const newEnquiry = {
         id: Date.now(),
+        inquiryId: generatedInquiryId,
+        quoteId: generatedQuoteId,
         ...form,
+        currency: derivedCurrency,
         date: new Date().toLocaleString(),
         isFulfilled: false
       }
       const existingEnquiries = JSON.parse(localStorage.getItem('avani_enquiries') || '[]')
       localStorage.setItem('avani_enquiries', JSON.stringify([newEnquiry, ...existingEnquiries]))
+
+      // Also store automatic quotation draft locally if generated
+      if (leadResponse?.quotationDraft) {
+        const existingQuotes = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
+        const updatedQuotes = [leadResponse.quotationDraft, ...existingQuotes.filter(q => q.quoteId !== leadResponse.quotationDraft.quoteId)]
+        localStorage.setItem('avani_quotations', JSON.stringify(updatedQuotes))
+      }
+
       window.dispatchEvent(new Event('enquiry-updated'))
 
     } catch (err) {
@@ -381,8 +418,8 @@ ${form.additionalMessage}
                         </select>
                       </div>
                       <div>
-                        <label className="label">Required Quantity (kg) *</label>
-                        <input type="number" min="100" className="input" required value={form.quantity} onChange={e => set('quantity', e.target.value)} placeholder="Min 100 kg" />
+                        <label className="label">Required Quantity (kg / MT) *</label>
+                        <input type="text" className="input" required value={form.quantity} onChange={e => set('quantity', e.target.value)} placeholder="e.g. 18000 or 18 MT (Min 100 kg)" />
                       </div>
                     </div>
 
