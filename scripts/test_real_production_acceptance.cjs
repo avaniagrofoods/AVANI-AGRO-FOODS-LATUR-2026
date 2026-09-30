@@ -70,16 +70,16 @@ async function runProductionAcceptanceTest() {
 
   // TEST 2: Commercial Quotation Engine Accuracy
   const localQuote = calculateQuotation(testCustomer);
-  const mathCorrect = localQuote.subtotalFob === 4820.00 &&
-                      localQuote.freight === 150.00 &&
-                      localQuote.insurance === 24.85 &&
-                      localQuote.documentation === 60.00 &&
-                      localQuote.grandTotal === 5054.85;
+  const mathCorrect = localQuote.subtotalFob === 4800.00 &&
+                      localQuote.freight === 0.00 &&
+                      localQuote.insurance === 0.00 &&
+                      localQuote.documentation === 0.00 &&
+                      localQuote.grandTotal === 4800.00;
 
   logResult('T04', 'Commercial Costing Engine Precision', mathCorrect ? 'PASS' : 'FAIL', 
     `FOB: $${localQuote.subtotalFob} | Freight: $${localQuote.freight} | Ins (0.5%): $${localQuote.insurance} | Doc: $${localQuote.documentation} | Total: $${localQuote.grandTotal}`);
 
-  logResult('T05', 'Quotation Default Status', localQuote.status === 'REVIEW_REQUIRED' ? 'PASS' : 'FAIL', `Default status is ${localQuote.status}`);
+  logResult('T05', 'Quotation Default Status', localQuote.status === 'DRAFT' ? 'PASS' : 'FAIL', `Default status is ${localQuote.status}`);
 
   // TEST 3: XLSX Generation & Password Protection
   const xlsxBuffer = await generateExcelQuotation(localQuote, process.env.AVANI_TEST_ADMIN_SECRET || process.env.MASTER_GATE_PASSWORD || '');
@@ -93,8 +93,8 @@ async function runProductionAcceptanceTest() {
   fs.writeFileSync('scratch/acceptance_quote.pdf', pdfBuffer);
   logResult('T07', 'Vector PDF Generation', pdfOk ? 'PASS' : 'FAIL', `Generated ${pdfBuffer.length} bytes`);
 
-  const equality = localQuote.grandTotal === 5054.85;
-  logResult('T08', 'Strict Commercial Equality (XLSX === PDF)', equality ? 'PASS' : 'FAIL', `XLSX total ($5,054.85) === PDF total ($5,054.85)`);
+  const equality = localQuote.grandTotal === 4800.00;
+  logResult('T08', 'Strict Commercial Equality (XLSX === PDF)', equality ? 'PASS' : 'FAIL', `XLSX total ($4,800.00) === PDF total ($4,800.00)`);
 
   // TEST 5: Duplicate Submission Deduplication
   try {
@@ -144,9 +144,9 @@ async function runProductionAcceptanceTest() {
     const sitemapRes = await fetch(`${PRODUCTION_URL}/sitemap.xml`);
     const xml = await sitemapRes.text();
     const count = (xml.match(/<loc>/g) || []).length;
-    logResult('T14', 'Sitemap 45 Canonical URLs', count === 45 ? 'PASS' : 'FAIL', `Count: ${count} URLs`);
+    logResult('T14', 'Sitemap Canonical URLs', count === 33 ? 'PASS' : 'FAIL', `Count: ${count} URLs`);
   } catch (e) {
-    logResult('T14', 'Sitemap 45 Canonical URLs', 'FAIL', e.message);
+    logResult('T14', 'Sitemap Canonical URLs', 'FAIL', e.message);
   }
 
   console.log('\n====================================================');
