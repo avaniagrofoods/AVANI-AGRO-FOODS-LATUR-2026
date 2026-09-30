@@ -11,6 +11,7 @@
 
 import { calculateQuotation, parseQuantityKg, COMPANY_INFO } from './lib/quotationEngine.js';
 import { matchProductMaster } from './lib/productMaster.js';
+import { getClientIp, checkRateLimit, isAllowedOrigin } from './lib/auth.js';
 
 // In-memory cache for recent submissions to prevent double clicks (1 min window)
 const recentSubmissions = new Map();
@@ -52,32 +53,56 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
+  // Security Headers
+  if (!isAllowedOrigin(req)) {
+    return res.status(403).json({ error: 'Forbidden origin' });
+  }
+
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
 
   try {
+    const ip = getClientIp(req);
+    const rateCheck = await checkRateLimit(ip, 'lead_submission');
+    if (rateCheck.limited) {
+      return res.status(429).json({
+        error: `Too many submissions. Please wait ${rateCheck.minutesLeft} minute(s) before trying again.`
+      });
+    }
+
     cleanOldSubmissions();
 
     const body = req.body || {};
-    const name = (body.name || body.fullName || `${body.firstName || ''} ${body.lastName || ''}`).trim();
-    const email = (body.email || '').trim().toLowerCase();
-    const phone = (body.phone || body.mobile || '').trim();
-    const company = (body.company || body.companyName || 'Direct Buyer').trim();
-    const country = (body.country || 'India').trim();
-    const rawProduct = (body.product || body.inquiry || body.inquiryType || 'Moringa Leaf Powder').trim();
-    const rawRequirement = (body.message || body.buyerRequirement || body.additionalMessage || '').trim();
-    const rawQuantity = String(body.quantity || body.quantityOriginal || '100').trim();
-    const source = (body.source || 'Website_Contact_RFQ').trim();
+    if (typeof body !== 'object' || body === null) {
+      return res.status(400).json({ error: 'Invalid payload.' });
+    }
 
-    // 1. Validation
-    if (!name || name.length < 2) {
-      return res.status(400).json({ error: 'Valid customer name is required.' });
+    const name = String(body.name || body.fullName || `${body.firstName || ''} ${body.lastName || ''}`).trim();
+    const email = String(body.email || '').trim().toLowerCase();
+    const phone = String(body.phone || body.mobile || '').trim();
+    const company = String(body.company || body.companyName || 'Direct Buyer').trim();
+    const country = String(body.country || 'India').trim();
+    const rawProduct = String(body.product || body.inquiry || body.inquiryType || 'Moringa Leaf Powder').trim();
+    const rawRequirement = String(body.message || body.buyerRequirement || body.additionalMessage || '').trim();
+    const rawQuantity = String(body.quantity || body.quantityOriginal || '100').trim();
+    const source = String(body.source || 'Website_Contact_RFQ').trim();
+
+    // 1. Validation & Length Bounds
+    if (!name || name.length < 2 || name.length > 150) {
+      return res.status(400).json({ error: 'Valid customer name is required (max 150 chars).' });
     }
-    if (!email || !email.includes('@') || !email.includes('.')) {
-      return res.status(400).json({ error: 'Valid customer email is required.' });
+    if (!email || !email.includes('@') || !email.includes('.') || email.length > 150) {
+      return res.status(400).json({ error: 'Valid customer email is required (max 150 chars).' });
     }
-    if (!phone || phone.length < 6) {
-      return res.status(400).json({ error: 'Valid phone/WhatsApp number is required.' });
+    if (!phone || phone.length < 6 || phone.length > 50) {
+      return res.status(400).json({ error: 'Valid phone/WhatsApp number is required (max 50 chars).' });
+    }
+    if (company.length > 150) {
+      return res.status(400).json({ error: 'Company name exceeds maximum length (150 chars).' });
+    }
+    if (rawRequirement.length > 5000) {
+      return res.status(400).json({ error: 'Requirement text exceeds maximum allowed length.' });
     }
 
     // 2. Deduplication check
@@ -243,11 +268,11 @@ export default async function handler(req, res) {
       googleSheetsQuotation: 'PENDING',
       hubSpot: process.env.HUBSPOT_ACCESS_TOKEN ? 'PENDING' : 'NOT_CONFIGURED',
       zapier: process.env.ZAPIER_WEBHOOK_URL ? 'PENDING' : 'NOT_CONFIGURED',
-      whatsapp: process.env.PICKY_ASSIST_URL || 'https://app.pickyassist.com/url/5cb2564f744736ff1b4d09e1ebad26748625043e' ? 'PENDING' : 'NOT_CONFIGURED'
+      whatsapp: process.env.PICKY_ASSIST_URL ? 'PENDING' : 'NOT_CONFIGURED'
     };
 
     // 9. Dispatch to Google Sheets Webhook (Both Inquiries and Quotations)
-    const GOOGLE_SHEETS_WEBHOOK = process.env.GOOGLE_SHEETS_WEBHOOK || process.env.VITE_GOOGLE_SHEETS_WEBHOOK || "https://script.google.com/macros/s/AKfycbxQN2Z7Bi7V-iZFibeeFkOyOOaMeX-4jFF3hv4GIYSGILDpoKbMq1WpXlAlX_Uims8k/exec";
+    const GOOGLE_SHEETS_WEBHOOK = process.env.GOOGLE_SHEETS_WEBHOOK || process.env.VITE_GOOGLE_SHEETS_WEBHOOK;
     if (GOOGLE_SHEETS_WEBHOOK && !GOOGLE_SHEETS_WEBHOOK.includes('YOUR_DEPLOYMENT_ID')) {
       try {
         // Send Customer Inquiry row
@@ -257,6 +282,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             targetSheet: 'Customer Inquiries',
             type: 'CUSTOMER_INQUIRY',
+            webhookSecret: process.env.CRM_WEBHOOK_SECRET || '',
             ...inquiryRecord
           })
         });
@@ -274,6 +300,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             targetSheet: 'Quotations',
             type: 'QUOTATION',
+            webhookSecret: process.env.CRM_WEBHOOK_SECRET || '',
             ...quotationRecord
           })
         });
@@ -299,7 +326,7 @@ export default async function handler(req, res) {
     }
 
     // 11. WhatsApp Webhook Dispatch (if configured)
-    const PICKY_ASSIST_URL = process.env.PICKY_ASSIST_URL || "https://app.pickyassist.com/url/5cb2564f744736ff1b4d09e1ebad26748625043e";
+    const PICKY_ASSIST_URL = process.env.PICKY_ASSIST_URL || '';
     if (PICKY_ASSIST_URL) {
       try {
         await fetch(PICKY_ASSIST_URL, {
@@ -338,7 +365,7 @@ export default async function handler(req, res) {
     console.error('[Save Lead API] Critical error:', err.message);
     return res.status(500).json({
       success: false,
-      error: 'An unexpected error occurred while processing the enquiry: ' + err.message
+      error: 'An unexpected error occurred while processing the enquiry. Please contact us directly.'
     });
   }
 }

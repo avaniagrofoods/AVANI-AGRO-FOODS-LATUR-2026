@@ -28,10 +28,18 @@ dist-ssr
 
 # Environment variables
 .env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+*.local
+
+# Generated test documents & media
+*.pdf
+*.docx
+*.xlsx
+test_quotation.*
 
 # Gemini/Antigravity artifacts & scratch
 .gemini
@@ -41,5 +49,5 @@ task.md
 logo_transparent*
 media__*
 scratch/
-
-.vercel
+google-maps-scraper-kit/
+AVANI_AGRO_FOODS_*

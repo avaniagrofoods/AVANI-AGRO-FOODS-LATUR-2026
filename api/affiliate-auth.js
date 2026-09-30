@@ -9,7 +9,7 @@
 //   3. High-Security HMAC Signing using SESSION_SECRET
 //
 // Environment variables:
-//   AFFILIATE_PASSWORD — Password for affiliate portal (Samarth@1356)
+//   AFFILIATE_PASSWORD — Password for affiliate portal
 //   SESSION_SECRET     — Cryptographic secret for HMAC session signing
 // ============================================================
 
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
   }
 
   const sessionSecret = getSessionSecret();
-  const correctPassword = process.env.AFFILIATE_PASSWORD || 'Samarth@1356';
+  const correctPassword = process.env.AFFILIATE_PASSWORD;
   const body = req.body || {};
   const { action, password } = body;
 
@@ -99,8 +99,18 @@ export default async function handler(req, res) {
     });
   }
 
-  if (!password || typeof password !== 'string' || !password.trim()) {
-    return res.status(400).json({ error: 'Password is required' });
+  if (!correctPassword) {
+    console.error('[SECURITY CRITICAL] AFFILIATE_PASSWORD is not configured on server.');
+    return res.status(500).json({ error: 'Server authentication configuration is missing.' });
+  }
+
+  if (!sessionSecret) {
+    console.error('[SECURITY CRITICAL] SESSION_SECRET is not configured on server.');
+    return res.status(500).json({ error: 'Server session signing configuration is missing.' });
+  }
+
+  if (!password || typeof password !== 'string' || !password.trim() || password.length > 256) {
+    return res.status(400).json({ error: 'Valid password is required.' });
   }
 
   const match = verifyPassword(password, correctPassword);

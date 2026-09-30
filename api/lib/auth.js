@@ -88,10 +88,13 @@ export async function resetRateLimit(ip, prefix = 'auth') {
 
 // ── SESSION MANAGEMENT & CRYPTOGRAPHY ───────────────────────────
 export function getSessionSecret() {
-  return process.env.SESSION_SECRET || 'AVANI_AGRO_SECURE_SESSION_SECRET_2026_PRODUCTION_STABLE';
+  return process.env.SESSION_SECRET || null;
 }
 
 export function signSessionId(sessionId, secret) {
+  if (!secret || typeof secret !== 'string') {
+    throw new Error('Session signing secret is not configured.');
+  }
   const hmac = crypto.createHmac('sha256', secret);
   hmac.update(sessionId);
   const sig = hmac.digest('base64url');
@@ -99,7 +102,7 @@ export function signSessionId(sessionId, secret) {
 }
 
 export function parseAndVerifySignature(signedCookie, secret) {
-  if (!signedCookie || typeof signedCookie !== 'string') return null;
+  if (!signedCookie || typeof signedCookie !== 'string' || !secret || typeof secret !== 'string') return null;
   const lastDot = signedCookie.lastIndexOf('.');
   if (lastDot === -1) return null;
 

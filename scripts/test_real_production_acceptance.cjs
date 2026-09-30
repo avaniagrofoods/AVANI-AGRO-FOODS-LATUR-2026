@@ -82,7 +82,7 @@ async function runProductionAcceptanceTest() {
   logResult('T05', 'Quotation Default Status', localQuote.status === 'REVIEW_REQUIRED' ? 'PASS' : 'FAIL', `Default status is ${localQuote.status}`);
 
   // TEST 3: XLSX Generation & Password Protection
-  const xlsxBuffer = await generateExcelQuotation(localQuote, process.env.MASTER_GATE_PASSWORD || 'Samarth@1356');
+  const xlsxBuffer = await generateExcelQuotation(localQuote, process.env.AVANI_TEST_ADMIN_SECRET || process.env.MASTER_GATE_PASSWORD || '');
   const xlsxOk = xlsxBuffer && xlsxBuffer.length > 5000;
   fs.writeFileSync('scratch/acceptance_quote.xlsx', xlsxBuffer);
   logResult('T06', 'Encrypted XLSX Generation', xlsxOk ? 'PASS' : 'FAIL', `Generated ${xlsxBuffer.length} bytes (Password protected)`);

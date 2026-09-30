@@ -35,9 +35,9 @@ export default function middleware(request) {
   const authHeader = request.headers.get('authorization') || ''
   if (authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7).trim()
-    const masterPassword = 'Samarth@1356'
-    if (token === masterPassword) {
-      return // Authorized API request
+    const masterPassword = process.env.PRIVATE_PORTAL_PASSWORD || process.env.MASTER_GATE_PASSWORD
+    if (masterPassword && token === masterPassword) {
+      return // Authorized API request: pass through to serverless handler
     }
   }
 
@@ -61,22 +61,10 @@ export default function middleware(request) {
       })
     }
 
-    // For web views, pass to client with security headers (client handles password gate)
-    const headers = new Headers()
-    headers.set('X-Robots-Tag', 'noindex, nofollow')
-    headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
-    headers.set('X-Content-Type-Options', 'nosniff')
-    headers.set('X-Frame-Options', 'SAMEORIGIN')
-
-    return new Response(null, { headers })
+    // For web views (/admin/...), allow through to client SPA so PasswordGate can render
+    return
   }
 
-  // Authorized admin request
-  const headers = new Headers()
-  headers.set('X-Robots-Tag', 'noindex, nofollow')
-  headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
-  headers.set('X-Content-Type-Options', 'nosniff')
-  headers.set('X-Frame-Options', 'SAMEORIGIN')
-
-  return new Response(null, { headers })
+  // Authorized admin request: pass through to downstream handler
+  return
 }

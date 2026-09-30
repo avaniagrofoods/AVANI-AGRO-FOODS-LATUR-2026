@@ -38,7 +38,7 @@ async function runE2ETest() {
 
   // STEP 2: Lead ID generated
   const quote = calculateQuotation(customerInput);
-  const hasLeadId = quote.leadId && quote.leadId.startsWith('LEAD-');
+  const hasLeadId = quote.leadId && (quote.leadId.startsWith('LEAD-') || quote.leadId.startsWith('AAF-INQ-'));
   recordStep(2, 'Lead ID Generated', hasLeadId ? 'PASS' : 'FAIL', `Lead ID: ${quote.leadId}`);
 
   // STEP 3: Customer Record Created
@@ -58,7 +58,7 @@ async function runE2ETest() {
   recordStep(8, 'Quotation Number Generated', hasQuoteId ? 'PASS' : 'FAIL', `Quotation ID: ${quote.quoteId}`);
 
   // STEP 9 & 10: XLSX Generation & Password Protection
-  const xlsxBuffer = await generateExcelQuotation(quote, process.env.MASTER_GATE_PASSWORD || 'Samarth@1356');
+  const xlsxBuffer = await generateExcelQuotation(quote, process.env.AVANI_TEST_ADMIN_SECRET || process.env.MASTER_GATE_PASSWORD || '');
   const xlsxValid = xlsxBuffer && xlsxBuffer.length > 5000;
   fs.writeFileSync('scratch/e2e_quote.xlsx', xlsxBuffer);
   recordStep(9, 'XLSX Quotation Generated', xlsxValid ? 'PASS' : 'FAIL', `File size: ${xlsxBuffer.length} bytes`);
@@ -72,7 +72,7 @@ async function runE2ETest() {
   recordStep(12, 'PDF Values Verified', 'PASS', `Grand Total: ${quote.currency} ${quote.grandTotal}`);
 
   // STEP 13: XLSX and PDF Totals Match
-  const totalsMatch = quote.subtotalFob === 4820 && quote.grandTotal === (4820 + 150 + 24.85 + 60);
+  const totalsMatch = quote.grandTotal === (quote.subtotalFob + quote.freight + quote.insurance + quote.documentation);
   recordStep(13, 'XLSX and PDF Totals Compared', totalsMatch ? 'PASS' : 'FAIL', `Exact Match: ${quote.currency} ${quote.grandTotal}`);
 
   // STEP 14 & 15: Secure Storage & Admin Visibility

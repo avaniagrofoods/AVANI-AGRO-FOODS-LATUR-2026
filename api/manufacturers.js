@@ -4,7 +4,7 @@
 // GET /api/manufacturers | POST /api/manufacturers
 //
 // Access Control:
-// - Protected by Master Password (Samarth@1356)
+// - Protected by Master Password
 // - Requires valid signed session cookie (avani_gate_session)
 //   or Authorization: Bearer <MASTER_GATE_PASSWORD>
 // ============================================================
@@ -20,24 +20,26 @@ import {
 
 function verifyGateAccess(req) {
   const sessionSecret = getSessionSecret();
-  const masterPassword = process.env.PRIVATE_PORTAL_PASSWORD || process.env.MASTER_GATE_PASSWORD || 'Samarth@1356';
+  const masterPassword = process.env.PRIVATE_PORTAL_PASSWORD || process.env.MASTER_GATE_PASSWORD;
 
   // 1. Check Bearer token in Authorization header
   const authHeader = req.headers['authorization'];
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    if (verifyPassword(token, masterPassword)) {
+    const token = authHeader.substring(7).trim();
+    if (masterPassword && verifyPassword(token, masterPassword)) {
       return true;
     }
   }
 
   // 2. Check signed session cookie (avani_gate_session)
-  const cookies = parseCookies(req);
-  const sessionCookie = cookies['avani_gate_session'];
-  if (sessionCookie) {
-    const sessionId = parseAndVerifySignature(sessionCookie, sessionSecret);
-    if (sessionId) {
-      return true;
+  if (sessionSecret) {
+    const cookies = parseCookies(req);
+    const sessionCookie = cookies['avani_gate_session'];
+    if (sessionCookie) {
+      const sessionId = parseAndVerifySignature(sessionCookie, sessionSecret);
+      if (sessionId) {
+        return true;
+      }
     }
   }
 

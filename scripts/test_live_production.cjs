@@ -63,27 +63,43 @@ async function runLiveTests() {
     'Live Quotations Page (/private/quotations) returns HTTP 200',
     `Status: ${quotesRes.statusCode}, Body size: ${quotesRes.buffer.length} bytes`);
 
-  // 3. Centralized Product Master API Endpoint
-  console.log('\n--- 2. Testing Live Product Master API ---');
-  const prodMasterRes = await fetchUrl('https://www.avaniagrofoods.com/api/admin-quotations?action=get-products');
-  let productsJson = null;
-  try {
-    productsJson = JSON.parse(prodMasterRes.text);
-  } catch (e) {}
+  // 3. Security Check: Unauthenticated Admin Endpoint Protection (Section 23)
+  console.log('\n--- 2. Testing Live Security & Product Master API ---');
+  const unauthRes = await fetchUrl('https://www.avaniagrofoods.com/api/admin-quotations');
+  assert(unauthRes.statusCode === 401,
+    'Section 23 Security: Unauthenticated request to /api/admin-quotations is blocked with HTTP 401',
+    `Status: ${unauthRes.statusCode}`);
 
-  assert(prodMasterRes.statusCode === 200 && productsJson && Array.isArray(productsJson.products),
-    'Product Master endpoint returns canonical product catalog',
-    `Status: ${prodMasterRes.statusCode}, Products count: ${productsJson?.products?.length}`);
+  // Authenticated Admin Product Master Request (Environment-Driven Secret)
+  const adminPassword = process.env.AVANI_TEST_ADMIN_SECRET || process.env.PRIVATE_PORTAL_PASSWORD || process.env.MASTER_GATE_PASSWORD;
+  if (!adminPassword) {
+    console.log('[SECURITY NOTE] Skipping authenticated bearer test: AVANI_TEST_ADMIN_SECRET not set in environment.');
+  } else {
+    const prodMasterRes = await fetchUrl('https://www.avaniagrofoods.com/api/admin-quotations?action=get-products', {
+      headers: {
+        'Authorization': `Bearer ${adminPassword}`
+      }
+    });
 
-  const moringaProd = productsJson?.products?.find(p => p.productId === 'moringa-leaf-powder');
-  assert(moringaProd && moringaProd.hsCode === '12119029',
-    'Live Product Master serves Moringa HS Code 12119029',
-    `HS Code: ${moringaProd?.hsCode}`);
+    let productsJson = null;
+    try {
+      productsJson = JSON.parse(prodMasterRes.text);
+    } catch (e) {}
 
-  const onionProd = productsJson?.products?.find(p => p.productId === 'red-onion-powder');
-  assert(onionProd && onionProd.hsCode === '07122000',
-    'Live Product Master serves Red Onion HS Code 07122000',
-    `HS Code: ${onionProd?.hsCode}`);
+    assert(prodMasterRes.statusCode === 200 && productsJson && Array.isArray(productsJson.products),
+      'Authenticated Product Master endpoint returns canonical product catalog',
+      `Status: ${prodMasterRes.statusCode}, Products count: ${productsJson?.products?.length}`);
+
+    const moringaProd = productsJson?.products?.find(p => p.productId === 'moringa-leaf-powder');
+    assert(moringaProd && moringaProd.hsCode === '12119029',
+      'Live Product Master serves Moringa HS Code 12119029',
+      `HS Code: ${moringaProd?.hsCode}`);
+
+    const onionProd = productsJson?.products?.find(p => p.productId === 'red-onion-powder');
+    assert(onionProd && onionProd.hsCode === '07122000',
+      'Live Product Master serves Red Onion HS Code 07122000',
+      `HS Code: ${onionProd?.hsCode}`);
+  }
 
   // 4. Live Lead Capture & Auto-Quotation Draft
   console.log('\n--- 3. Testing Live Inquiry Submission & Auto-Quotation Draft ---');

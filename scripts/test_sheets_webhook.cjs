@@ -1,8 +1,12 @@
 // Use native global fetch in Node 18+
 
 async function testGoogleSheetsWebhook() {
-  const webhookUrl = "https://script.google.com/macros/s/AKfycbxQN2Z7Bi7V-iZFibeeFkOyOOaMeX-4jFF3hv4GIYSGILDpoKbMq1WpXlAlX_Uims8k/exec";
-  console.log('Testing Google Sheets Webhook:', webhookUrl);
+  const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK || process.env.VITE_GOOGLE_SHEETS_WEBHOOK;
+  if (!webhookUrl) {
+    console.log('[SECURITY NOTE] Skipping sheets webhook test: GOOGLE_SHEETS_WEBHOOK is not set in environment.');
+    return;
+  }
+  console.log('Testing Google Sheets Webhook (Environment-Driven)');
 
   const testInquiryPayload = {
     targetSheet: 'Customer Inquiries',

@@ -6,12 +6,12 @@
 // SETUP INSTRUCTIONS:
 // 1. Open the Google Sheet above
 // 2. Click Extensions → Apps Script
-// 3. Paste the script from /public/sheets-webhook.txt into the editor
+// 3. Paste the script from scripts/google-apps-script-crm.js into the editor
 // 4. Deploy → New Deployment → Web App → "Anyone" access
 // 5. Copy the deployment URL and paste into VITE_GOOGLE_SHEETS_WEBHOOK in .env.local
 // ============================================================
 
-const WEBHOOK_URL = import.meta.env.VITE_GOOGLE_SHEETS_WEBHOOK || "https://script.google.com/macros/s/AKfycbxQN2Z7Bi7V-iZFibeeFkOyOOaMeX-4jFF3hv4GIYSGILDpoKbMq1WpXlAlX_Uims8k/exec";
+const WEBHOOK_URL = import.meta.env.VITE_GOOGLE_SHEETS_WEBHOOK || '';
 
 /**
  * Log an affiliate event to Google Sheets

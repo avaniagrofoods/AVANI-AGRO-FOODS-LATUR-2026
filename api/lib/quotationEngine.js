@@ -963,7 +963,7 @@ export async function generateDocxQuotation(quoteInput) {
 /**
  * Generates protected Excel (.xlsx) Quotation File Buffer
  */
-export async function generateExcelQuotation(quoteInput, password = process.env.MASTER_GATE_PASSWORD || 'Samarth@1356') {
+export async function generateExcelQuotation(quoteInput, password = process.env.MASTER_GATE_PASSWORD || '') {
   const quote = calculateQuotation(quoteInput);
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'AVANI AGRO FOODS';
@@ -1052,10 +1052,12 @@ export async function generateExcelQuotation(quoteInput, password = process.env.
     { width: 22 }
   ];
 
-  await sheet.protect(password, {
-    selectLockedCells: true,
-    selectUnlockedCells: true
-  });
+  if (password) {
+    await sheet.protect(password, {
+      selectLockedCells: true,
+      selectUnlockedCells: true
+    });
+  }
 
   return await workbook.xlsx.writeBuffer();
 }

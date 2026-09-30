@@ -18,10 +18,14 @@ export default async function handler(req, res) {
   // Security Headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
 
   try {
-    const action = req.query.action || 'calculate';
+    const action = req.query?.action || 'calculate';
     const body = req.body || {};
+    if (typeof body !== 'object' || body === null) {
+      return res.status(400).json({ error: 'Invalid payload' });
+    }
 
     const quote = calculateQuotation(body);
 
@@ -47,7 +51,7 @@ export default async function handler(req, res) {
     }
 
     if (action === 'download-xlsx') {
-      const xlsxPassword = process.env.MASTER_GATE_PASSWORD || 'Samarth@1356';
+      const xlsxPassword = process.env.MASTER_GATE_PASSWORD || '';
       const xlsxBuffer = await generateExcelQuotation(quote, xlsxPassword);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', `attachment; filename="Quotation_${quote.quoteId}.xlsx"`);
