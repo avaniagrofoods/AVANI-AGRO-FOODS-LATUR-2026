@@ -65,6 +65,16 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
+      const url = new URL(req.url, 'http://localhost');
+      const action = req.query?.action || url.searchParams.get('action');
+      if (action === 'get-products') {
+        const { PRODUCT_MASTER } = await import('./lib/productMaster.js');
+        return res.status(200).json({
+          success: true,
+          products: PRODUCT_MASTER
+        });
+      }
+
       // Return structured sample leads & mock data if database is empty
       const sampleQuotes = [
         {
