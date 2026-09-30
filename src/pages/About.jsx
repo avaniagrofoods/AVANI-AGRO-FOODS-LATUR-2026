@@ -63,7 +63,7 @@ export default function About() {
             <div>
               <div className="card" style={{ padding: '36px 28px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', backdropFilter: 'blur(12px)' }}>
                 <div style={{ display: 'flex', gap: 20, marginBottom: 20, alignItems: 'center', justifyContent: 'center' }}>
-                  <img src="/logo.png" alt="AVANI AGRO FOODS" style={{ height: 80, width: 80, objectFit: 'contain', borderRadius: '50%', background: 'white', padding: 4 }} />
+                  <img src="/logo.png" alt="AVANI AGRO FOODS" onError={(e) => { e.target.onerror = null; e.target.src = '/assets/brand/avani-agro-foods-logo.png'; }} style={{ height: 80, width: 80, objectFit: 'contain', borderRadius: '50%', background: 'white', padding: 4 }} />
                   <div style={{ width: 90, height: 90, borderRadius: '50%', background: 'white', overflow: 'hidden', border: '3px solid #e6a817' }}>
                     <img src="/sachin.png" alt="Sachin Shinde" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
