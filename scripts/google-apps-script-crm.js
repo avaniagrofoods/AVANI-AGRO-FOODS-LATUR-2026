@@ -2,7 +2,28 @@
 // AVANI AGRO FOODS — CUSTOMER INQUIRY & QUOTATION CRM
 // Google Apps Script Webhook (Autonomous 5-Tab Architecture)
 // Sheet Name: AVANI AGRO FOODS — Customer Inquiry & Quotation CRM
+// Security Model: Shared Secret Authentication via Script Properties
 // ============================================================
+
+/**
+ * Timing-safe string equality check to prevent timing attacks.
+ * Iterates through all characters without early-exit.
+ */
+function timingSafeEqualStr(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') {
+    return false;
+  }
+  var lenA = a.length;
+  var lenB = b.length;
+  var result = lenA ^ lenB;
+  var maxLen = Math.max(lenA, lenB);
+  for (var i = 0; i < maxLen; i++) {
+    var codeA = i < lenA ? a.charCodeAt(i) : 0;
+    var codeB = i < lenB ? b.charCodeAt(i) : 0;
+    result |= (codeA ^ codeB);
+  }
+  return result === 0;
+}
 
 /**
  * Automatically initializes or retrieves sheet with standardized styling & headers
@@ -60,27 +81,70 @@ function seedProductMaster(ss) {
 
 /**
  * Handle HTTP GET Requests (Healthcheck & Metadata)
+ * Sanitized to avoid exposing sensitive internal spreadsheet IDs
  */
 function doGet(e) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
   return ContentService.createTextOutput(JSON.stringify({
     success: true,
-    message: 'AVANI AGRO FOODS CRM Webhook Active',
-    spreadsheetName: ss.getName(),
-    spreadsheetId: ss.getId(),
+    service: 'AVANI AGRO FOODS CRM Webhook Engine',
+    status: 'ACTIVE',
     timestamp: new Date().toISOString()
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
 /**
  * Handle HTTP POST Requests (Inquiries & Quotations Dispatch)
+ * Protected with mandatory CRM_WEBHOOK_SECRET authentication
  */
 function doPost(e) {
+  // 1. Validate payload existence
+  if (!e || !e.postData || !e.postData.contents) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: 'Bad Request: Missing request payload'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 2. Parse incoming JSON safely
+  var data;
+  try {
+    data = JSON.parse(e.postData.contents);
+  } catch (parseErr) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: 'Bad Request: Malformed JSON payload'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  if (!data || typeof data !== 'object') {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: 'Bad Request: Invalid payload structure'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 3. Verify CRM_WEBHOOK_SECRET from Script Properties
+  var expectedSecret = PropertiesService.getScriptProperties().getProperty('CRM_WEBHOOK_SECRET');
+  if (!expectedSecret) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: 'Server Misconfiguration: Webhook authentication is unconfigured'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  var incomingSecret = data.webhookSecret;
+  if (!incomingSecret || !timingSafeEqualStr(String(incomingSecret), String(expectedSecret))) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      error: 'Unauthorized: Invalid or missing webhook credentials'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 4. Concurrency lock and Spreadsheet write
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000); // 10-second lock protection against concurrency collisions
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var data = JSON.parse(e.postData.contents);
     var target = data.targetSheet || (data.type === 'QUOTATION' ? 'Quotations' : 'Customer Inquiries');
 
     // Initialize Required Tabs
@@ -89,7 +153,7 @@ function doPost(e) {
     getOrCreateSheet(ss, 'Settings', ['Key', 'Value', 'Description', 'Updated At']);
 
     // 1. CUSTOMER INQUIRIES TAB
-    if (target === 'Customer Inquiries' || data.type === 'CUSTOMER_INQUIRY') {
+    if (target === 'Customer Inquiries' || data.type === 'CUSTOMER_INQUIRY' || data.type === 'INQUIRY') {
       var inqHeaders = [
         'Inquiry ID', 'Inquiry Date', 'Buyer Name', 'Company', 'Email',
         'Phone', 'Country', 'Product', 'Buyer Requirement', 'Quantity Original',
@@ -133,7 +197,7 @@ function doPost(e) {
         data.lastUpdated || new Date().toISOString()
       ]);
 
-      // Log to Activity Log
+      // Log to Activity Log (Never log incoming secret)
       var logSheet = ss.getSheetByName('Activity Log');
       if (logSheet) {
         logSheet.appendRow([
@@ -189,7 +253,7 @@ function doPost(e) {
         data.updatedBy || 'Website Automation Engine'
       ]);
 
-      // Log to Activity Log
+      // Log to Activity Log (Never log incoming secret)
       var logSheetQ = ss.getSheetByName('Activity Log');
       if (logSheetQ) {
         logSheetQ.appendRow([
@@ -212,9 +276,11 @@ function doPost(e) {
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
-      error: err.message
+      error: 'Internal synchronization error'
     })).setMimeType(ContentService.MimeType.JSON);
   } finally {
-    lock.releaseLock();
+    try {
+      lock.releaseLock();
+    } catch (lockErr) {}
   }
 }

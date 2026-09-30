@@ -4,6 +4,27 @@
 // ============================================================
 
 const https = require('https');
+const fs = require('fs');
+
+if (fs.existsSync('.env.local')) {
+  const lines = fs.readFileSync('.env.local', 'utf8').split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#')) {
+      const idx = trimmed.indexOf('=');
+      if (idx !== -1) {
+        const k = trimmed.substring(0, idx).trim();
+        let v = trimmed.substring(idx + 1).trim();
+        if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+          v = v.slice(1, -1);
+        }
+        if (!process.env[k]) {
+          process.env[k] = v;
+        }
+      }
+    }
+  }
+}
 
 async function fetchUrl(url, options = {}) {
   return new Promise((resolve, reject) => {

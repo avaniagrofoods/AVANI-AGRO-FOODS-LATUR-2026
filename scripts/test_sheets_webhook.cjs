@@ -1,4 +1,25 @@
 // Use native global fetch in Node 18+
+const fs = require('fs');
+
+if (fs.existsSync('.env.local')) {
+  const lines = fs.readFileSync('.env.local', 'utf8').split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#')) {
+      const idx = trimmed.indexOf('=');
+      if (idx !== -1) {
+        const k = trimmed.substring(0, idx).trim();
+        let v = trimmed.substring(idx + 1).trim();
+        if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+          v = v.slice(1, -1);
+        }
+        if (!process.env[k]) {
+          process.env[k] = v;
+        }
+      }
+    }
+  }
+}
 
 async function testGoogleSheetsWebhook() {
   const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK || process.env.VITE_GOOGLE_SHEETS_WEBHOOK;
@@ -11,6 +32,7 @@ async function testGoogleSheetsWebhook() {
   const testInquiryPayload = {
     targetSheet: 'Customer Inquiries',
     type: 'INQUIRY',
+    webhookSecret: process.env.CRM_WEBHOOK_SECRET || '',
     inquiryId: 'AAF-INQ-2026-TEST01',
     inquiryDate: '2026-09-30',
     buyerName: 'VIKRAM (Automated Test)',

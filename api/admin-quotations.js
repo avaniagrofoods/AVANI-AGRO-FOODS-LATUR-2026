@@ -155,6 +155,7 @@ export default async function handler(req, res) {
               body: JSON.stringify({
                 targetSheet: 'Quotations',
                 type: 'QUOTATION',
+                webhookSecret: process.env.CRM_WEBHOOK_SECRET || '',
                 quotationId: quote.quoteId,
                 inquiryId: quote.inquiryId || '',
                 quoteDate: quote.date,
