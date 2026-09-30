@@ -259,7 +259,7 @@ export default function ExportCompliance() {
             </p>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
               <span style={{ background: 'rgba(255,255,255,0.12)', padding: '8px 20px', borderRadius: 20, fontSize: '0.85rem', fontWeight: 600 }}>🌍 35 Global Markets</span>
-              <span style={{ background: 'rgba(255,255,255,0.12)', padding: '8px 20px', borderRadius: 20, fontSize: '0.85rem', fontWeight: 600 }}>🌿 Moringa Powder (HS 0712.90.90)</span>
+              <span style={{ background: 'rgba(255,255,255,0.12)', padding: '8px 20px', borderRadius: 20, fontSize: '0.85rem', fontWeight: 600 }}>🌿 Moringa Powder (HS 12119029)</span>
               <span style={{ background: 'rgba(255,255,255,0.12)', padding: '8px 20px', borderRadius: 20, fontSize: '0.85rem', fontWeight: 600 }}>🧅 Red Onion Powder (HS 0712.20.00)</span>
               <span style={{ background: 'rgba(255,255,255,0.12)', padding: '8px 20px', borderRadius: 20, fontSize: '0.85rem', fontWeight: 600 }}>🏛️ Official Regulatory Sources</span>
             </div>

@@ -10,7 +10,8 @@ async function capture() {
 
   const filesToCapture = [
     { pdf: 'scratch/Vikram_Quotation_AAF-Q-2026-9075.pdf', out: 'scratch/vikram_quotation_visual_qa.png' },
-    { pdf: 'scratch/Long_Description_Wrapped.pdf', out: 'scratch/long_desc_quotation_visual_qa.png' }
+    { pdf: 'scratch/Long_Description_Wrapped.pdf', out: 'scratch/long_desc_quotation_visual_qa.png' },
+    { pdf: 'scratch/Multi_Product_Quotation.pdf', out: 'scratch/multi_product_quotation_visual_qa.png' }
   ];
 
   for (const item of filesToCapture) {

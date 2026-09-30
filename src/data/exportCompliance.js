@@ -54,7 +54,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇦🇪',
     region: 'Gulf & Middle East',
     authority: 'MOIAT (Ministry of Industry & Advanced Technology) / Dubai Municipality Food Safety',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Detailed Packing List',
       'Certificate of Origin (issued by authorized Indian Chamber / Export Inspection Council)',
@@ -89,7 +89,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇸🇦',
     region: 'Gulf & Middle East',
     authority: 'SFDA (Saudi Food and Drug Authority)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Packing List attested via Saudi SABER / FASAH platform',
       'Certificate of Origin (authorized Chamber of Commerce in India)',
@@ -122,7 +122,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇶🇦',
     region: 'Gulf & Middle East',
     authority: 'MOPH (Ministry of Public Health) — Department of Food Safety & Environmental Health',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice',
       'Packing List',
@@ -153,7 +153,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇰🇼',
     region: 'Gulf & Middle East',
     authority: 'PAFN (Public Authority for Food and Nutrition) / Ministry of Commerce & Industry',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice (legalized if requested)',
       'Packing List',
@@ -182,7 +182,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇴🇲',
     region: 'Gulf & Middle East',
     authority: 'MAFWR (Ministry of Agriculture, Fisheries and Water Resources) / Food Safety Center',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Packing List',
       'Certificate of Origin',
@@ -210,7 +210,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇧🇭',
     region: 'Gulf & Middle East',
     authority: 'Ministry of Health — Food Control Section / Supreme Council for Environment',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Packing List',
       'Certificate of Origin',
@@ -242,7 +242,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇯🇵',
     region: 'Asia Pacific',
     authority: 'MHLW (Ministry of Health, Labour and Welfare) / MAFF (Ministry of Agriculture, Forestry and Fisheries)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Detailed Packing List',
       'Certificate of Origin',
@@ -276,7 +276,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇰🇷',
     region: 'Asia Pacific',
     authority: 'MFDS (Ministry of Food and Drug Safety) / QIA (Animal and Plant Quarantine Agency)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Packing List',
       'Certificate of Origin (under India-Korea CEPA for preferential tariff)',
@@ -309,7 +309,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇸🇬',
     region: 'Asia Pacific',
     authority: 'SFA (Singapore Food Agency)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Packing List',
       'Certificate of Origin',
@@ -340,7 +340,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇲🇾',
     region: 'Asia Pacific',
     authority: 'Food Safety and Quality Division (FSQD) — Ministry of Health / MAFI (MAQIS)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Packing List',
       'Certificate of Origin (under India-Malaysia CECA / AIFTA)',
@@ -372,7 +372,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇮🇩',
     region: 'Asia Pacific',
     authority: 'BPOM (National Agency of Drug and Food Control) / Ministry of Agriculture (Barantin)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Packing List',
       'Certificate of Origin (Form AI under ASEAN-India FTA)',
@@ -404,7 +404,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇹🇭',
     region: 'Asia Pacific',
     authority: 'Thai FDA (Food and Drug Administration) / Department of Agriculture (DOA)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Packing List',
       'Certificate of Origin (Form AIFTA)',
@@ -433,7 +433,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇻🇳',
     region: 'Asia Pacific',
     authority: 'VFA (Vietnam Food Administration) — Ministry of Health / Plant Protection Department (MARD)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Packing List',
       'Certificate of Origin (AIFTA Form AI)',
@@ -461,7 +461,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇵🇭',
     region: 'Asia Pacific',
     authority: 'FDA Philippines (Center for Food Regulation and Research) / Bureau of Plant Industry (BPI)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Packing List',
       'Certificate of Origin',
@@ -490,7 +490,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇨🇳',
     region: 'Asia Pacific',
     authority: 'GACC (General Administration of Customs of the People\'s Republic of China) / MARA',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Packing List',
       'Certificate of Origin',
@@ -522,7 +522,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇭🇰',
     region: 'Asia Pacific',
     authority: 'CFS (Centre for Food Safety) — Food and Environmental Hygiene Department (FEHD)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Packing List',
       'Certificate of Origin',
@@ -550,7 +550,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇹🇼',
     region: 'Asia Pacific',
     authority: 'TFDA (Taiwan Food and Drug Administration) / BAPHIQ (Animal and Plant Health Inspection)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Packing List',
       'Certificate of Origin',
@@ -582,7 +582,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇪🇺',
     region: 'Europe',
     authority: 'European Commission (DG SANTE) / EFSA (European Food Safety Authority)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Detailed Packing List',
       'Certificate of Origin (EUR.1 or REX registered exporter statement)',
@@ -616,7 +616,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇩🇪',
     region: 'Europe',
     authority: 'BVL (Federal Office of Consumer Protection and Food Safety) / BLE',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'All EU Mandatory Documents (see EU general framework)',
       'TRACES NT CHED Document',
@@ -642,7 +642,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇬🇧',
     region: 'Europe',
     authority: 'FSA (Food Standards Agency) / Defra (Department for Environment, Food & Rural Affairs)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Detailed Packing List',
       'Certificate of Origin (standard or UK GSP statement)',
@@ -675,7 +675,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇫🇷',
     region: 'Europe',
     authority: 'DGCCRF (Directorate General for Competition Policy, Consumer Affairs and Fraud Control) / DGAL',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'All EU Mandatory Documents (TRACES NT CHED)',
       'Phytosanitary Certificate',
@@ -701,7 +701,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇳🇱',
     region: 'Europe',
     authority: 'NVWA (Netherlands Food and Consumer Product Safety Authority)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'EU Standard Documentation & TRACES NT CHED',
       'Phytosanitary Certificate',
@@ -727,7 +727,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇮🇹',
     region: 'Europe',
     authority: 'Ministero della Salute (Ministry of Health) — DGISAN / USMAF (Port Health)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'EU Standard Import Dossier & TRACES CHED',
       'Phytosanitary Certificate',
@@ -753,7 +753,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇪🇸',
     region: 'Europe',
     authority: 'AESAN (Spanish Agency for Food Safety and Nutrition) / Sanidad Exterior',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'EU Framework Import Dossier & TRACES CHED',
       'Phytosanitary Certificate',
@@ -779,7 +779,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇧🇪',
     region: 'Europe',
     authority: 'FAVV / AFSCA (Federal Agency for the Safety of the Food Chain)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: ['EU Standard Import Documentation', 'TRACES CHED', 'Phytosanitary Cert', 'Batch COA'],
     conditionalDocuments: ['Bilingual Dutch-French label for Belgian retail market'],
     recommendedCertifications: ['IFS', 'BRCGS', 'ISO 22000'],
@@ -801,7 +801,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇵🇱',
     region: 'Europe',
     authority: 'GIS (Chief Sanitary Inspectorate) / IJHARS',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: ['EU Standard Import Dossier', 'TRACES CHED', 'Batch COA'],
     conditionalDocuments: ['Polish language label for consumer sales'],
     recommendedCertifications: ['ISO 22000', 'HACCP', 'IFS'],
@@ -823,7 +823,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇸🇪',
     region: 'Europe',
     authority: 'Livsmedelsverket (Swedish Food Agency)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: ['EU Standard Import Documentation', 'TRACES CHED', 'Batch COA'],
     conditionalDocuments: ['KRAV / EU Organic certificate (highly valued in Nordic markets)'],
     recommendedCertifications: ['KRAV Organic', 'BRCGS', 'ISO 22000'],
@@ -845,7 +845,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇩🇰',
     region: 'Europe',
     authority: 'Fødevarestyrelsen (Danish Veterinary and Food Administration)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: ['EU Standard Import Documentation', 'TRACES CHED', 'Batch COA'],
     conditionalDocuments: ['Danish language label', 'Statskontrolleret økologisk (Ø-mærket) organic verification'],
     recommendedCertifications: ['Ø-mærket / EU Organic', 'BRCGS', 'ISO 22000'],
@@ -871,7 +871,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇺🇸',
     region: 'North America',
     authority: 'FDA (Food and Drug Administration) / USDA (Animal and Plant Health Inspection Service - APHIS)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Packing List',
       'Certificate of Origin',
@@ -906,7 +906,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇨🇦',
     region: 'North America',
     authority: 'CFIA (Canadian Food Inspection Agency) / Health Canada',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Detailed Packing List',
       'Canada Customs Invoice (CCI) or commercial invoice with all CCI data elements',
@@ -940,7 +940,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇲🇽',
     region: 'North America',
     authority: 'COFEPRIS (Federal Commission for Protection against Sanitary Risks) / SENASICA (SADER)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice (Factura Comercial) & Packing List',
       'Certificate of Origin',
@@ -975,7 +975,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇦🇺',
     region: 'Oceania',
     authority: 'DAFF (Department of Agriculture, Fisheries and Forestry — Biosecurity) / FSANZ (Food Standards Australia New Zealand)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Detailed Packing List',
       'Certificate of Origin',
@@ -1008,7 +1008,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇳🇿',
     region: 'Oceania',
     authority: 'MPI (Ministry for Primary Industries — Biosecurity New Zealand) / FSANZ',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Packing List',
       'Certificate of Origin',
@@ -1040,7 +1040,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇿🇦',
     region: 'Africa',
     authority: 'DALRRD (Department of Agriculture, Land Reform and Rural Development) / Department of Health (Directorate: Food Control)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Detailed Packing List',
       'Certificate of Origin',
@@ -1074,7 +1074,7 @@ export const COMPLIANCE_DATA = [
     flag: '🇧🇷',
     region: 'Latin America',
     authority: 'ANVISA (National Health Surveillance Agency) / MAPA (Ministry of Agriculture and Livestock)',
-    products: ['Moringa Powder (HS 0712.90.90)', 'Red Onion Powder (HS 0712.20.00)'],
+    products: ['Moringa Powder (HS 1211.90.29 / 12119029)', 'Red Onion Powder (HS 0712.20.00)'],
     mandatoryDocuments: [
       'Commercial Invoice & Detailed Packing List (in English and Portuguese)',
       'Certificate of Origin',

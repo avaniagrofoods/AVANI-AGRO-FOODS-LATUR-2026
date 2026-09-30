@@ -326,6 +326,127 @@ async function runMasterAcceptanceTests() {
     'Positive 6: Official AVANI AGRO FOODS company branding confirmed in PDF metadata & header',
     `Verified PDF Author: "${pdfAuthor}", Title: "${pdfTitle}"`);
 
+  // ------------------------------------------------------------
+  // 7. SECTION 29 — REGRESSION TESTS (100 KG @ 400 & 500 KG @ 425)
+  // ------------------------------------------------------------
+  console.log('\n--- 7. SECTION 29 REGRESSION TESTS ---');
+  
+  // Regression Case 1: 100 KG @ INR 400.00 = INR 40,000.00
+  const reg1 = calculateQuotation({
+    customerName: 'Test Buyer 100KG',
+    companyName: 'Small Batch Traders',
+    country: 'INDIA',
+    currency: 'INR',
+    product: 'Moringa Leaf Powder',
+    quantity: 100,
+    rate: 400
+  });
+
+  assert(reg1.items[0].quantity === 100,
+    'Regression 1: Quantity is 100 KG (not overridden by 18,000)',
+    `Qty: ${reg1.items[0].quantity} KG`);
+  assert(reg1.items[0].rate === 400,
+    'Regression 1: Rate is INR 400.00 (not overridden by 350)',
+    `Rate: INR ${reg1.items[0].rate}`);
+  assert(reg1.items[0].amount === 40000 && reg1.grandTotal === 40000,
+    'Regression 1: Subtotal and Grand Total match exactly INR 40,000.00',
+    `Grand Total: INR ${reg1.grandTotal}`);
+
+  // Regression Case 2: 500 KG @ INR 425.00 = INR 212,500.00
+  const reg2 = calculateQuotation({
+    customerName: 'Test Buyer 500KG',
+    companyName: 'Medium Batch Traders',
+    country: 'INDIA',
+    currency: 'INR',
+    product: 'Moringa Leaf Powder',
+    quantity: 500,
+    rate: 425
+  });
+
+  assert(reg2.items[0].quantity === 500,
+    'Regression 2: Quantity is 500 KG',
+    `Qty: ${reg2.items[0].quantity} KG`);
+  assert(reg2.items[0].rate === 425,
+    'Regression 2: Rate is INR 425.00',
+    `Rate: INR ${reg2.items[0].rate}`);
+  assert(reg2.items[0].amount === 212500 && reg2.grandTotal === 212500,
+    'Regression 2: Subtotal and Grand Total match exactly INR 212,500.00',
+    `Grand Total: INR ${reg2.grandTotal}`);
+
+  // ------------------------------------------------------------
+  // 8. SECTION 30 — MULTI-PRODUCT TEST (Moringa + Red Onion)
+  // ------------------------------------------------------------
+  console.log('\n--- 8. SECTION 30 MULTI-PRODUCT TEST ---');
+  
+  const multiQuote = calculateQuotation({
+    quoteId: 'AAF-Q-2026-MULTI',
+    customerName: 'Global Commodities Group',
+    companyName: 'Multitrade International',
+    country: 'UAE',
+    currency: 'INR',
+    incoterm: 'FOB NHAVA SHEVA',
+    items: [
+      {
+        productId: 'moringa-leaf-powder',
+        name: 'Moringa Leaf Powder',
+        description: 'Moringa Leaf Powder — Natural Green, 80–100 Mesh, Moisture Max 7–8%, 100% Pure, 25 kg Food-Grade HDPE Bags.',
+        hscode: '12119029',
+        quantity: 18000,
+        unit: 'KG',
+        rate: 350
+      },
+      {
+        productId: 'red-onion-powder',
+        name: 'Dehydrated Red Onion Powder',
+        description: 'Dehydrated Red Onion Powder — Premium Export Grade, 80–100 Mesh, Moisture < 6%, 25 kg Cartons.',
+        hscode: '07122000',
+        quantity: 2000,
+        unit: 'KG',
+        rate: 800
+      }
+    ],
+    freight: 15000,
+    documentation: 5000
+  });
+
+  assert(multiQuote.items.length === 2,
+    'Multi-product quotation contains exactly 2 line items',
+    `Items Count: ${multiQuote.items.length}`);
+
+  const item1 = multiQuote.items[0];
+  const item2 = multiQuote.items[1];
+
+  assert(item1.hscode === '12119029' && item2.hscode === '07122000',
+    'No HS Code cross-contamination (Item 1: 12119029, Item 2: 07122000)',
+    `Item 1 HS: ${item1.hscode} | Item 2 HS: ${item2.hscode}`);
+
+  assert(item1.amount === 6300000 && item2.amount === 1600000,
+    'Separate line totals calculated correctly (6,300,000 and 1,600,000)',
+    `Item 1: INR ${item1.amount} | Item 2: INR ${item2.amount}`);
+
+  const expectedCombinedSubtotal = 6300000 + 1600000;
+  assert(multiQuote.subtotal === expectedCombinedSubtotal,
+    'Combined subtotal is exact: INR 7,900,000.00',
+    `Subtotal: INR ${multiQuote.subtotal}`);
+
+  const expectedMultiGrandTotal = expectedCombinedSubtotal + 15000 + 5000;
+  assert(multiQuote.grandTotal === expectedMultiGrandTotal,
+    'Multi-product Grand Total includes freight & documentation: INR 7,920,000.00',
+    `Grand Total: INR ${multiQuote.grandTotal}`);
+
+  // Multi-product PDF & DOCX generation
+  const multiPdfBuffer = await generatePdfQuotation(multiQuote);
+  assert(multiPdfBuffer && multiPdfBuffer.length > 5000,
+    'Multi-product PDF generated with multiple table rows and separate HS codes',
+    `Multi PDF Size: ${multiPdfBuffer.length} bytes`);
+  fs.writeFileSync(path.join(scratchDir, 'Multi_Product_Quotation.pdf'), multiPdfBuffer);
+
+  const multiDocxBuffer = await generateDocxQuotation(multiQuote);
+  assert(multiDocxBuffer && multiDocxBuffer.length > 3000,
+    'Multi-product DOCX generated with multiple table rows and separate HS codes',
+    `Multi DOCX Size: ${multiDocxBuffer.length} bytes`);
+  fs.writeFileSync(path.join(scratchDir, 'Multi_Product_Quotation.docx'), multiDocxBuffer);
+
   // Summary
   console.log('\n════════════════════════════════════════════════════════════════');
   console.log(`  TEST RESULTS: ${passed} PASSED, ${failed} FAILED (TOTAL: ${passed + failed})`);

@@ -4,9 +4,8 @@ import SEO from '../components/SEO'
 import { Calculator, Search, Calculator as CalcIcon, Info, ArrowRight } from 'lucide-react'
 
 const HS_CODES = [
-  { code: '1211.90.90', product: 'Moringa Leaves (Dehydrated)', notes: 'Primary code for whole/crushed leaves' },
-  { code: '0712.90.90', product: 'Moringa Powder (Export Grade)', notes: 'Standard powder code for export' },
-  { code: '0712.20.00', product: 'Red Onion Powder', notes: 'Specific for dehydrated onion products' },
+  { code: '1211.90.29 (12119029)', product: 'Moringa Leaf Powder (Export Grade)', notes: 'Primary canonical HS Code for Moringa Oleifera leaf powder' },
+  { code: '0712.20.00 (07122000)', product: 'Dehydrated Red Onion Powder', notes: 'Canonical HS Code for dehydrated onion powder' },
   { code: '0703.10.10', product: 'Fresh Red Onions', notes: 'For fresh export bulk orders' },
   { code: '1106.30.90', product: 'Moringa Seed Powder', notes: 'Seeds and related meal products' },
 ]

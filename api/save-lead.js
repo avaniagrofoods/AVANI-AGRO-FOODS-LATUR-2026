@@ -330,6 +330,7 @@ export default async function handler(req, res) {
       quoteId: quote.quoteId,
       inquiry: inquiryRecord,
       quote,
+      quotationDraft: quote,
       integrations
     });
 

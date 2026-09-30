@@ -10,7 +10,7 @@ import {
   Calculator, Search, Filter, ShieldCheck, X, FileCheck, Layers, Save
 } from 'lucide-react'
 import { BUSINESS_INFO, WHATSAPP_NUMBER } from '../data/links'
-import { PRODUCT_MASTER, getProductById, matchProductMaster } from '../data/productMaster'
+import { PRODUCT_MASTER, getProductById, matchProductMaster, parseQuantityKg, parseUnitRate } from '../data/productMaster'
 
 const STATUS_LIST = ['ALL', 'DRAFT', 'SENT', 'VIEWED', 'NEGOTIATION', 'REVISED', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'CANCELLED']
 
@@ -120,8 +120,9 @@ export default function AdminQuotations() {
       const localEnquiries = JSON.parse(localStorage.getItem('avani_enquiries') || '[]')
       const enquiryQuotes = localEnquiries.map((e, idx) => {
         const pm = matchProductMaster(e.product || '')
-        const qty = Number(e.quantityNormalizedKg || e.quantity) || 500
-        const rate = Number(e.requestedPrice || e.rate) || (e.currency === 'INR' ? pm.defaultRateInr : pm.defaultRateUsd)
+        const qty = parseQuantityKg(e.quantityNormalizedKg || e.quantity, e.message || '')
+        const fallbackRate = (e.currency === 'INR' || e.country?.toLowerCase().includes('india')) ? pm.defaultRateInr : pm.defaultRateUsd
+        const rate = parseUnitRate(e.requestedPrice || e.targetPrice || e.rate, fallbackRate)
         return {
           quoteId: e.quoteId || `AAF-Q-2026-${2000 + idx}`,
           inquiryId: e.inquiryId || `AAF-INQ-2026-${1000 + idx}`,

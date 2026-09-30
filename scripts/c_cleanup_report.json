@@ -1,0 +1,34 @@
+{
+  "beforeFreeGB": 2.3009,
+  "beforeFreeBytes": 2470600704,
+  "afterFreeGB": 2.3262,
+  "afterFreeBytes": 2497748992,
+  "removedGB": "0.025",
+  "removedBytes": 27148288,
+  "auditLog": [
+    {
+      "path": "C:\\Users\\ALPHA-1\\AppData\\Local\\npm-cache",
+      "fileType": "Directory / Cache",
+      "size": "~1.7 GB",
+      "reason": "Safe npm package download cache",
+      "action": "npm cache clean --force",
+      "timestamp": "2026-09-30T00:54:23.532Z"
+    },
+    {
+      "path": "C:\\Users\\ALPHA-1\\AppData\\Local\\Temp",
+      "fileType": "Temporary files (>1hr old)",
+      "size": "0 MB",
+      "reason": "Temporary application files",
+      "action": "Removed 14 unlocked files/dirs",
+      "timestamp": "2026-09-30T00:54:26.464Z"
+    },
+    {
+      "path": "C:\\Users\\ALPHA-1\\Downloads\\21MAY2026\\SACHIN SHINDE DOCUMENTS\\DEVELOPEMENT TOOLS\\2-AVANI AGRO FOODS LATUR 2026\\vite.config.js.timestamp-1787214852080-5c957d81a44d28.mjs",
+      "fileType": "Stale Build Artifact",
+      "size": "0 bytes",
+      "reason": "Temporary vite config timestamp file",
+      "action": "Removed file",
+      "timestamp": "2026-09-30T00:54:26.466Z"
+    }
+  ]
+}

@@ -145,6 +145,53 @@ export function matchProductMaster(query) {
 }
 
 /**
+ * Parse quantity in KG safely from user string or numeric input
+ * e.g., "18 MT" -> 18000, "18,000" -> 18000, "18,000 KG" -> 18000
+ */
+export function parseQuantityKg(qtyInput, rawText = '') {
+  if (typeof qtyInput === 'number' && !isNaN(qtyInput) && qtyInput > 0) {
+    return Math.round(qtyInput);
+  }
+  const str = `${qtyInput || ''} ${rawText || ''}`.toLowerCase();
+  
+  // Check for Metric Tons (MT / Metric Ton)
+  const mtMatch = str.match(/([\d,]+(?:\.\d+)?)\s*(?:mt|metric\s*ton)/i);
+  if (mtMatch) {
+    const val = parseFloat(mtMatch[1].replace(/,/g, ''));
+    if (!isNaN(val) && val > 0) return Math.round(val * 1000);
+  }
+
+  // Check for KG
+  const kgMatch = str.match(/([\d,]+(?:\.\d+)?)\s*(?:kg|kgs|kilogram)/i);
+  if (kgMatch) {
+    const val = parseFloat(kgMatch[1].replace(/,/g, ''));
+    if (!isNaN(val) && val > 0) return Math.round(val);
+  }
+
+  // Pure number fallback (stripping commas and extra text)
+  if (typeof qtyInput === 'string') {
+    const cleanNum = parseFloat(qtyInput.replace(/,/g, '').replace(/[^\d.]/g, ''));
+    if (!isNaN(cleanNum) && cleanNum > 0) return Math.round(cleanNum);
+  }
+
+  return 100; // Default only when completely unspecified
+}
+
+/**
+ * Parse unit rate cleanly from input (handles "INR 350", "₹350", "350.00", etc.)
+ */
+export function parseUnitRate(rateInput, fallback = 350) {
+  if (typeof rateInput === 'number' && !isNaN(rateInput) && rateInput > 0) {
+    return rateInput;
+  }
+  if (typeof rateInput === 'string') {
+    const clean = parseFloat(rateInput.replace(/,/g, '').replace(/[^\d.]/g, ''));
+    if (!isNaN(clean) && clean > 0) return clean;
+  }
+  return fallback;
+}
+
+/**
  * Get active products list
  */
 export function getActiveProducts() {

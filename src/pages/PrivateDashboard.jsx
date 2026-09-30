@@ -10,6 +10,7 @@ import {
   ExternalLink, FileSpreadsheet
 } from 'lucide-react'
 import { BUSINESS_INFO, WHATSAPP_NUMBER } from '../data/links'
+import { matchProductMaster, parseQuantityKg, parseUnitRate } from '../data/productMaster'
 
 export default function PrivateDashboard() {
   const navigate = useNavigate()
@@ -60,22 +61,37 @@ export default function PrivateDashboard() {
         }
       } catch {}
 
+      const savedQuotes = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
       const localEnquiries = JSON.parse(localStorage.getItem('avani_enquiries') || '[]')
-      const localQuotes = localEnquiries.map((e, idx) => ({
-        quoteId: e.quoteId || `AAF-Q-2026-${1001 + idx}`,
-        customerName: e.fullName || e.name || 'Direct Buyer',
-        companyName: e.companyName || e.company || 'B2B Importer',
-        country: e.country || 'International',
-        product: e.product || 'Moringa Powder',
-        quantity: e.quantity || 500,
-        currency: 'USD',
-        incoterm: e.incoterm || 'FOB Nhava Sheva',
-        grandTotal: ((Number(e.quantity) || 500) * 4.82) + 210,
-        status: e.status || 'NEW',
-        date: e.date ? e.date.split(',')[0] : new Date().toISOString().split('T')[0]
-      }))
+      const enquiryQuotes = localEnquiries.map((e, idx) => {
+        // If there's already a full quotation saved for this enquiry, use it
+        const matchedQuote = savedQuotes.find(q => q.quoteId === e.quoteId || (e.inquiryId && q.inquiryId === e.inquiryId))
+        if (matchedQuote) return matchedQuote
 
-      const merged = [...localQuotes, ...serverQuotes]
+        const pm = matchProductMaster(e.product || '')
+        const qty = parseQuantityKg(e.quantityNormalizedKg || e.quantity, e.message || '')
+        const isIndia = (e.currency === 'INR' || e.country?.toLowerCase().includes('india'))
+        const fallbackRate = isIndia ? pm.defaultRateInr : pm.defaultRateUsd
+        const rate = parseUnitRate(e.requestedPrice || e.targetPrice || e.rate, fallbackRate)
+        const subtotal = Number((qty * rate).toFixed(2))
+
+        return {
+          quoteId: e.quoteId || `AAF-Q-2026-${1001 + idx}`,
+          inquiryId: e.inquiryId || `AAF-INQ-2026-${1001 + idx}`,
+          customerName: e.fullName || e.name || 'Direct Buyer',
+          companyName: e.companyName || e.company || 'B2B Importer',
+          country: e.country || (isIndia ? 'INDIA' : 'International'),
+          product: pm.productName,
+          quantity: qty,
+          currency: isIndia ? 'INR' : (e.currency || 'USD'),
+          incoterm: e.incoterm || 'FOB NHAVA SHEVA (JNPT MUMBAI)',
+          grandTotal: subtotal,
+          status: e.status || 'DRAFT',
+          date: e.date ? e.date.split(',')[0] : new Date().toISOString().split('T')[0]
+        }
+      })
+
+      const merged = [...savedQuotes, ...enquiryQuotes, ...serverQuotes]
       const unique = Array.from(new Map(merged.map(q => [q.quoteId, q])).values())
       setQuotations(unique)
 

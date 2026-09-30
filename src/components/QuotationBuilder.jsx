@@ -1,29 +1,39 @@
 import { useState } from 'react'
 import { Printer, Plus, Trash2, Download } from 'lucide-react'
 import { BUSINESS_INFO } from '../data/links'
+import { PRODUCT_MASTER } from '../data/productMaster'
 
+const moringa = PRODUCT_MASTER[0]
 const defaultItems = [
-  { id: 1, description: 'Premium Moringa Powder — Export Grade A', hscode: '0712.90.90', quantity: 100, unit: 'KG', rate: 350, amount: 35000 },
+  {
+    id: 1,
+    description: moringa.fullDescription,
+    hscode: moringa.hsCode,
+    quantity: 18000,
+    unit: 'KG',
+    rate: 350,
+    amount: 6300000
+  },
 ]
 
-const generateQN = () => `AAF-${Date.now().toString().slice(-6)}`
+const generateQN = () => `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`
 
-export default function QuotationBuilder({ defaultName = '', defaultEmail = '', defaultCountry = '' }) {
+export default function QuotationBuilder({ defaultName = 'VIKRAM', defaultEmail = 'vikrajaexports@gmail.com', defaultCountry = 'INDIA' }) {
   const [qn] = useState(generateQN())
-  const today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
-  const validUntil = new Date(Date.now() + 15 * 86400000).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
+  const today = '29 September 2026'
+  const validUntil = '12 Oct 2026'
 
   const [items, setItems] = useState(defaultItems)
-  const [consignee, setConsignee] = useState({ name: defaultName, address: '', country: defaultCountry, email: defaultEmail, phone: '' })
+  const [consignee, setConsignee] = useState({ name: defaultName, address: 'Solapur, Maharashtra', country: defaultCountry, email: defaultEmail, phone: '84464 19006' })
   const [terms, setTerms] = useState({
-    delivery: 'CIF',
-    payment: '30% Advance, 70% before shipment',
-    origin: 'India (Maharashtra)',
+    delivery: 'FOB Nhava Sheva (JNPT Mumbai)',
+    payment: '50% Advance Payment, Balance 50% Before Dispatch.',
+    origin: 'Latur, Maharashtra, India / JNPT Nhava Sheva, Mumbai',
     port: 'Nhava Sheva / JNPT, Mumbai',
-    packing: 'Multi-wall Kraft Bags (25 kg each)',
-    inspection: 'NABL Lab Certificate of Analysis provided',
-    lead: '14-21 working days from PO confirmation',
-    currency: 'USD',
+    packing: '25 kg Food-Grade HDPE Bags included.',
+    inspection: "Pre-dispatch inspection permitted at seller's warehouse at buyer's cost.",
+    lead: 'Shipment within 60–75 days from the date of advance payment confirmation.',
+    currency: 'INR',
   })
 
   const addRow = () => {
@@ -99,11 +109,11 @@ export default function QuotationBuilder({ defaultName = '', defaultEmail = '', 
       {/* Quotation Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))', color: 'white', padding: '32px', borderRadius: 'var(--radius-md)' }}>
         <div>
-          <img src="/logo.jpeg" alt="Logo" style={{ height: 56, marginBottom: 12, borderRadius: 8 }} onError={e => e.target.style.display='none'} />
+          <img src="/assets/brand/avani-agro-foods-logo.png" alt="AVANI AGRO FOODS Logo" style={{ height: 60, marginBottom: 12, borderRadius: 8, background: 'white', padding: '4px' }} onError={e => { e.target.src = '/logo.png'; }} />
           <div style={{ fontWeight: 900, fontSize: '1.3rem' }}>{BUSINESS_INFO.name}</div>
           <div style={{ opacity: 0.8, fontSize: '0.8rem' }}>{BUSINESS_INFO.address.full}</div>
           <div style={{ opacity: 0.8, fontSize: '0.8rem' }}>{BUSINESS_INFO.phone} | {BUSINESS_INFO.email}</div>
-          <div style={{ opacity: 0.8, fontSize: '0.8rem' }}>Udyam Registered | Partner FSSAI &amp; APEDA Compliant</div>
+          <div style={{ opacity: 0.8, fontSize: '0.8rem' }}>Trader &amp; Export Marketing Partner | MSME Udyam Registered</div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', opacity: 0.7, marginBottom: 6 }}>Proforma Invoice</div>
@@ -208,11 +218,18 @@ export default function QuotationBuilder({ defaultName = '', defaultEmail = '', 
         </div>
       </div>
 
-      {/* Notes */}
-      <div style={{ padding: '20px', background: 'linear-gradient(135deg, rgba(26,77,46,0.05), rgba(26,77,46,0.02))', borderRadius: 'var(--radius-md)', border: '1px solid rgba(26,77,46,0.1)', marginBottom: 24 }}>
-        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', lineHeight: 1.8, margin: 0 }}>
-          <strong>Terms & Conditions:</strong> This quotation is valid for {validUntil}. Prices subject to market fluctuation. Final quantity &amp; price confirmed on receipt of Purchase Order. All products are FSSAI compliant. Documents provided: Certificate of Analysis, Phytosanitary Certificate, Certificate of Origin, Packing List, Commercial Invoice. Bank Details shared upon PO confirmation.
-        </p>
+      {/* Commercial Notes & Terms */}
+      <div style={{ padding: '20px', background: '#f8faf8', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', marginBottom: 24 }}>
+        <div style={{ fontWeight: 800, fontSize: '0.8rem', color: 'var(--color-primary)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Commercial Notes &amp; Terms:</div>
+        <ol style={{ fontSize: '0.78rem', color: 'var(--color-text)', lineHeight: 1.8, margin: 0, paddingLeft: 18 }}>
+          <li><strong>Payment Terms:</strong> 50% Advance Payment, Balance 50% Before Dispatch.</li>
+          <li><strong>Price Basis:</strong> FOB Shipment terms (Final port details to be confirmed by Buyer).</li>
+          <li><strong>Delivery Timeline:</strong> Shipment within 60–75 days from the date of advance payment confirmation.</li>
+          <li><strong>Packaging:</strong> 25 kg Food-Grade HDPE Bags included.</li>
+          <li><strong>Validity:</strong> This quotation is valid until 12 Oct 2026.</li>
+          <li><strong>Inspection:</strong> Pre-dispatch inspection permitted at seller's warehouse at buyer's cost.</li>
+          <li><strong>Jurisdiction:</strong> All disputes are subject to the exclusive jurisdiction of competent courts in Latur, Maharashtra, India.</li>
+        </ol>
       </div>
 
       {/* Action Buttons */}

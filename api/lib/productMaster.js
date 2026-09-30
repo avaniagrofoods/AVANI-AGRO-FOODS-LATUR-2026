@@ -6,5 +6,7 @@ export {
   PRODUCT_MASTER,
   getProductById,
   matchProductMaster,
-  getActiveProducts
+  getActiveProducts,
+  parseQuantityKg,
+  parseUnitRate
 } from '../../src/data/productMaster.js';

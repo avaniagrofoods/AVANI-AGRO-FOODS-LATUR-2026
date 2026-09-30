@@ -203,6 +203,8 @@ ${form.additionalMessage}
         inquiryId: generatedInquiryId,
         quoteId: generatedQuoteId,
         ...form,
+        quantityNormalizedKg: leadResponse?.inquiry?.quantityNormalizedKg || form.quantity,
+        requestedPrice: leadResponse?.inquiry?.requestedPrice || form.targetPrice,
         currency: derivedCurrency,
         date: new Date().toLocaleString(),
         isFulfilled: false
@@ -211,9 +213,10 @@ ${form.additionalMessage}
       localStorage.setItem('avani_enquiries', JSON.stringify([newEnquiry, ...existingEnquiries]))
 
       // Also store automatic quotation draft locally if generated
-      if (leadResponse?.quotationDraft) {
+      const draftQuote = leadResponse?.quotationDraft || leadResponse?.quote
+      if (draftQuote) {
         const existingQuotes = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
-        const updatedQuotes = [leadResponse.quotationDraft, ...existingQuotes.filter(q => q.quoteId !== leadResponse.quotationDraft.quoteId)]
+        const updatedQuotes = [draftQuote, ...existingQuotes.filter(q => q.quoteId !== draftQuote.quoteId)]
         localStorage.setItem('avani_quotations', JSON.stringify(updatedQuotes))
       }
 

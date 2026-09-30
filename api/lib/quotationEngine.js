@@ -137,8 +137,20 @@ export function calculateQuotation(input = {}) {
   if (Array.isArray(input.items) && input.items.length > 0) {
     items = input.items.map((item, idx) => {
       const pm = item.productId ? getProductById(item.productId) : matchProductMaster(item.description || item.name || '');
-      const qty = Number(item.quantity) || 1;
-      const rate = item.rate !== undefined && item.rate !== null && item.rate !== '' ? Number(item.rate) : (currency === 'INR' ? pm.defaultRateInr : pm.defaultRateUsd);
+      const qty = parseQuantityKg(item.quantity, item.description || item.name || '');
+      
+      // Clean and parse rate safely (handles currency strings e.g. "INR 350", "350.00", etc.)
+      const rawRate = item.rate !== undefined && item.rate !== null && item.rate !== '' 
+        ? item.rate 
+        : (item.unitRate !== undefined && item.unitRate !== null && item.unitRate !== '' ? item.unitRate : null);
+      let rate;
+      if (rawRate !== null) {
+        const cleanRate = typeof rawRate === 'string' ? parseFloat(rawRate.replace(/[^0-9.]/g, '')) : Number(rawRate);
+        rate = !isNaN(cleanRate) && cleanRate > 0 ? cleanRate : (currency === 'INR' ? pm.defaultRateInr : pm.defaultRateUsd);
+      } else {
+        rate = currency === 'INR' ? pm.defaultRateInr : pm.defaultRateUsd;
+      }
+
       const total = Number((qty * rate).toFixed(2));
       const description = item.description || item.fullDescription || pm.fullDescription;
       const hscode = item.hscode || item.hsCode || pm.hsCode;
@@ -165,10 +177,12 @@ export function calculateQuotation(input = {}) {
     
     // Determine rate: preserve explicitly entered rate, otherwise fallback to product master
     let rate;
-    if (input.unitRate !== undefined && input.unitRate !== null && input.unitRate !== '') {
-      rate = Number(input.unitRate);
-    } else if (input.rate !== undefined && input.rate !== null && input.rate !== '') {
-      rate = Number(input.rate);
+    const rawRate = input.unitRate !== undefined && input.unitRate !== null && input.unitRate !== ''
+      ? input.unitRate
+      : (input.rate !== undefined && input.rate !== null && input.rate !== '' ? input.rate : null);
+    if (rawRate !== null) {
+      const cleanRate = typeof rawRate === 'string' ? parseFloat(rawRate.replace(/[^0-9.]/g, '')) : Number(rawRate);
+      rate = !isNaN(cleanRate) && cleanRate > 0 ? cleanRate : (currency === 'INR' ? pm.defaultRateInr : pm.defaultRateUsd);
     } else {
       rate = currency === 'INR' ? pm.defaultRateInr : pm.defaultRateUsd;
     }
@@ -546,7 +560,7 @@ export async function generatePdfQuotation(quoteInput) {
 
   // GRAND TOTAL BLOCK (Two-line / Structured Layout — Zero text overlap guaranteed!)
   y -= 18;
-  const grandTotalBoxHeight = 36;
+  const grandTotalBoxHeight = 42;
   page.drawRectangle({
     x: 290,
     y: y - grandTotalBoxHeight + 8,
@@ -558,10 +572,11 @@ export async function generatePdfQuotation(quoteInput) {
   });
 
   // Top line of Grand Total block: Clear Incoterm context
-  page.drawText(`GRAND TOTAL (${quote.incoterm})`, {
+  const cleanIncoterm = quote.incoterm ? (quote.incoterm.length > 30 ? quote.incoterm.slice(0, 30) + '...' : quote.incoterm) : 'FOB';
+  page.drawText(`GRAND TOTAL (${cleanIncoterm})`, {
     x: 300,
-    y: y - 4,
-    size: 8,
+    y: y - 3,
+    size: 7.8,
     font: fontBold,
     color: primaryColor
   });
@@ -569,7 +584,7 @@ export async function generatePdfQuotation(quoteInput) {
   // Bottom line of Grand Total block: Prominent, non-overlapping total
   page.drawText(`${quote.currency} ${formatCurrency(quote.grandTotal, quote.currency)}`, {
     x: 300,
-    y: y - 20,
+    y: y - 22,
     size: 13,
     font: fontBold,
     color: primaryColor
