@@ -67,7 +67,8 @@ async function testGoogleSheetsWebhook() {
     const res = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(testInquiryPayload)
+      body: JSON.stringify(testInquiryPayload),
+      redirect: 'manual'
     });
     console.log('Webhook Response Status:', res.status);
     const text = await res.text();
