@@ -20,7 +20,7 @@ async function runIntegrityTestSuite() {
     parseQuantityKg,
     parseUnitRate,
     validateQuotation
-  } = await import('../api/lib/quotationEngine.js');
+  } = await import('../api/_lib/quotationEngine.js');
 
   const results = [];
   function assertTest(id, name, condition, details) {

@@ -256,8 +256,8 @@ async function runTests() {
   // --- TEST 7: RFQ Flow & Quotation Generation ---
   console.log('\n--- 3. Testing Quotation Engine & RFQ Flow ---');
   {
-    const { calculateQuotation, parseQuantityKg } = await import('../api/lib/quotationEngine.js');
-    const { matchProductMaster } = await import('../api/lib/productMaster.js');
+    const { calculateQuotation, parseQuantityKg } = await import('../api/_lib/quotationEngine.js');
+    const { matchProductMaster } = await import('../api/_lib/productMaster.js');
 
     // 18 MT Moringa Export Quote
     const pm = matchProductMaster('Moringa Leaf Powder');

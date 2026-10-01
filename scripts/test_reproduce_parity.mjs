@@ -1,4 +1,4 @@
-import { calculateQuotation, generatePdfQuotation, generateDocxQuotation } from '../api/lib/quotationEngine.js';
+import { calculateQuotation, generatePdfQuotation, generateDocxQuotation } from '../api/_lib/quotationEngine.js';
 
 const quoteInput = {
   quoteId: 'AAF-Q-2026-9075',

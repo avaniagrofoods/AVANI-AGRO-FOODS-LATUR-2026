@@ -9,14 +9,14 @@
 // - Or Bearer Authorization header matching MASTER_GATE_PASSWORD or AFFILIATE_PASSWORD
 // ============================================================
 
-import { calculateQuotation } from './lib/quotationEngine.js';
+import { calculateQuotation } from './_lib/quotationEngine.js';
 import {
   getSessionSecret,
   parseAndVerifySignature,
   parseCookies,
   verifyPassword,
   isAllowedOrigin,
-} from './lib/auth.js';
+} from './_lib/auth.js';
 
 function verifyAdminAuth(req) {
   const sessionSecret = getSessionSecret();
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
       const url = new URL(req.url, 'http://localhost');
       const action = req.query?.action || url.searchParams.get('action');
       if (action === 'get-products') {
-        const { PRODUCT_MASTER } = await import('./lib/productMaster.js');
+        const { PRODUCT_MASTER } = await import('./_lib/productMaster.js');
         return res.status(200).json({
           success: true,
           products: PRODUCT_MASTER
@@ -135,7 +135,7 @@ export default async function handler(req, res) {
       const { action, quoteData, quoteId, newStatus } = req.body || {};
 
       if (action === 'get-products') {
-        const { PRODUCT_MASTER } = await import('./lib/productMaster.js');
+        const { PRODUCT_MASTER } = await import('./_lib/productMaster.js');
         return res.status(200).json({
           success: true,
           products: PRODUCT_MASTER

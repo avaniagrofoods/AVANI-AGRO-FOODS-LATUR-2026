@@ -30,7 +30,7 @@ import {
   SESSION_TTL_SECONDS,
   hasDistributedKV,
   execKVCommand,
-} from './lib/auth.js';
+} from './_lib/auth.js';
 
 export default async function handler(req, res) {
   // CORS & Security Headers

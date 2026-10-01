@@ -60,7 +60,7 @@ async function runMasterAcceptanceTests() {
   // 2. REQUIRED TEST CASE: VIKRAM (Section 25 & Bugs #3, #4, #5)
   // ------------------------------------------------------------
   console.log('\n--- 2. REQUIRED TEST CASE: VIKRAM (18,000 KG @ ₹350/KG) ---');
-  const { calculateQuotation, generatePdfQuotation, generateDocxQuotation, formatCurrency } = await import('../api/lib/quotationEngine.js');
+  const { calculateQuotation, generatePdfQuotation, generateDocxQuotation, formatCurrency } = await import('../api/_lib/quotationEngine.js');
 
   const vikramInput = {
     quoteId: 'AAF-Q-2026-9075',

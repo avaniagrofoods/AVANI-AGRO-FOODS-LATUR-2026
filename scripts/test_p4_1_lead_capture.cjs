@@ -19,7 +19,7 @@ const leadsApiHandler = leadsModule.default || leadsModule;
 
 // P3 Baseline engines to verify zero regression
 const { parseQuantityKg, matchProductMaster } = require('../src/data/productMaster.js');
-const { calculateQuotation } = require('../api/lib/quotationEngine.js');
+const { calculateQuotation } = require('../api/_lib/quotationEngine.js');
 
 let totalTests = 0;
 let passedTests = 0;

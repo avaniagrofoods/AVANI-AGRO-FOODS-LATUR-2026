@@ -9,9 +9,9 @@
 // 6. External integrations (Zapier, HubSpot, WhatsApp Picky Assist)
 // ============================================================
 
-import { calculateQuotation, parseQuantityKg, COMPANY_INFO } from './lib/quotationEngine.js';
-import { matchProductMaster } from './lib/productMaster.js';
-import { getClientIp, checkRateLimit, isAllowedOrigin } from './lib/auth.js';
+import { calculateQuotation, parseQuantityKg, COMPANY_INFO } from './_lib/quotationEngine.js';
+import { matchProductMaster } from './_lib/productMaster.js';
+import { getClientIp, checkRateLimit, isAllowedOrigin } from './_lib/auth.js';
 
 // In-memory cache for recent submissions to prevent double clicks (1 min window)
 const recentSubmissions = new Map();

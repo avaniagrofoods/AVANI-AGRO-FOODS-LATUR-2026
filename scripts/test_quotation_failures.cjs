@@ -10,7 +10,7 @@ async function runFailureTests() {
   console.log('AVANI AGRO FOODS — FAILURE & RESILIENCE TEST SUITE');
   console.log('====================================================\n');
 
-  const { calculateQuotation } = await import('../api/lib/quotationEngine.js');
+  const { calculateQuotation } = await import('../api/_lib/quotationEngine.js');
 
   const failureResults = [];
 

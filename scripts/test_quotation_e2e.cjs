@@ -13,7 +13,7 @@ async function runE2ETest() {
   console.log(`Timestamp: ${new Date().toISOString()}`);
   console.log('====================================================\n');
 
-  const { calculateQuotation, generateExcelQuotation, generatePdfQuotation } = await import('../api/lib/quotationEngine.js');
+  const { calculateQuotation, generateExcelQuotation, generatePdfQuotation } = await import('../api/_lib/quotationEngine.js');
 
   const testResults = [];
   function recordStep(stepNum, stepName, status, details) {

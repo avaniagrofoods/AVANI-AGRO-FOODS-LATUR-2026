@@ -19,7 +19,7 @@ const {
   generateDocxQuotation,
   DEFAULT_COMMERCIAL_TERMS,
   COMPANY_INFO
-} = require('../api/lib/quotationEngine.js');
+} = require('../api/_lib/quotationEngine.js');
 
 let totalTests = 0;
 let passedTests = 0;

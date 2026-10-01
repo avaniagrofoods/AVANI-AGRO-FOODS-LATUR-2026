@@ -7,7 +7,7 @@
 // - POST /api/quotation?action=send-email -> Sends quotation documents to customer
 // ============================================================
 
-import { calculateQuotation, generateExcelQuotation, generatePdfQuotation, generateDocxQuotation } from './lib/quotationEngine.js';
+import { calculateQuotation, generateExcelQuotation, generatePdfQuotation, generateDocxQuotation } from './_lib/quotationEngine.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

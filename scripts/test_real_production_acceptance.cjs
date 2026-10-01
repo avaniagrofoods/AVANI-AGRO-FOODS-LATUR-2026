@@ -16,7 +16,7 @@ async function runProductionAcceptanceTest() {
   console.log(`Timestamp: ${new Date().toISOString()}`);
   console.log('====================================================\n');
 
-  const { calculateQuotation, generateExcelQuotation, generatePdfQuotation } = await import('../api/lib/quotationEngine.js');
+  const { calculateQuotation, generateExcelQuotation, generatePdfQuotation } = await import('../api/_lib/quotationEngine.js');
 
   const results = [];
   function logResult(id, name, status, details) {

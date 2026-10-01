@@ -9,14 +9,14 @@
 //   or Authorization: Bearer <MASTER_GATE_PASSWORD>
 // ============================================================
 
-import { MANUFACTURERS } from './data/manufacturersData.js';
+import { MANUFACTURERS } from './_data/manufacturersData.js';
 import {
   getSessionSecret,
   parseAndVerifySignature,
   parseCookies,
   verifyPassword,
   isAllowedOrigin,
-} from './lib/auth.js';
+} from './_lib/auth.js';
 
 function verifyGateAccess(req) {
   const sessionSecret = getSessionSecret();

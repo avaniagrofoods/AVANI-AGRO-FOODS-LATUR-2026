@@ -3,8 +3,8 @@
 // Endpoint: POST /api/leads
 // ============================================================
 
-import { validateLeadPayload, createLeadRecord } from './lib/leadModel.js';
-import { getClientIp, checkRateLimit, isAllowedOrigin } from './lib/auth.js';
+import { validateLeadPayload, createLeadRecord } from './_lib/leadModel.js';
+import { getClientIp, checkRateLimit, isAllowedOrigin } from './_lib/auth.js';
 
 // In-memory deduplication cache (60s window)
 const recentLeadSubmissions = new Map();
