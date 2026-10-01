@@ -8,5 +8,6 @@ export {
   matchProductMaster,
   getActiveProducts,
   parseQuantityKg,
-  parseUnitRate
+  parseUnitRate,
+  validateQuotation
 } from '../../src/data/productMaster.js';

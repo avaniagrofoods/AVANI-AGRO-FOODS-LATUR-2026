@@ -23,7 +23,16 @@ import {
   ShadingType,
   PageNumber
 } from 'docx';
-import { PRODUCT_MASTER, getProductById, matchProductMaster } from './productMaster.js';
+import {
+  PRODUCT_MASTER,
+  getProductById,
+  matchProductMaster,
+  parseQuantityKg,
+  parseUnitRate,
+  validateQuotation
+} from './productMaster.js';
+
+export { parseQuantityKg, parseUnitRate, validateQuotation };
 
 export const COMPANY_INFO = {
   name: 'AVANI AGRO FOODS',
@@ -57,39 +66,6 @@ export function formatCurrency(amount, currency = 'INR') {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
-}
-
-/**
- * Parses user or buyer quantity string into normalized KG
- * e.g. "18 MT" -> 18000, "18000 kg" -> 18000, 18000 -> 18000
- */
-export function parseQuantityKg(qtyInput, rawText = '') {
-  if (typeof qtyInput === 'number' && !isNaN(qtyInput) && qtyInput > 0) {
-    return qtyInput;
-  }
-  const str = `${qtyInput || ''} ${rawText || ''}`.toLowerCase();
-  
-  // Check for Metric Tons (MT / Metric Ton)
-  const mtMatch = str.match(/([\d,]+(?:\.\d+)?)\s*(?:mt|metric\s*ton)/i);
-  if (mtMatch) {
-    const val = parseFloat(mtMatch[1].replace(/,/g, ''));
-    if (!isNaN(val) && val > 0) return Math.round(val * 1000);
-  }
-
-  // Check for KG
-  const kgMatch = str.match(/([\d,]+(?:\.\d+)?)\s*(?:kg|kgs|kilogram)/i);
-  if (kgMatch) {
-    const val = parseFloat(kgMatch[1].replace(/,/g, ''));
-    if (!isNaN(val) && val > 0) return Math.round(val);
-  }
-
-  // Pure number fallback
-  if (typeof qtyInput === 'string') {
-    const cleanNum = parseFloat(qtyInput.replace(/[^\d.]/g, ''));
-    if (!isNaN(cleanNum) && cleanNum > 0) return Math.round(cleanNum);
-  }
-
-  return 100; // Default only when completely unspecified
 }
 
 /**
@@ -137,16 +113,17 @@ export function calculateQuotation(input = {}) {
   if (Array.isArray(input.items) && input.items.length > 0) {
     items = input.items.map((item, idx) => {
       const pm = item.productId ? getProductById(item.productId) : matchProductMaster(item.description || item.name || '');
-      const qty = parseQuantityKg(item.quantity, item.description || item.name || '');
+      // Prioritize explicit item.quantity directly without polluting with packaging text from description
+      const qty = parseQuantityKg(item.quantity);
       
-      // Clean and parse rate safely (handles currency strings e.g. "INR 350", "350.00", etc.)
+      // Clean and parse rate safely (preserves 0, handles currency strings e.g. "INR 350", "350.00", etc.)
       const rawRate = item.rate !== undefined && item.rate !== null && item.rate !== '' 
         ? item.rate 
         : (item.unitRate !== undefined && item.unitRate !== null && item.unitRate !== '' ? item.unitRate : null);
       let rate;
       if (rawRate !== null) {
-        const cleanRate = typeof rawRate === 'string' ? parseFloat(rawRate.replace(/[^0-9.]/g, '')) : Number(rawRate);
-        rate = !isNaN(cleanRate) && cleanRate > 0 ? cleanRate : (currency === 'INR' ? pm.defaultRateInr : pm.defaultRateUsd);
+        const parsedRate = parseUnitRate(rawRate, null);
+        rate = parsedRate !== null ? parsedRate : (currency === 'INR' ? pm.defaultRateInr : pm.defaultRateUsd);
       } else {
         rate = currency === 'INR' ? pm.defaultRateInr : pm.defaultRateUsd;
       }
@@ -181,8 +158,8 @@ export function calculateQuotation(input = {}) {
       ? input.unitRate
       : (input.rate !== undefined && input.rate !== null && input.rate !== '' ? input.rate : null);
     if (rawRate !== null) {
-      const cleanRate = typeof rawRate === 'string' ? parseFloat(rawRate.replace(/[^0-9.]/g, '')) : Number(rawRate);
-      rate = !isNaN(cleanRate) && cleanRate > 0 ? cleanRate : (currency === 'INR' ? pm.defaultRateInr : pm.defaultRateUsd);
+      const parsedRate = parseUnitRate(rawRate, null);
+      rate = parsedRate !== null ? parsedRate : (currency === 'INR' ? pm.defaultRateInr : pm.defaultRateUsd);
     } else {
       rate = currency === 'INR' ? pm.defaultRateInr : pm.defaultRateUsd;
     }

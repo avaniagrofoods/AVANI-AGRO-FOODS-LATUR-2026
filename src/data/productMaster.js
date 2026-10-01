@@ -146,49 +146,125 @@ export function matchProductMaster(query) {
 
 /**
  * Parse quantity in KG safely from user string or numeric input
- * e.g., "18 MT" -> 18000, "18,000" -> 18000, "18,000 KG" -> 18000
+ * e.g., "18 MT" -> 18000, "18,000" -> 18000, "18,000 KG" -> 18000, 0 -> 0
+ * Prioritizes qtyInput directly so packaging text (e.g. "25 kg bags") in rawText
+ * cannot corrupt an explicit order quantity.
  */
 export function parseQuantityKg(qtyInput, rawText = '') {
-  if (typeof qtyInput === 'number' && !isNaN(qtyInput) && qtyInput > 0) {
+  // 1. Explicit numeric input (preserves 0 for sample line items, clamps negative to 1)
+  if (typeof qtyInput === 'number' && !isNaN(qtyInput)) {
+    if (qtyInput === 0) return 0;
+    if (qtyInput < 0) return 1;
     return Math.round(qtyInput);
   }
-  const str = `${qtyInput || ''} ${rawText || ''}`.toLowerCase();
-  
-  // Check for Metric Tons (MT / Metric Ton)
-  const mtMatch = str.match(/([\d,]+(?:\.\d+)?)\s*(?:mt|metric\s*ton)/i);
-  if (mtMatch) {
-    const val = parseFloat(mtMatch[1].replace(/,/g, ''));
-    if (!isNaN(val) && val > 0) return Math.round(val * 1000);
+
+  // 2. String input in qtyInput — parse directly without polluting with rawText!
+  if (typeof qtyInput === 'string' && qtyInput.trim() !== '') {
+    const s = qtyInput.trim();
+
+    // Check for Metric Tons (e.g. "18 MT", "18.5 metric ton")
+    const mtMatch = s.match(/^([\d,]+(?:\.\d+)?)\s*(?:mt|metric\s*ton)/i);
+    if (mtMatch) {
+      const val = parseFloat(mtMatch[1].replace(/,/g, ''));
+      if (!isNaN(val)) return val <= 0 ? 0 : Math.round(val * 1000);
+    }
+
+    // Check for KG (e.g. "18,000 KG", "18000 kg", "25kg")
+    const kgMatch = s.match(/^([\d,]+(?:\.\d+)?)\s*(?:kg|kgs|kilogram)/i);
+    if (kgMatch) {
+      const val = parseFloat(kgMatch[1].replace(/,/g, ''));
+      if (!isNaN(val)) return val <= 0 ? 0 : Math.round(val);
+    }
+
+    // Pure number fallback (e.g. "18,000", "18000", "25", "0")
+    const cleanNumStr = s.replace(/,/g, '').replace(/[^\d.]/g, '');
+    if (cleanNumStr !== '') {
+      const val = parseFloat(cleanNumStr);
+      if (!isNaN(val)) {
+        if (val === 0) return 0;
+        if (val < 0) return 1;
+        return Math.round(val);
+      }
+    }
   }
 
-  // Check for KG
-  const kgMatch = str.match(/([\d,]+(?:\.\d+)?)\s*(?:kg|kgs|kilogram)/i);
-  if (kgMatch) {
-    const val = parseFloat(kgMatch[1].replace(/,/g, ''));
-    if (!isNaN(val) && val > 0) return Math.round(val);
+  // 3. Fallback: Only if qtyInput was completely absent/empty, extract from rawText (buyer inquiry message)
+  // Be careful to ignore packaging specifications (e.g. "25 kg HDPE bags")
+  if (rawText && typeof rawText === 'string' && rawText.trim() !== '') {
+    const mtMatch = rawText.match(/(?:need|order|quantity|qty|volume|require|requirement)?[:\s]*([\d,]+(?:\.\d+)?)\s*(?:mt|metric\s*ton)/i);
+    if (mtMatch) {
+      const val = parseFloat(mtMatch[1].replace(/,/g, ''));
+      if (!isNaN(val) && val > 0) return Math.round(val * 1000);
+    }
+
+    const kgMatches = [...rawText.matchAll(/([\d,]+(?:\.\d+)?)\s*(?:kg|kgs|kilogram)/gi)];
+    for (const m of kgMatches) {
+      const idx = m.index;
+      const surrounding = rawText.substring(Math.max(0, idx - 15), Math.min(rawText.length, idx + m[0].length + 20)).toLowerCase();
+      // Skip if surrounding text indicates packaging rather than order quantity
+      if (!surrounding.includes('bag') && !surrounding.includes('pack') && !surrounding.includes('carton') && !surrounding.includes('drum')) {
+        const val = parseFloat(m[1].replace(/,/g, ''));
+        if (!isNaN(val) && val > 0) return Math.round(val);
+      }
+    }
   }
 
-  // Pure number fallback (stripping commas and extra text)
-  if (typeof qtyInput === 'string') {
-    const cleanNum = parseFloat(qtyInput.replace(/,/g, '').replace(/[^\d.]/g, ''));
-    if (!isNaN(cleanNum) && cleanNum > 0) return Math.round(cleanNum);
-  }
-
-  return 100; // Default only when completely unspecified
+  return 0; // Return 0 when unspecified so caller can detect missing/unspecified quantity
 }
 
 /**
- * Parse unit rate cleanly from input (handles "INR 350", "₹350", "350.00", etc.)
+ * Parse unit rate cleanly from input (handles "INR 350", "₹350", "350.00", 0, etc.)
  */
 export function parseUnitRate(rateInput, fallback = 350) {
-  if (typeof rateInput === 'number' && !isNaN(rateInput) && rateInput > 0) {
+  if (typeof rateInput === 'number' && !isNaN(rateInput) && rateInput >= 0) {
     return rateInput;
   }
-  if (typeof rateInput === 'string') {
-    const clean = parseFloat(rateInput.replace(/,/g, '').replace(/[^\d.]/g, ''));
-    if (!isNaN(clean) && clean > 0) return clean;
+  if (typeof rateInput === 'string' && rateInput.trim() !== '') {
+    const clean = parseFloat(rateInput.replace(/,/g, '').replace(/[^0-9.]/g, ''));
+    if (!isNaN(clean) && clean >= 0) return clean;
   }
   return fallback;
+}
+
+/**
+ * Validates a quotation object for strict calculation and data integrity.
+ * Returns { valid: true } or { valid: false, error: string }
+ */
+export function validateQuotation(quote) {
+  if (!quote || typeof quote !== 'object') {
+    return { valid: false, error: 'Quotation payload is missing or invalid' };
+  }
+
+  const items = Array.isArray(quote.items) ? quote.items : (quote.product ? [quote] : []);
+  if (items.length === 0) {
+    return { valid: false, error: 'Quotation must have at least one product line item' };
+  }
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const idx = item.sr || i + 1;
+    
+    // Check missing quantity
+    if (item.quantity === undefined || item.quantity === null || (typeof item.quantity === 'string' && item.quantity.trim() === '')) {
+      return { valid: false, error: `Item #${idx} (${item.name || 'Product'}): Missing quantity. Please specify quantity.` };
+    }
+    const qNum = typeof item.quantity === 'number' ? item.quantity : parseFloat(String(item.quantity).replace(/,/g, '').replace(/[^\d.]/g, ''));
+    if (isNaN(qNum) || qNum < 0) {
+      return { valid: false, error: `Item #${idx} (${item.name || 'Product'}): Invalid quantity value.` };
+    }
+
+    // Check missing rate
+    const rawRate = item.rate !== undefined && item.rate !== null && item.rate !== '' ? item.rate : (item.unitRate !== undefined && item.unitRate !== null && item.unitRate !== '' ? item.unitRate : null);
+    if (rawRate === null || (typeof rawRate === 'string' && rawRate.trim() === '')) {
+      return { valid: false, error: `Item #${idx} (${item.name || 'Product'}): Missing unit rate. Please specify rate.` };
+    }
+    const rNum = typeof rawRate === 'number' ? rawRate : parseFloat(String(rawRate).replace(/,/g, '').replace(/[^0-9.]/g, ''));
+    if (isNaN(rNum) || rNum < 0) {
+      return { valid: false, error: `Item #${idx} (${item.name || 'Product'}): Invalid unit rate value.` };
+    }
+  }
+
+  return { valid: true };
 }
 
 /**

@@ -10,7 +10,7 @@ import {
   Calculator, Search, Filter, ShieldCheck, X, FileCheck, Layers, Save
 } from 'lucide-react'
 import { BUSINESS_INFO, WHATSAPP_NUMBER } from '../data/links'
-import { PRODUCT_MASTER, getProductById, matchProductMaster, parseQuantityKg, parseUnitRate } from '../data/productMaster'
+import { PRODUCT_MASTER, getProductById, matchProductMaster, parseQuantityKg, parseUnitRate, validateQuotation } from '../data/productMaster'
 
 const STATUS_LIST = ['ALL', 'DRAFT', 'SENT', 'VIEWED', 'NEGOTIATION', 'REVISED', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'CANCELLED']
 
@@ -197,7 +197,7 @@ export default function AdminQuotations() {
         ]
       }
 
-      const combined = [...localQuotes, ...enquiryQuotes, ...serverQuotes, defaultVikramQuote]
+      const combined = [defaultVikramQuote, ...serverQuotes, ...enquiryQuotes, ...localQuotes]
       const unique = Array.from(new Map(combined.map(q => [q.quoteId, q])).values())
       setQuotations(unique)
 
@@ -298,15 +298,64 @@ export default function AdminQuotations() {
     }))
   }
 
+  // Helper: Sanitize & normalize quotation to ensure exact numeric parity
+  const sanitizeQuote = (q) => {
+    if (!q) return q
+    const cleanedItems = (q.items || []).map((item, idx) => {
+      const qNum = typeof item.quantity === 'number' 
+        ? item.quantity 
+        : parseFloat(String(item.quantity || 0).replace(/,/g, '').replace(/[^\d.]/g, ''))
+      const quantity = !isNaN(qNum) ? qNum : 0
+
+      const rNum = typeof item.rate === 'number'
+        ? item.rate
+        : parseFloat(String(item.rate !== undefined && item.rate !== null && item.rate !== '' ? item.rate : (item.unitRate || 0)).replace(/,/g, '').replace(/[^0-9.]/g, ''))
+      const rate = !isNaN(rNum) ? rNum : 0
+
+      const amount = Number((quantity * rate).toFixed(2))
+      return {
+        ...item,
+        sr: idx + 1,
+        quantity,
+        rate,
+        amount
+      }
+    })
+
+    const subtotal = Number(cleanedItems.reduce((sum, i) => sum + i.amount, 0).toFixed(2))
+    const freight = Number(Number(q.freightCharges || q.freight || 0).toFixed(2))
+    const insurance = Number(Number(q.insuranceCharges || q.insurance || 0).toFixed(2))
+    const documentation = Number(Number(q.documentationCharges || q.documentation || 0).toFixed(2))
+    const otherCharges = Number(Number(q.otherCharges || 0).toFixed(2))
+    const grandTotal = Number((subtotal + freight + insurance + documentation + otherCharges).toFixed(2))
+
+    return {
+      ...q,
+      items: cleanedItems,
+      subtotal,
+      grandTotal,
+      freightCharges: freight,
+      insuranceCharges: insurance,
+      documentationCharges: documentation,
+      otherCharges
+    }
+  }
+
   const handleUpdateItem = (id, field, value) => {
     setBuilderForm(prev => ({
       ...prev,
       items: prev.items.map(item => {
         if (item.id === id) {
           const updated = { ...item, [field]: value }
-          if (field === 'quantity' || field === 'rate') {
-            const q = field === 'quantity' ? Number(value) || 0 : Number(item.quantity) || 0
-            const r = field === 'rate' ? Number(value) || 0 : Number(item.rate) || 0
+          if (field === 'quantity') {
+            const cleanQty = typeof value === 'string' ? parseFloat(value.replace(/,/g, '').replace(/[^\d.]/g, '')) : Number(value)
+            const q = !isNaN(cleanQty) ? cleanQty : 0
+            const r = typeof item.rate === 'string' ? parseFloat(item.rate.replace(/,/g, '').replace(/[^0-9.]/g, '')) || 0 : Number(item.rate) || 0
+            updated.amount = Number((q * r).toFixed(2))
+          } else if (field === 'rate') {
+            const cleanRate = typeof value === 'string' ? parseFloat(value.replace(/,/g, '').replace(/[^0-9.]/g, '')) : Number(value)
+            const r = !isNaN(cleanRate) ? cleanRate : 0
+            const q = typeof item.quantity === 'string' ? parseFloat(item.quantity.replace(/,/g, '').replace(/[^\d.]/g, '')) || 0 : Number(item.quantity) || 0
             updated.amount = Number((q * r).toFixed(2))
           }
           return updated
@@ -336,64 +385,89 @@ export default function AdminQuotations() {
 
   // Edit Existing Quotation
   const handleEditQuote = (q) => {
+    const sanitized = sanitizeQuote(q)
     setBuilderForm({
-      quoteId: q.quoteId,
-      inquiryId: q.inquiryId || `AAF-INQ-2026-${Math.floor(100000 + Math.random() * 900000)}`,
-      date: q.date || new Date().toISOString().split('T')[0],
-      validUntil: q.validUntil || '12 Oct 2026',
-      buyerName: q.buyerName || q.customerName || '',
-      companyName: q.companyName || '',
-      country: q.country || 'INDIA',
-      destinationPort: q.destinationPort || 'NHAVA SHEVA (JNPT MUMBAI)',
-      address: q.address || '',
-      email: q.email || '',
-      phone: q.phone || '',
-      currency: q.currency || 'INR',
-      incoterm: q.incoterm || INCOTERMS[0],
-      origin: q.origin || 'Latur, Maharashtra, India / JNPT Nhava Sheva, Mumbai',
-      paymentTerms: q.paymentTerms || '50% Advance Payment, Balance 50% Before Dispatch.',
-      deliveryTimeline: q.deliveryTimeline || 'Shipment within 60–75 days from the date of advance payment confirmation.',
-      inspectionTerms: q.inspectionTerms || 'Pre-dispatch inspection permitted at seller\'s warehouse at buyer\'s cost.',
-      jurisdiction: q.jurisdiction || 'All disputes are subject to the exclusive jurisdiction of competent courts in Latur, Maharashtra, India.',
-      packaging: q.packaging || '25 kg Food-Grade HDPE Bags included.',
-      notes: q.notes || 'Commercial trade offer coordinated by AVANI AGRO FOODS.',
-      internalSupplierNote: q.internalSupplierNote || '',
-      items: q.items && q.items.length > 0 ? q.items : [
+      quoteId: sanitized.quoteId,
+      inquiryId: sanitized.inquiryId || `AAF-INQ-2026-${Math.floor(100000 + Math.random() * 900000)}`,
+      date: sanitized.date || new Date().toISOString().split('T')[0],
+      validUntil: sanitized.validUntil || '12 Oct 2026',
+      buyerName: sanitized.buyerName || sanitized.customerName || '',
+      companyName: sanitized.companyName || '',
+      country: sanitized.country || 'INDIA',
+      destinationPort: sanitized.destinationPort || 'NHAVA SHEVA (JNPT MUMBAI)',
+      address: sanitized.address || '',
+      email: sanitized.email || '',
+      phone: sanitized.phone || '',
+      currency: sanitized.currency || 'INR',
+      incoterm: sanitized.incoterm || INCOTERMS[0],
+      origin: sanitized.origin || 'Latur, Maharashtra, India / JNPT Nhava Sheva, Mumbai',
+      paymentTerms: sanitized.paymentTerms || '50% Advance Payment, Balance 50% Before Dispatch.',
+      deliveryTimeline: sanitized.deliveryTimeline || 'Shipment within 60–75 days from the date of advance payment confirmation.',
+      inspectionTerms: sanitized.inspectionTerms || 'Pre-dispatch inspection permitted at seller\'s warehouse at buyer\'s cost.',
+      jurisdiction: sanitized.jurisdiction || 'All disputes are subject to the exclusive jurisdiction of competent courts in Latur, Maharashtra, India.',
+      packaging: sanitized.packaging || '25 kg Food-Grade HDPE Bags included.',
+      notes: sanitized.notes || 'Commercial trade offer coordinated by AVANI AGRO FOODS.',
+      internalSupplierNote: sanitized.internalSupplierNote || '',
+      items: sanitized.items && sanitized.items.length > 0 ? sanitized.items : [
         {
           id: 1,
           productId: 'moringa-leaf-powder',
-          name: q.product || 'Moringa Leaf Powder',
-          description: q.description || 'Moringa Leaf Powder — Natural Green — 80–100 Mesh — 25 kg Food-Grade HDPE Bags',
-          hscode: q.hsCode || q.hscode || '12119029',
-          quantity: Number(q.quantityKg || q.quantity) || 18000,
-          unit: q.unit || 'KG',
-          rate: Number(q.unitRate || q.rate) || 350,
-          amount: (Number(q.quantityKg || q.quantity) || 18000) * (Number(q.unitRate || q.rate) || 350),
+          name: sanitized.product || 'Moringa Leaf Powder',
+          description: sanitized.description || 'Moringa Leaf Powder — Natural Green — 80–100 Mesh — 25 kg Food-Grade HDPE Bags',
+          hscode: sanitized.hsCode || sanitized.hscode || '12119029',
+          quantity: Number(sanitized.quantityKg || sanitized.quantity) || 18000,
+          unit: sanitized.unit || 'KG',
+          rate: Number(sanitized.unitRate || sanitized.rate) || 350,
+          amount: (Number(sanitized.quantityKg || sanitized.quantity) || 18000) * (Number(sanitized.unitRate || sanitized.rate) || 350),
           packaging: '25 kg Food-Grade HDPE Bags'
         }
       ],
-      freightCharges: q.freightCharges || q.freight || 0,
-      insuranceCharges: q.insuranceCharges || q.insurance || 0,
-      documentationCharges: q.documentationCharges || q.documentation || 0,
-      otherCharges: q.otherCharges || 0,
-      status: q.status || 'DRAFT'
+      freightCharges: sanitized.freightCharges || 0,
+      insuranceCharges: sanitized.insuranceCharges || 0,
+      documentationCharges: sanitized.documentationCharges || 0,
+      otherCharges: sanitized.otherCharges || 0,
+      status: sanitized.status || 'DRAFT'
     })
     setActiveTab('builder')
+  }
+
+  // Duplicate Quotation Handler (Copies current saved values with new quoteId)
+  const handleDuplicateQuote = (q) => {
+    const newQuoteId = `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`
+    const duplicated = sanitizeQuote({
+      ...q,
+      quoteId: newQuoteId,
+      date: new Date().toISOString().split('T')[0],
+      status: 'DRAFT',
+      updatedAt: new Date().toISOString()
+    })
+    const existing = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
+    const updated = [duplicated, ...existing.filter(item => item.quoteId !== duplicated.quoteId)]
+    localStorage.setItem('avani_quotations', JSON.stringify(updated))
+    setQuotations(prev => [duplicated, ...prev.filter(item => item.quoteId !== duplicated.quoteId)])
+    setSelectedQuote(duplicated)
+    setActiveTab('preview')
   }
 
   // Save Quotation Handler (Local + Server API + Google Sheets CRM sync)
   const handleSaveQuotation = async (e) => {
     e.preventDefault()
-    const record = {
+    
+    // Validate quotation integrity
+    const validation = validateQuotation(builderForm)
+    if (!validation.valid) {
+      alert(validation.error)
+      return
+    }
+
+    const record = sanitizeQuote({
       ...builderForm,
-      subtotal: itemsSubtotal,
-      grandTotal: grandTotal,
       customerName: builderForm.buyerName,
       commercialTerms: DEFAULT_TERMS,
       product: builderForm.items.map(i => i.name).join(' + '),
       updatedAt: new Date().toISOString(),
       updatedBy: 'Admin (Sachin Shinde)'
-    }
+    })
 
     // Save locally
     const existing = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
@@ -436,20 +510,21 @@ export default function AdminQuotations() {
     if (selectedQuote?.quoteId === quoteId) setSelectedQuote(null)
   }
 
-  // Download PDF Action
+  // Download PDF Action with clean numeric parity
   const handleDownloadPdf = async (quote) => {
     try {
+      const payload = sanitizeQuote(quote)
       const res = await fetch('/api/quotation?action=download-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(quote)
+        body: JSON.stringify(payload)
       })
       if (res.ok) {
         const blob = await res.blob()
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `Quotation_${quote.quoteId}.pdf`
+        a.download = `Quotation_${payload.quoteId}.pdf`
         document.body.appendChild(a)
         a.click()
         a.remove()
@@ -462,20 +537,21 @@ export default function AdminQuotations() {
     }
   }
 
-  // Download DOCX Action
+  // Download DOCX Action with clean numeric parity
   const handleDownloadDocx = async (quote) => {
     try {
+      const payload = sanitizeQuote(quote)
       const res = await fetch('/api/quotation?action=download-docx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(quote)
+        body: JSON.stringify(payload)
       })
       if (res.ok) {
         const blob = await res.blob()
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `Quotation_${quote.quoteId}.docx`
+        a.download = `Quotation_${payload.quoteId}.docx`
         document.body.appendChild(a)
         a.click()
         a.remove()
@@ -723,6 +799,14 @@ export default function AdminQuotations() {
                                   title="View Printable Quotation"
                                 >
                                   <Eye size={13} /> View
+                                </button>
+                                <button
+                                  onClick={() => handleDuplicateQuote(q)}
+                                  className="btn"
+                                  style={{ padding: '5px 8px', fontSize: '0.75rem', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}
+                                  title="Duplicate Quotation (Copies saved values)"
+                                >
+                                  <Copy size={13} /> Copy
                                 </button>
                                 <button
                                   onClick={() => handleDownloadPdf(q)}
@@ -1001,6 +1085,9 @@ export default function AdminQuotations() {
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <button onClick={() => handleEditQuote(selectedQuote)} className="btn" style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', gap: 6 }}>
                     <Edit size={15} /> Edit Quotation
+                  </button>
+                  <button onClick={() => handleDuplicateQuote(selectedQuote)} className="btn" style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', gap: 6 }}>
+                    <Copy size={15} /> Duplicate
                   </button>
                   <button onClick={() => window.print()} className="btn" style={{ background: 'white', border: '1px solid var(--color-border)', gap: 6 }}>
                     <Printer size={15} /> Print Proforma
