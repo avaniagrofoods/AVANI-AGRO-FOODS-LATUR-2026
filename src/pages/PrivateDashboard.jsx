@@ -11,6 +11,12 @@ import {
 } from 'lucide-react'
 import { BUSINESS_INFO, WHATSAPP_NUMBER } from '../data/links'
 import { matchProductMaster, parseQuantityKg, parseUnitRate } from '../data/productMaster'
+import {
+  evaluateLeadQualification,
+  CANONICAL_QUALIFICATION_STATUS,
+  CANONICAL_PRIORITY,
+  CANONICAL_BUYER_TYPES
+} from '../data/qualificationModel'
 
 export default function PrivateDashboard() {
   const navigate = useNavigate()
@@ -19,6 +25,9 @@ export default function PrivateDashboard() {
   const [quotations, setQuotations] = useState([])
   const [leads, setLeads] = useState([])
   const [selectedLead, setSelectedLead] = useState(null)
+  const [filterStatus, setFilterStatus] = useState('ALL')
+  const [sortBy, setSortBy] = useState('NEWEST')
+  const [adminNote, setAdminNote] = useState('')
   const [loading, setLoading] = useState(true)
 
   const loadData = async () => {
@@ -145,17 +154,100 @@ export default function PrivateDashboard() {
     }
   }, [])
 
-  // Derived real metrics
-  const totalImporters = importers.length
-  const verifiedImporters = importers.filter(i => i.verificationStatus === 'VERIFIED').length
-  const highPriorityImporters = importers.filter(i => i.priority === 'HIGH').length
+  const handleUpdateLeadStatus = (leadId, newStatus, note = '') => {
+    const savedLeads = JSON.parse(localStorage.getItem('avani_leads') || '[]')
+    const now = new Date().toISOString()
+    let found = false
+    const updated = savedLeads.map(l => {
+      if (l.leadId !== leadId) return l
+      found = true
+      const prevStatus = l.qualification?.status || l.workflow?.status || 'NEW'
+      return {
+        ...l,
+        updatedAt: now,
+        qualification: {
+          ...(l.qualification || {}),
+          status: newStatus
+        },
+        workflow: {
+          ...(l.workflow || {}),
+          status: newStatus
+        },
+        activity: [
+          ...(l.activity || []),
+          {
+            type: 'QUALIFICATION_UPDATED',
+            timestamp: now,
+            actor: 'ADMIN',
+            fromStatus: prevStatus,
+            toStatus: newStatus,
+            note: note || undefined
+          }
+        ],
+        notes: note ? [...(l.notes || []), { text: note, date: now, author: 'Sachin Shinde' }] : (l.notes || [])
+      }
+    })
 
-  const totalManufacturers = manufacturers.all.length
-  const maharashtraMfrs = manufacturers.all.filter(m => m.location?.includes('Maharashtra')).length
-  const verifiedMfrs = manufacturers.all.filter(m => m.verificationStatus === 'VERIFIED').length
+    if (!found && selectedLead && selectedLead.leadId === leadId) {
+      const updatedLead = {
+        ...selectedLead,
+        updatedAt: now,
+        qualification: { ...(selectedLead.qualification || {}), status: newStatus },
+        workflow: { ...(selectedLead.workflow || {}), status: newStatus },
+        activity: [
+          ...(selectedLead.activity || []),
+          { type: 'QUALIFICATION_UPDATED', timestamp: now, actor: 'ADMIN', fromStatus: selectedLead.workflow?.status || 'NEW', toStatus: newStatus, note: note || undefined }
+        ],
+        notes: note ? [...(selectedLead.notes || []), { text: note, date: now, author: 'Sachin Shinde' }] : (selectedLead.notes || [])
+      }
+      updated.push(updatedLead)
+    }
 
-  const totalQuotes = quotations.length
-  const openQuotes = quotations.filter(q => q.status === 'NEW' || q.status === 'REVIEW_REQUIRED' || q.status === 'DRAFT' || q.status === 'SENT').length
+    localStorage.setItem('avani_leads', JSON.stringify(updated))
+    window.dispatchEvent(new Event('lead-updated'))
+    loadData()
+    if (selectedLead && selectedLead.leadId === leadId) {
+      const refreshed = updated.find(l => l.leadId === leadId)
+      if (refreshed) setSelectedLead(refreshed)
+    }
+    setAdminNote('')
+  }
+
+  // P4.2 Lead Qualification Evaluation & Pipeline Filtering
+  const evaluatedLeads = leads.map(l => {
+    const qual = evaluateLeadQualification(l)
+    return {
+      ...l,
+      qual
+    }
+  })
+
+  const filteredLeads = evaluatedLeads.filter(l => {
+    if (filterStatus === 'ALL') return true
+    return l.qual.qualificationStatus === filterStatus || (l.qualification?.status === filterStatus) || (l.workflow?.status === filterStatus)
+  })
+
+  const sortedLeads = [...filteredLeads].sort((a, b) => {
+    if (sortBy === 'NEWEST') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    if (sortBy === 'OLDEST') return new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
+    if (sortBy === 'PRIORITY') {
+      const pMap = { HIGH: 3, MEDIUM: 2, LOW: 1 }
+      return (pMap[b.qual.priority] || 0) - (pMap[a.qual.priority] || 0)
+    }
+    if (sortBy === 'SCORE') return b.qual.qualificationScore - a.qual.qualificationScore
+    if (sortBy === 'QUANTITY') {
+      const qA = Number(a.inquiry?.quantity || 0)
+      const qB = Number(b.inquiry?.quantity || 0)
+      return qB - qA
+    }
+    return 0
+  })
+
+  // Qualification summary counts
+  const totalQualifiedCount = evaluatedLeads.filter(l => l.qual.qualificationStatus === 'QUALIFIED').length
+  const totalNeedsInfoCount = evaluatedLeads.filter(l => l.qual.qualificationStatus === 'NEEDS_INFORMATION').length
+  const totalProcessorCheckCount = evaluatedLeads.filter(l => l.qual.qualificationStatus === 'PROCESSOR_CHECK').length
+  const totalHighPriorityCount = evaluatedLeads.filter(l => l.qual.priority === 'HIGH').length
 
   return (
     <PasswordGate
@@ -373,236 +465,562 @@ export default function PrivateDashboard() {
             </div>
           </div>
 
-          {/* P4.1 Canonical B2B Leads & Qualification Pipeline */}
+          {/* P4.2 Canonical B2B Leads & Qualification Pipeline */}
           <div className="card" style={{ padding: '32px', background: 'white', marginBottom: 36, borderTop: '4px solid var(--color-primary)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 16 }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>
-                    B2B Commercial Leads &amp; Qualification Pipeline
+                    B2B Lead Qualification &amp; Processor Matching Pipeline
                   </h3>
                   <span className="badge" style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', fontSize: '0.75rem' }}>
-                    {leads.length} Canonical Leads
+                    {evaluatedLeads.length} Total Leads
+                  </span>
+                  <span className="badge" style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', fontSize: '0.75rem' }}>
+                    {totalQualifiedCount} Qualified
+                  </span>
+                  <span className="badge" style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '0.75rem' }}>
+                    {totalProcessorCheckCount} Processor Check
+                  </span>
+                  <span className="badge" style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', fontSize: '0.75rem' }}>
+                    {totalNeedsInfoCount} Needs Info
                   </span>
                 </div>
-                <p style={{ fontSize: '0.84rem', color: 'var(--color-text-light)', margin: '4px 0 0' }}>
-                  Canonical RFQ submissions structured for qualification, pricing coordination, and proforma generation
+                <p style={{ fontSize: '0.84rem', color: 'var(--color-text-light)', margin: '6px 0 0' }}>
+                  Automated qualification scoring, requirement completeness audit, processor brief generation, and P4.3 quotation handoff.
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: 10 }}>
+
+              {/* Sorting and Refresh */}
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.82rem' }}>
+                  <label htmlFor="lead-sort-select" style={{ color: 'var(--color-text-light)', fontWeight: 600 }}>Sort by:</label>
+                  <select
+                    id="lead-sort-select"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    style={{ padding: '6px 10px', fontSize: '0.8rem', borderRadius: 6, border: '1px solid var(--color-border)', background: 'white' }}
+                  >
+                    <option value="NEWEST">Newest First</option>
+                    <option value="OLDEST">Oldest First</option>
+                    <option value="PRIORITY">Priority (High to Low)</option>
+                    <option value="SCORE">Qualification Score (High to Low)</option>
+                    <option value="QUANTITY">Order Volume (High to Low)</option>
+                  </select>
+                </div>
                 <button onClick={loadData} className="btn" style={{ padding: '6px 12px', fontSize: '0.78rem', gap: 6, background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}>
-                  <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh Leads
+                  <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
                 </button>
               </div>
             </div>
 
-            {leads.length === 0 ? (
+            {/* Filter Pills */}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--color-border)' }}>
+              {[
+                { id: 'ALL', label: 'All Leads', count: evaluatedLeads.length },
+                { id: 'NEW', label: 'New', count: evaluatedLeads.filter(l => l.qual.qualificationStatus === 'NEW').length },
+                { id: 'REVIEWING', label: 'Reviewing', count: evaluatedLeads.filter(l => l.qual.qualificationStatus === 'REVIEWING').length },
+                { id: 'NEEDS_INFORMATION', label: 'Needs Information', count: totalNeedsInfoCount },
+                { id: 'QUALIFIED', label: 'Qualified', count: totalQualifiedCount },
+                { id: 'PROCESSOR_CHECK', label: 'Processor Check', count: totalProcessorCheckCount },
+                { id: 'QUOTATION_READY', label: 'Quotation Ready', count: evaluatedLeads.filter(l => l.qual.qualificationStatus === 'QUOTATION_READY').length },
+                { id: 'NURTURE', label: 'Nurture', count: evaluatedLeads.filter(l => l.qual.qualificationStatus === 'NURTURE').length },
+                { id: 'DISQUALIFIED', label: 'Disqualified', count: evaluatedLeads.filter(l => l.qual.qualificationStatus === 'DISQUALIFIED').length },
+                { id: 'LOST', label: 'Lost', count: evaluatedLeads.filter(l => l.qual.qualificationStatus === 'LOST').length }
+              ].map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setFilterStatus(f.id)}
+                  style={{
+                    padding: '5px 12px',
+                    fontSize: '0.76rem',
+                    fontWeight: filterStatus === f.id ? 800 : 500,
+                    borderRadius: 20,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    background: filterStatus === f.id ? 'var(--color-primary)' : 'var(--color-bg-alt)',
+                    color: filterStatus === f.id ? 'white' : 'var(--color-text)',
+                    border: `1px solid ${filterStatus === f.id ? 'var(--color-primary)' : 'var(--color-border)'}`
+                  }}
+                >
+                  {f.label} ({f.count})
+                </button>
+              ))}
+            </div>
+
+            {sortedLeads.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--color-text-light)', fontSize: '0.88rem' }}>
-                No RFQ leads recorded yet. Submissions from the website RFQ form will appear here with structured commercial parameters.
+                No leads match the selected filter <strong>"{filterStatus}"</strong>.
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
                   <thead>
                     <tr style={{ background: 'var(--color-bg-alt)', borderBottom: '2px solid var(--color-border)', textAlign: 'left' }}>
-                      <th style={{ padding: '10px 14px' }}>Lead ID</th>
-                      <th style={{ padding: '10px 14px' }}>Date</th>
-                      <th style={{ padding: '10px 14px' }}>Buyer &amp; Company</th>
-                      <th style={{ padding: '10px 14px' }}>Country</th>
-                      <th style={{ padding: '10px 14px' }}>Product</th>
-                      <th style={{ padding: '10px 14px' }}>Quantity</th>
-                      <th style={{ padding: '10px 14px' }}>Destination</th>
-                      <th style={{ padding: '10px 14px' }}>Status</th>
-                      <th style={{ padding: '10px 14px' }}>Next Action</th>
-                      <th style={{ padding: '10px 14px', textAlign: 'right' }}>Requirement</th>
+                      <th style={{ padding: '10px 12px' }}>Lead ID</th>
+                      <th style={{ padding: '10px 12px' }}>Buyer &amp; Company</th>
+                      <th style={{ padding: '10px 12px' }}>Country</th>
+                      <th style={{ padding: '10px 12px' }}>Product</th>
+                      <th style={{ padding: '10px 12px' }}>Quantity</th>
+                      <th style={{ padding: '10px 12px' }}>Status</th>
+                      <th style={{ padding: '10px 12px' }}>Score &amp; Comp.</th>
+                      <th style={{ padding: '10px 12px' }}>Priority</th>
+                      <th style={{ padding: '10px 12px' }}>Missing Info</th>
+                      <th style={{ padding: '10px 12px' }}>Next Action</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'right' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {leads.map((l) => (
-                      <tr key={l.leadId} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                        <td style={{ padding: '12px 14px', fontWeight: 800, color: 'var(--color-primary)', fontFamily: 'monospace' }}>
-                          {l.leadId}
-                        </td>
-                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', color: 'var(--color-text-light)' }}>
-                          {l.createdAt ? (l.createdAt.includes('T') ? l.createdAt.split('T')[0] : l.createdAt.split(',')[0]) : 'Recent'}
-                        </td>
-                        <td style={{ padding: '12px 14px' }}>
-                          <div style={{ fontWeight: 700 }}>{l.buyer?.name || 'Direct Buyer'}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>{l.buyer?.company || 'Commercial Importer'}</div>
-                        </td>
-                        <td style={{ padding: '12px 14px' }}>{l.buyer?.country || 'International'}</td>
-                        <td style={{ padding: '12px 14px' }}>
-                          <span style={{ fontWeight: 600 }}>{l.inquiry?.product || 'Moringa Powder'}</span>
-                          {l.inquiry?.hsCode && (
-                            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)', fontFamily: 'monospace' }}>HS: {l.inquiry.hsCode}</div>
-                          )}
-                        </td>
-                        <td style={{ padding: '12px 14px', fontWeight: 700 }}>
-                          {Number(l.inquiry?.quantity || 0).toLocaleString()} {l.inquiry?.quantityUnit || 'KG'}
-                        </td>
-                        <td style={{ padding: '12px 14px' }}>
-                          <div>{l.inquiry?.destination || 'Nhava Sheva (JNPT)'}</div>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>{l.inquiry?.incoterm || 'FOB'}</div>
-                        </td>
-                        <td style={{ padding: '12px 14px' }}>
-                          <span className="badge" style={{
-                            fontSize: '0.7rem',
-                            fontWeight: 700,
-                            background: l.workflow?.status === 'QUALIFIED' ? '#f0fdf4' : '#eff6ff',
-                            color: l.workflow?.status === 'QUALIFIED' ? '#166534' : '#1d4ed8',
-                            border: `1px solid ${l.workflow?.status === 'QUALIFIED' ? '#bbf7d0' : '#bfdbfe'}`
-                          }}>
-                            {l.workflow?.status || 'NEW'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '12px 14px', fontSize: '0.78rem', color: 'var(--color-text-light)', maxWidth: 180 }}>
-                          {l.workflow?.nextAction || 'Review specs & verify processor stock'}
-                        </td>
-                        <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                          <button
-                            onClick={() => setSelectedLead(l)}
-                            className="btn"
-                            style={{ padding: '5px 10px', fontSize: '0.75rem', gap: 4, background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}
-                          >
-                            <Eye size={13} /> Inspect
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {sortedLeads.map((l) => {
+                      const q = l.qual
+                      const statusColor =
+                        q.qualificationStatus === 'QUALIFIED' ? { bg: '#f0fdf4', text: '#166534', border: '#bbf7d0' } :
+                        q.qualificationStatus === 'PROCESSOR_CHECK' ? { bg: '#fffbeb', text: '#92400e', border: '#fde68a' } :
+                        q.qualificationStatus === 'QUOTATION_READY' ? { bg: '#f5f3ff', text: '#5b21b6', border: '#ddd6fe' } :
+                        q.qualificationStatus === 'NEEDS_INFORMATION' ? { bg: '#fef2f2', text: '#991b1b', border: '#fecaca' } :
+                        q.qualificationStatus === 'DISQUALIFIED' ? { bg: '#f3f4f6', text: '#4b5563', border: '#e5e7eb' } :
+                        { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' }
+
+                      const priorityColor =
+                        q.priority === 'HIGH' ? { bg: '#fef2f2', text: '#b91c1c', border: '#fecaca' } :
+                        q.priority === 'MEDIUM' ? { bg: '#fffbeb', text: '#b45309', border: '#fde68a' } :
+                        { bg: '#f3f4f6', text: '#4b5563', border: '#e5e7eb' }
+
+                      return (
+                        <tr key={l.leadId} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                          <td style={{ padding: '12px', fontWeight: 800, color: 'var(--color-primary)', fontFamily: 'monospace' }}>
+                            {l.leadId}
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            <div style={{ fontWeight: 700 }}>{l.buyer?.name || 'Direct Buyer'}</div>
+                            <div style={{ fontSize: '0.74rem', color: 'var(--color-text-light)' }}>{l.buyer?.company || 'Commercial Importer'}</div>
+                          </td>
+                          <td style={{ padding: '12px' }}>{l.buyer?.country || 'International'}</td>
+                          <td style={{ padding: '12px' }}>
+                            <span style={{ fontWeight: 600 }}>{l.inquiry?.product || 'Moringa Powder'}</span>
+                            {l.inquiry?.hsCode && (
+                              <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)', fontFamily: 'monospace' }}>HS: {l.inquiry.hsCode}</div>
+                            )}
+                          </td>
+                          <td style={{ padding: '12px', fontWeight: 700 }}>
+                            {Number(l.inquiry?.quantity || 0).toLocaleString()} {l.inquiry?.quantityUnit || 'KG'}
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            <span className="badge" style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              background: statusColor.bg,
+                              color: statusColor.text,
+                              border: `1px solid ${statusColor.border}`,
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {q.qualificationStatus}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontWeight: 800, color: q.qualificationScore >= 70 ? '#166534' : q.qualificationScore >= 45 ? '#b45309' : '#b91c1c' }}>
+                                {q.qualificationScore}/100
+                              </span>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>({q.completenessScore}%)</span>
+                            </div>
+                            <div style={{ width: 60, height: 4, background: '#e2e8f0', borderRadius: 2, marginTop: 4, overflow: 'hidden' }}>
+                              <div style={{
+                                width: `${q.qualificationScore}%`,
+                                height: '100%',
+                                background: q.qualificationScore >= 70 ? '#16a34a' : q.qualificationScore >= 45 ? '#f59e0b' : '#ef4444'
+                              }} />
+                            </div>
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            <span className="badge" style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              background: priorityColor.bg,
+                              color: priorityColor.text,
+                              border: `1px solid ${priorityColor.border}`
+                            }}>
+                              {q.priority}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px', fontSize: '0.75rem', maxWidth: 140 }}>
+                            {q.missingFields && q.missingFields.length > 0 ? (
+                              <span style={{ color: '#b91c1c', fontWeight: 600 }}>
+                                {q.missingFields.length} missing ({q.missingFields.slice(0, 2).join(', ')}{q.missingFields.length > 2 ? '...' : ''})
+                              </span>
+                            ) : (
+                              <span style={{ color: '#166534', fontWeight: 600 }}>Complete</span>
+                            )}
+                          </td>
+                          <td style={{ padding: '12px', fontSize: '0.76rem', color: 'var(--color-text)', maxWidth: 200 }}>
+                            {q.nextAction}
+                          </td>
+                          <td style={{ padding: '12px', textAlign: 'right' }}>
+                            <button
+                              onClick={() => setSelectedLead(l)}
+                              className="btn"
+                              style={{ padding: '5px 10px', fontSize: '0.74rem', gap: 4, background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)', whiteSpace: 'nowrap' }}
+                            >
+                              <Eye size={13} /> Inspect &amp; Qualify
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
             )}
           </div>
 
-          {/* Lead Requirement Inspection Modal */}
-          {selectedLead && (
-            <div style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(0,0,0,0.65)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 9999,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 20
-            }}>
-              <div className="card" style={{
-                background: 'white',
-                maxWidth: 720,
-                width: '100%',
-                maxHeight: '90vh',
-                overflowY: 'auto',
-                borderRadius: 12,
-                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-                padding: '32px'
+          {/* Lead Requirement Inspection Modal (Expanded P4.2 11-Section Inspector) */}
+          {selectedLead && (() => {
+            const qual = evaluateLeadQualification(selectedLead)
+            const proc = qual.processorRequirements || {}
+            const buyer = selectedLead.buyer || {}
+            const inq = selectedLead.inquiry || {}
+            const statusColor =
+              qual.qualificationStatus === 'QUALIFIED' ? { bg: '#f0fdf4', text: '#166534', border: '#bbf7d0' } :
+              qual.qualificationStatus === 'PROCESSOR_CHECK' ? { bg: '#fffbeb', text: '#92400e', border: '#fde68a' } :
+              qual.qualificationStatus === 'QUOTATION_READY' ? { bg: '#f5f3ff', text: '#5b21b6', border: '#ddd6fe' } :
+              qual.qualificationStatus === 'NEEDS_INFORMATION' ? { bg: '#fef2f2', text: '#991b1b', border: '#fecaca' } :
+              { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' }
+
+            return (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0,0,0,0.7)',
+                backdropFilter: 'blur(5px)',
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--color-border)', paddingBottom: 16, marginBottom: 20 }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: '1.2rem', fontWeight: 900, fontFamily: 'monospace', color: 'var(--color-primary)' }}>
-                        {selectedLead.leadId}
-                      </span>
-                      <span className="badge" style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
-                        {selectedLead.workflow?.status || 'NEW'}
-                      </span>
+                <div className="card" style={{
+                  background: 'white',
+                  maxWidth: 920,
+                  width: '100%',
+                  maxHeight: '92vh',
+                  overflowY: 'auto',
+                  borderRadius: 12,
+                  boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)',
+                  padding: '32px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 24
+                }}>
+                  {/* Modal Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--color-border)', paddingBottom: 16 }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '1.3rem', fontWeight: 900, fontFamily: 'monospace', color: 'var(--color-primary)' }}>
+                          {selectedLead.leadId}
+                        </span>
+                        <span className="badge" style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 800,
+                          background: statusColor.bg,
+                          color: statusColor.text,
+                          border: `1px solid ${statusColor.border}`
+                        }}>
+                          {qual.qualificationStatus}
+                        </span>
+                        <span className="badge" style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          background: qual.priority === 'HIGH' ? '#fef2f2' : qual.priority === 'MEDIUM' ? '#fffbeb' : '#f3f4f6',
+                          color: qual.priority === 'HIGH' ? '#b91c1c' : qual.priority === 'MEDIUM' ? '#b45309' : '#4b5563',
+                          border: '1px solid currentColor'
+                        }}>
+                          PRIORITY: {qual.priority}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: 4 }}>
+                        Source: <strong>{selectedLead.source?.channel || 'Website RFQ'}</strong> | Created: {selectedLead.createdAt} | Updated: {selectedLead.updatedAt || selectedLead.createdAt}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: 4 }}>
-                      Received: {selectedLead.createdAt} | Channel: {selectedLead.source?.channel || 'Website RFQ'}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setSelectedLead(null)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)', padding: 4 }}
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 24 }}>
-                  {/* Buyer Card */}
-                  <div style={{ background: 'var(--color-bg-alt)', padding: 16, borderRadius: 8 }}>
-                    <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-light)', marginBottom: 12 }}>
-                      Buyer Information
-                    </h4>
-                    <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>
-                      <div><strong>Contact:</strong> {selectedLead.buyer?.name}</div>
-                      <div><strong>Company:</strong> {selectedLead.buyer?.company}</div>
-                      <div><strong>Country:</strong> {selectedLead.buyer?.country}</div>
-                      <div><strong>Email:</strong> {selectedLead.buyer?.email}</div>
-                      <div><strong>Phone/WhatsApp:</strong> {selectedLead.buyer?.phone || selectedLead.buyer?.whatsapp || 'N/A'}</div>
-                    </div>
-                  </div>
-
-                  {/* Commercial Specifications */}
-                  <div style={{ background: 'var(--color-bg-alt)', padding: 16, borderRadius: 8 }}>
-                    <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-light)', marginBottom: 12 }}>
-                      Commercial Requirement
-                    </h4>
-                    <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>
-                      <div><strong>Product:</strong> {selectedLead.inquiry?.product}</div>
-                      <div><strong>HS Code:</strong> {selectedLead.inquiry?.hsCode || 'N/A'}</div>
-                      <div><strong>Quantity:</strong> {Number(selectedLead.inquiry?.quantity || 0).toLocaleString()} {selectedLead.inquiry?.quantityUnit || 'KG'}</div>
-                      <div><strong>Packaging:</strong> {selectedLead.inquiry?.packaging || 'Standard Export Pack'}</div>
-                      <div><strong>Mesh / Specs:</strong> {selectedLead.inquiry?.mesh || 'Standard'}</div>
-                      <div><strong>Moisture:</strong> {selectedLead.inquiry?.moisture || 'Standard'}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Trade & Logistics */}
-                <div style={{ background: '#f8fafc', padding: 16, borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 20 }}>
-                  <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-light)', marginBottom: 10 }}>
-                    Trade Terms &amp; Documentation
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, fontSize: '0.85rem' }}>
-                    <div><strong>Incoterm:</strong> {selectedLead.inquiry?.incoterm}</div>
-                    <div><strong>Destination Port:</strong> {selectedLead.inquiry?.destination}</div>
-                    <div><strong>Delivery Timeline:</strong> {selectedLead.inquiry?.timeline || '60–75 Days'}</div>
-                    <div><strong>Sample Required:</strong> {selectedLead.inquiry?.sampleRequired ? 'YES' : 'No'}</div>
-                    <div><strong>COA Required:</strong> {selectedLead.inquiry?.coaRequired ? 'YES' : 'Standard'}</div>
-                    <div><strong>Heavy Metals / Lab:</strong> {selectedLead.inquiry?.testingRequired ? 'YES' : 'Standard'}</div>
-                  </div>
-                  {selectedLead.inquiry?.additionalRequirements && (
-                    <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed #cbd5e1', fontSize: '0.82rem' }}>
-                      <strong>Buyer Notes / Remarks:</strong>
-                      <p style={{ margin: '4px 0 0', color: 'var(--color-text)', whiteSpace: 'pre-wrap' }}>
-                        {selectedLead.inquiry.additionalRequirements}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Next Workflow Steps */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, borderTop: '1px solid var(--color-border)', paddingTop: 20 }}>
-                  <div style={{ fontSize: '0.82rem', color: 'var(--color-text-light)' }}>
-                    Next Step: <strong>{selectedLead.workflow?.nextAction || 'Review & Coordinate Quotation'}</strong>
-                  </div>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <Link
-                      to={`/private/quotations?tab=builder&leadId=${selectedLead.leadId}&product=${encodeURIComponent(selectedLead.inquiry?.product || '')}&qty=${selectedLead.inquiry?.quantity || ''}&buyer=${encodeURIComponent(selectedLead.buyer?.name || '')}&company=${encodeURIComponent(selectedLead.buyer?.company || '')}&country=${encodeURIComponent(selectedLead.buyer?.country || '')}`}
-                      className="btn btn-primary"
-                      style={{ fontSize: '0.82rem', padding: '8px 16px' }}
-                    >
-                      Draft Quotation (P4.3 Readiness)
-                    </Link>
                     <button
                       onClick={() => setSelectedLead(null)}
-                      className="btn"
-                      style={{ fontSize: '0.82rem', padding: '8px 16px', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)', padding: 6 }}
                     >
-                      Close
+                      <X size={22} />
                     </button>
                   </div>
-                </div>
 
+                  {/* Section 1: Buyer Information & Section 2: Commercial Inquiry */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+                    {/* 1. Buyer Information */}
+                    <div style={{ background: 'var(--color-bg-alt)', padding: 18, borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                      <h4 style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: 12 }}>
+                        1. Buyer &amp; Organization Profile
+                      </h4>
+                      <div style={{ fontSize: '0.85rem', lineHeight: 1.7 }}>
+                        <div><strong>Contact Name:</strong> {buyer.name || 'Not provided'}</div>
+                        <div><strong>Company:</strong> {buyer.company || 'Not provided'}</div>
+                        <div><strong>Country:</strong> {buyer.country || 'Not provided'}</div>
+                        <div><strong>Business Email:</strong> {buyer.email || 'Not provided'}</div>
+                        <div><strong>Phone / WhatsApp:</strong> {buyer.phone || buyer.whatsapp || 'Not provided'}</div>
+                        <div><strong>Identified Buyer Type:</strong> <span className="badge" style={{ background: '#e0f2fe', color: '#0369a1', fontSize: '0.72rem' }}>{qual.buyerType}</span></div>
+                        <div><strong>Decision Maker Known:</strong> {selectedLead.qualification?.decisionMakerKnown ? 'Yes' : 'To be confirmed'}</div>
+                      </div>
+                    </div>
+
+                    {/* 2. Inquiry Parameters */}
+                    <div style={{ background: 'var(--color-bg-alt)', padding: 18, borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                      <h4 style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: 12 }}>
+                        2. Commercial Inquiry Details
+                      </h4>
+                      <div style={{ fontSize: '0.85rem', lineHeight: 1.7 }}>
+                        <div><strong>Product:</strong> {inq.product || 'Not specified'}</div>
+                        <div><strong>Harmonized Code:</strong> <span style={{ fontFamily: 'monospace' }}>{inq.hsCode || proc.hsCode}</span></div>
+                        <div><strong>Requested Volume:</strong> {Number(inq.quantity || 0).toLocaleString()} {inq.quantityUnit || 'KG'} ({proc.quantityKg} KG normalized)</div>
+                        <div><strong>Destination &amp; Port:</strong> {inq.destinationPort || inq.destination || 'Not specified'}</div>
+                        <div><strong>Requested Incoterm:</strong> {inq.incoterm || 'Not specified'}</div>
+                        <div><strong>Requested Packaging:</strong> {inq.packaging || 'Standard Bulk Pack'}</div>
+                        <div><strong>Target Price:</strong> {inq.targetPrice ? `${inq.targetPrice}` : 'Open to quote'}</div>
+                        <div><strong>Delivery Timeline:</strong> {inq.timeline || 'Standard Lead Time'}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 3: Qualification & Section 4: Requirement Completeness */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+                    {/* 3. Qualification Assessment */}
+                    <div style={{ background: '#f8fafc', padding: 18, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <h4 style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text)', margin: 0 }}>
+                          3. Qualification Assessment
+                        </h4>
+                        <span style={{ fontSize: '1.2rem', fontWeight: 900, color: qual.qualificationScore >= 70 ? '#16a34a' : '#f59e0b' }}>
+                          {qual.qualificationScore} / 100
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--color-text-light)', marginBottom: 10 }}>
+                        Scoring criteria met:
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {qual.qualificationReasons && qual.qualificationReasons.map((r, i) => (
+                          <span key={i} className="badge" style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', fontSize: '0.72rem' }}>
+                            ✓ {r}
+                          </span>
+                        ))}
+                      </div>
+                      <div style={{ marginTop: 12, padding: 8, background: '#f1f5f9', borderRadius: 4, fontSize: '0.72rem', color: '#64748b' }}>
+                        Notice: This score is an internal operational CRM readiness metric, not a credit assessment or buyer quality claim.
+                      </div>
+                    </div>
+
+                    {/* 4. Requirement Completeness */}
+                    <div style={{ background: '#f8fafc', padding: 18, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <h4 style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text)', margin: 0 }}>
+                          4. Requirement Completeness
+                        </h4>
+                        <span style={{ fontSize: '1.2rem', fontWeight: 900, color: qual.completenessScore >= 80 ? '#16a34a' : '#ef4444' }}>
+                          {qual.completenessScore}%
+                        </span>
+                      </div>
+                      <div style={{ width: '100%', height: 6, background: '#e2e8f0', borderRadius: 3, marginBottom: 12, overflow: 'hidden' }}>
+                        <div style={{ width: `${qual.completenessScore}%`, height: '100%', background: qual.completenessScore >= 80 ? '#16a34a' : '#f59e0b' }} />
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--color-text-light)' }}>
+                        Priority drivers:
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                        {qual.priorityReasons && qual.priorityReasons.map((pr, i) => (
+                          <span key={i} className="badge" style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', fontSize: '0.72rem' }}>
+                            • {pr}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 5: Product Match */}
+                  <div style={{ background: '#fcfbf7', padding: 18, borderRadius: 8, border: '1px solid #f2edd9' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                      <h4 style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', color: '#92400e', margin: 0 }}>
+                        5. Product Master &amp; Specification Match
+                      </h4>
+                      <span className="badge" style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        background: qual.productMatch?.specificationMatch === 'MATCH' ? '#f0fdf4' : '#fffbeb',
+                        color: qual.productMatch?.specificationMatch === 'MATCH' ? '#166534' : '#b45309',
+                        border: '1px solid currentColor'
+                      }}>
+                        SPECIFICATION: {qual.productMatch?.specificationMatch}
+                      </span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, fontSize: '0.82rem', marginTop: 8 }}>
+                      <div><strong>Catalog Product:</strong> {qual.productMatch?.masterProduct?.productName || 'Unmatched'}</div>
+                      <div><strong>Buyer Mesh:</strong> {inq.mesh || 'Standard'} (Master: {qual.productMatch?.masterProduct?.meshStandard || '80–100 Mesh'})</div>
+                      <div><strong>Buyer Moisture:</strong> {inq.moisture || 'Standard'} (Master: {qual.productMatch?.masterProduct?.moistureStandard || 'Max 7–8%'})</div>
+                      <div><strong>Buyer Packaging:</strong> {inq.packaging || 'Standard'} (Master: {qual.productMatch?.masterProduct?.packagingStandard || '25 kg Bags'})</div>
+                    </div>
+                  </div>
+
+                  {/* Section 6: Processor Requirement Brief & Positioning */}
+                  <div style={{ background: '#f0fdf4', padding: 18, borderRadius: 8, border: '1px solid #bbf7d0' }}>
+                    <h4 style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', color: '#166534', marginBottom: 8 }}>
+                      6. Indian Processor Requirement Brief (Sourcing Coordination)
+                    </h4>
+                    <p style={{ fontSize: '0.8rem', color: '#15803d', fontStyle: 'italic', margin: '0 0 12px' }}>
+                      Positioning: AVANI AGRO FOODS coordinates sourcing, requirement handling, supplier communication and export-process coordination. Manufacturing partner subject to confirmation. Specification and capacity to be confirmed with the manufacturing partner.
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, fontSize: '0.83rem', color: 'var(--color-text)' }}>
+                      <div><strong>Sourcing Target:</strong> {proc.product} ({proc.quantityDisplay})</div>
+                      <div><strong>Normalized Weight:</strong> {proc.quantityKg} KG Net</div>
+                      <div><strong>HS Code:</strong> {proc.hsCode}</div>
+                      <div><strong>Port / Dispatch:</strong> {proc.destination || 'Nhava Sheva (JNPT Mumbai)'}</div>
+                      <div><strong>Sample Requested:</strong> {proc.sampleRequired ? 'YES — Batch sample needed' : 'Not required initially'}</div>
+                      <div><strong>Batch COA:</strong> {proc.coaRequired ? 'YES — Mandatory' : 'Standard Processor COA'}</div>
+                      <div><strong>Lab Testing:</strong> {proc.testingRequired ? 'YES — Heavy Metals / Microbiological' : 'Standard Quality Parameter'}</div>
+                    </div>
+                    {proc.additionalRequirements && (
+                      <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px dashed #bbf7d0', fontSize: '0.8rem' }}>
+                        <strong>Buyer Custom Instructions:</strong> {proc.additionalRequirements}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Section 7: Missing Information & Section 8: Processor Confirmation Checklist */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+                    {/* 7. Missing Information */}
+                    <div style={{ background: '#fef2f2', padding: 18, borderRadius: 8, border: '1px solid #fecaca' }}>
+                      <h4 style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', color: '#991b1b', marginBottom: 10 }}>
+                        7. Missing Information Checklist
+                      </h4>
+                      {qual.missingFields && qual.missingFields.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {qual.missingFields.map((f, i) => (
+                            <div key={i} style={{ fontSize: '0.8rem', color: '#b91c1c', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontWeight: 800 }}>⚠</span> Field missing: <strong>{f}</strong>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '0.82rem', color: '#166534', fontWeight: 600 }}>
+                          ✓ All mandatory commercial parameters are satisfied.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 8. Processor Confirmation Checklist */}
+                    <div style={{ background: '#fffbeb', padding: 18, borderRadius: 8, border: '1px solid #fde68a' }}>
+                      <h4 style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', color: '#92400e', marginBottom: 10 }}>
+                        8. Processor Confirmation Checklist
+                      </h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {qual.requirementsToConfirm && qual.requirementsToConfirm.map((req, i) => (
+                          <div key={i} style={{ fontSize: '0.8rem', color: '#78350f', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontWeight: 800 }}>☐</span> {req}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 9: Operational Next Action */}
+                  <div style={{ background: '#eff6ff', padding: 18, borderRadius: 8, border: '1px solid #bfdbfe' }}>
+                    <h4 style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', color: '#1e40af', marginBottom: 6 }}>
+                      9. Recommended Operational Next Action
+                    </h4>
+                    <div style={{ fontSize: '1rem', fontWeight: 700, color: '#1e3a8a' }}>
+                      👉 {qual.nextAction}
+                    </div>
+                  </div>
+
+                  {/* Section 10: Activity & Audit History */}
+                  <div style={{ background: 'var(--color-bg-alt)', padding: 18, borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                    <h4 style={{ fontSize: '0.82rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-light)', marginBottom: 10 }}>
+                      10. Activity &amp; Audit Trail
+                    </h4>
+                    {selectedLead.activity && selectedLead.activity.length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {selectedLead.activity.map((act, i) => (
+                          <div key={i} style={{ fontSize: '0.78rem', color: 'var(--color-text-light)', display: 'flex', justifyContent: 'space-between' }}>
+                            <span><strong>{act.type}</strong> ({act.actor || 'SYSTEM'}): {act.fromStatus ? `${act.fromStatus} → ${act.toStatus}` : act.note || 'Recorded'}</span>
+                            <span style={{ fontFamily: 'monospace' }}>{act.timestamp ? act.timestamp.split('T')[0] : ''}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)' }}>
+                        Lead recorded via Website RFQ. No qualification status overrides yet.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Section 11: Admin Workflow & Status Overrides & P4.3 Handoff */}
+                  <div style={{ background: '#f8fafc', padding: 20, borderRadius: 8, border: '1px solid #cbd5e1' }}>
+                    <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text)', marginBottom: 12 }}>
+                      11. Workflow Actions &amp; P4.3 Draft Quotation Handoff
+                    </h4>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>Change Status:</label>
+                        <select
+                          defaultValue={selectedLead.workflow?.status || qual.qualificationStatus}
+                          id="manual-status-select"
+                          style={{ padding: '6px 12px', fontSize: '0.82rem', borderRadius: 6, border: '1px solid var(--color-border)', background: 'white' }}
+                        >
+                          {CANONICAL_QUALIFICATION_STATUS.map(st => (
+                            <option key={st} value={st}>{st}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Add internal note for audit trail..."
+                        value={adminNote}
+                        onChange={(e) => setAdminNote(e.target.value)}
+                        style={{ flex: 1, minWidth: 240, padding: '6px 12px', fontSize: '0.82rem', borderRadius: 6, border: '1px solid var(--color-border)' }}
+                      />
+                      <button
+                        onClick={() => {
+                          const sel = document.getElementById('manual-status-select')
+                          if (sel) handleUpdateLeadStatus(selectedLead.leadId, sel.value, adminNote)
+                        }}
+                        className="btn"
+                        style={{ padding: '6px 14px', fontSize: '0.82rem', background: 'var(--color-primary)', color: 'white' }}
+                      >
+                        Update Status &amp; Save Note
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, borderTop: '1px solid #e2e8f0', paddingTop: 16 }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)' }}>
+                        P4.3 Readiness: Sourcing parameters structured for Quotation Builder calculation engine.
+                      </div>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <Link
+                          to={`/private/quotations?tab=builder&leadId=${encodeURIComponent(selectedLead.leadId)}&product=${encodeURIComponent(proc.product || inq.product || '')}&qty=${proc.quantityKg || inq.quantity || ''}&buyer=${encodeURIComponent(buyer.name || '')}&company=${encodeURIComponent(buyer.company || '')}&country=${encodeURIComponent(buyer.country || '')}&incoterm=${encodeURIComponent(proc.incoterm || inq.incoterm || '')}&dest=${encodeURIComponent(proc.destination || inq.destination || '')}&mesh=${encodeURIComponent(proc.mesh || inq.mesh || '')}&moisture=${encodeURIComponent(proc.moisture || inq.moisture || '')}&packaging=${encodeURIComponent(proc.packaging || inq.packaging || '')}&timeline=${encodeURIComponent(proc.timeline || inq.timeline || '')}&targetPrice=${encodeURIComponent(proc.targetPrice || inq.targetPrice || '')}&additionalReqs=${encodeURIComponent(proc.additionalRequirements || inq.additionalRequirements || '')}`}
+                          className="btn btn-primary"
+                          style={{ fontSize: '0.84rem', padding: '8px 18px', gap: 6 }}
+                        >
+                          <Plus size={14} /> Create Draft Quotation (P4.3 Readiness)
+                        </Link>
+                        <button
+                          onClick={() => setSelectedLead(null)}
+                          className="btn"
+                          style={{ fontSize: '0.84rem', padding: '8px 16px', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}
+                        >
+                          Close Inspector
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* Recent Sourcing Inquiries & Quotations */}
           <div className="card" style={{ padding: '32px', background: 'white' }}>

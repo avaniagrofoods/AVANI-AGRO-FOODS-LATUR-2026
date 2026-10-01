@@ -114,6 +114,18 @@ export function validateLeadPayload(payload) {
 
   const errors = [];
 
+  // 0. Payload Size & LeadId Format Checks
+  try {
+    const rawLen = JSON.stringify(payload).length;
+    if (rawLen > 50000) {
+      errors.push('Maximum payload limit exceeded (50KB maximum).');
+    }
+  } catch (e) {}
+
+  if (payload.leadId && !/^AAF-L-\d{4}-\d{4,6}$/.test(payload.leadId)) {
+    errors.push('Invalid leadId format. Expected AAF-L-YYYY-XXXX.');
+  }
+
   // Flatten potential nested buyer/inquiry structures
   const buyer = payload.buyer || {};
   const inquiry = payload.inquiry || {};
@@ -307,6 +319,8 @@ export function createLeadRecord(validatedData) {
   };
 }
 
+export const sanitizeText = sanitizeString;
+
 // CommonJS compatibility export
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -314,6 +328,7 @@ if (typeof module !== 'undefined' && module.exports) {
     CANONICAL_WORKFLOW_STATUS,
     generateLeadId,
     sanitizeString,
+    sanitizeText: sanitizeString,
     normalizeIncomingPayload,
     validateLeadPayload,
     createLeadRecord
