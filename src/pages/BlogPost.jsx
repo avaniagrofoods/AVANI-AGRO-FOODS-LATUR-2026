@@ -149,11 +149,11 @@ export default function BlogPost() {
                 </div>
               </article>
 
-              {/* Affiliate Disclaimer */}
+              {/* Sourcing Disclaimer */}
               <div style={{ marginTop: 48, padding: '20px', background: 'rgba(230,168,23,0.08)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(230,168,23,0.2)', fontSize: '0.78rem', color: 'var(--color-text-light)' }}>
-                <strong>📋 Affiliate Disclosure:</strong> This article may contain affiliate links to Amazon and iHerb. If you purchase through these links, Avani Agro Foods earns a small commission at no additional cost to you. This helps support our free content. All opinions are our own.
+                <strong>📋 Sourcing Disclosure:</strong> This article is published by AVANI AGRO FOODS, an Indian agricultural trade coordination partner based in Latur, Maharashtra. Product specifications and technical parameters described are indicative and subject to final supplier and batch confirmation.
                 <br /><br />
-                <strong>⚕️ Medical Disclaimer:</strong> The health information provided is for educational purposes only and is not a substitute for professional medical advice.
+                <strong>⚕️ Educational Disclaimer:</strong> Any nutritional or botanical information provided in this article is for general educational and trade reference purposes only, and is not a substitute for professional medical, regulatory, or laboratory advice.
               </div>
 
               {/* Share */}
@@ -170,7 +170,7 @@ export default function BlogPost() {
               {/* CTA Card */}
               <div className="card" style={{ padding: '28px', marginBottom: 24, background: 'linear-gradient(135deg, var(--color-primary-dark), var(--color-primary))' }}>
                 <h3 style={{ color: 'white', fontWeight: 900, marginBottom: 12 }}>Need Bulk Moringa?</h3>
-                <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.85rem', marginBottom: 20, lineHeight: 1.6 }}>Export-grade. Lab certified. 25 kg minimum. Samples available.</p>
+                <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.85rem', marginBottom: 20, lineHeight: 1.6 }}>Export-grade. Batch COA coordinated. 25 kg minimum. Samples available on request.</p>
                 <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi! I read your blog about moringa and I need pricing.`} target="_blank" rel="noopener noreferrer" className="btn" style={{ background: '#25D366', color: 'white', width: '100%', justifyContent: 'center' }}>
                   📱 WhatsApp Us
                 </a>

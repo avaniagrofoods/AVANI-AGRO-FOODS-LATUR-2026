@@ -563,7 +563,7 @@ Western India, particularly Maharashtra's agricultural belt (Nashik, Pune, Ahmed
 | **Moisture Content** | ≤ 6.0% (typical) | Critical threshold to prevent clumping and microbial activity |
 | **Mesh Size** | 60–80 Mesh | Standard free-flowing grain for spice blends and seasonings |
 | **Pungency** | High Pyruvic Acid Index | Ensures intense flavor delivery at low formulation dosage |
-| **Shelf Life** | 24 months | Guaranteed when sealed in moisture-barrier export liners |
+| **Shelf Life** | 24 months | Achievable when sealed in moisture-barrier export liners under recommended storage conditions |
 
 ---
 

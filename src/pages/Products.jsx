@@ -52,7 +52,7 @@ const PRODUCTS = [
     name: 'Red Onion Powder',
     tagline: 'Dehydrated Indian Red Onion Powder — Food Processing Grade',
     category: 'Dehydrated Food Ingredient · Sourcing Coordination',
-    description: 'Manufactured from selected Indian red onion varieties (N-53, Bhima Shakti) via multi-stage controlled dehydration. Engineered to provide standardized pungency, extended 24-month ambient shelf life, and ease of incorporation for commercial food manufacturing.',
+    description: 'Coordinated sourcing of dehydrated Red Onion Powder produced from selected Indian red onion varieties (N-53, Bhima Shakti) by vetted processing partners via multi-stage controlled dehydration. Engineered to provide standardized pungency, extended 24-month ambient shelf life, and ease of incorporation for commercial food manufacturing.',
     img: '/onion.png',
     hscode: '0712.20.00',
     badge: '🧅 Commercial Food Ingredient',

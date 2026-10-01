@@ -467,7 +467,7 @@ export default function Home() {
                   Premium Food Processing Grade
                 </div>
                 <p style={{ color: 'var(--color-text-light)', fontSize: '0.92rem', lineHeight: 1.7, marginBottom: 20 }}>
-                  Manufactured from select Indian red onions using controlled multi-stage dehydration. Delivers sharp aroma, consistent flavor profile, and extended 24-month stability for soup mixes, snack seasonings, and processed foods.
+                  Coordinated sourcing of Red Onion Powder produced from select Indian red onions via controlled multi-stage dehydration by vetted processing partners. Delivers sharp aroma, consistent flavor profile, and extended 24-month stability for soup mixes, snack seasonings, and processed foods.
                 </p>
 
                 <div style={{ background: 'var(--color-bg-alt)', borderRadius: 'var(--radius-sm)', padding: '16px', marginBottom: 24, fontSize: '0.85rem' }}>
