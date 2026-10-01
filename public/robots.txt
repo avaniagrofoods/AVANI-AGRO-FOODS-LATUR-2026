@@ -15,6 +15,8 @@ Allow: /terms
 Allow: /disclaimer
 
 # Block confidential and private portals
+Disallow: /private/
+Disallow: /private
 Disallow: /admin/
 Disallow: /admin
 Disallow: /manufacturers
