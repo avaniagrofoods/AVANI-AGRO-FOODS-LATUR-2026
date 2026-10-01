@@ -42,11 +42,11 @@ export default async function handler(req, res) {
 
     // 5. Payload Validation
     const body = req.body;
-    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length === 0) {
       return res.status(400).json({
         success: false,
         error: 'Bad Request',
-        message: 'Invalid JSON payload. Expected lead or qualification evaluation object.'
+        message: 'Invalid or empty JSON payload. Expected lead or qualification evaluation object.'
       });
     }
 
@@ -71,17 +71,29 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       leadId,
+      qualification: {
+        qualificationStatus: qualResult.qualificationStatus,
+        qualificationScore: qualResult.qualificationScore,
+        scoreBreakdown: qualResult.scoreBreakdown,
+        completenessScore: qualResult.completenessScore,
+        priority: qualResult.priority,
+        priorityReasons: qualResult.priorityReasons,
+        buyerType: qualResult.buyerType,
+        missingFields: qualResult.missingFields,
+        missingFieldLabels: qualResult.missingFieldLabels,
+        qualificationReasons: qualResult.qualificationReasons,
+        specificationMatch: qualResult.specificationMatch,
+        specificationMatchNotes: qualResult.specificationMatchNotes,
+        productMatch: qualResult.productMatch,
+        nextAction: qualResult.nextAction
+      },
       qualificationStatus: qualResult.qualificationStatus,
       qualificationScore: qualResult.qualificationScore,
       completenessScore: qualResult.completenessScore,
       priority: qualResult.priority,
-      priorityReasons: qualResult.priorityReasons,
       buyerType: qualResult.buyerType,
       missingFields: qualResult.missingFields,
-      missingFieldLabels: qualResult.missingFieldLabels,
       qualificationReasons: qualResult.qualificationReasons,
-      specificationMatch: qualResult.specificationMatch,
-      specificationMatchNotes: qualResult.specificationMatchNotes,
       processorRequirements: qualResult.processorRequirements,
       requirementsToConfirm: qualResult.requirementsToConfirm,
       nextAction: qualResult.nextAction

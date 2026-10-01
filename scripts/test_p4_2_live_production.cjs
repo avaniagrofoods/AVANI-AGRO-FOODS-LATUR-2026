@@ -171,11 +171,13 @@ async function runLiveProductionAudit() {
 
     const data = JSON.parse(res.body);
     if (!data.success) throw new Error('Expected data.success === true');
-    if (data.qualification.qualificationStatus !== 'QUALIFIED') {
-      throw new Error(`Expected QUALIFIED status, got ${data.qualification.qualificationStatus}`);
+    const status = data.qualification?.qualificationStatus || data.qualificationStatus;
+    const score = data.qualification?.qualificationScore !== undefined ? data.qualification.qualificationScore : data.qualificationScore;
+    if (status !== 'QUALIFIED') {
+      throw new Error(`Expected QUALIFIED status, got ${status}`);
     }
-    if (data.qualification.qualificationScore < 70) {
-      throw new Error(`Expected score >= 70, got ${data.qualification.qualificationScore}`);
+    if (score < 70) {
+      throw new Error(`Expected score >= 70, got ${score}`);
     }
   });
 
@@ -240,7 +242,7 @@ async function runLiveProductionAudit() {
       incoterm: 'CIF Long Beach'
     };
 
-    const res = await makeRequest(`${PROD_URL}/api/quotation`, {
+    const res = await makeRequest(`${PROD_URL}/api/quotation?action=calculate`, {
       method: 'POST',
       headers: {
         'Origin': 'https://www.avaniagrofoods.com'
@@ -257,8 +259,9 @@ async function runLiveProductionAudit() {
     }
 
     const data = JSON.parse(res.body);
-    if (data.quotation.grandTotal !== 135000) {
-      throw new Error(`Expected grandTotal 135000, got ${data.quotation.grandTotal}`);
+    const grandTotal = data.quote?.grandTotal || data.quotation?.grandTotal;
+    if (grandTotal !== 135000) {
+      throw new Error(`Expected grandTotal 135000, got ${grandTotal}`);
     }
   });
 
