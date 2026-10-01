@@ -22,9 +22,68 @@ export default function BlogPost() {
   const shareUrl = `https://www.avaniagrofoods.com/blog/${blog.slug}`
   const waShare = `https://wa.me/?text=${encodeURIComponent(`${blog.title} - ${shareUrl}`)}`
 
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": blog.seoTitle || blog.title,
+    "description": blog.seoDesc || blog.excerpt,
+    "image": blog.thumbnail ? `https://www.avaniagrofoods.com${blog.thumbnail.startsWith('/') ? '' : '/'}${blog.thumbnail}` : "https://www.avaniagrofoods.com/og-image.jpg",
+    "author": {
+      "@type": "Person",
+      "name": blog.author || "Sachin Shinde"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "AVANI AGRO FOODS",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.avaniagrofoods.com/logo.png"
+      }
+    },
+    "datePublished": blog.date,
+    "dateModified": blog.date,
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": shareUrl
+    }
+  }
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.avaniagrofoods.com/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Blog",
+        "item": "https://www.avaniagrofoods.com/blog"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": blog.title,
+        "item": shareUrl
+      }
+    ]
+  }
+
+  const blogSchemas = [articleSchema, breadcrumbSchema]
+
   return (
     <>
-      <SEO title={blog.seoTitle || blog.title} description={blog.seoDesc || blog.excerpt} keywords={blog.keywords?.join(', ')} image={blog.thumbnail} />
+      <SEO
+        title={blog.seoTitle || blog.title}
+        description={blog.seoDesc || blog.excerpt}
+        keywords={blog.keywords?.join(', ')}
+        image={blog.thumbnail}
+        schema={blogSchemas}
+      />
 
       <div className="page-top">
         {/* Header */}
@@ -75,7 +134,14 @@ export default function BlogPost() {
                       th: ({ children }) => <th style={{ background: 'var(--color-primary)', color: 'white', padding: '10px 14px', textAlign: 'left', fontSize: '0.78rem' }}>{children}</th>,
                       td: ({ children }) => <td style={{ padding: '10px 14px', borderBottom: '1px solid var(--color-border)' }}>{children}</td>,
                       strong: ({ children }) => <strong style={{ color: 'var(--color-primary-dark)', fontWeight: 800 }}>{children}</strong>,
-                      a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>{children}</a>,
+                      a: ({ href, children }) => {
+                        const isInternal = href && (href.startsWith('/') || href.includes('avaniagrofoods.com'))
+                        if (isInternal) {
+                          const internalPath = href.replace('https://www.avaniagrofoods.com', '')
+                          return <Link to={internalPath} style={{ color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'underline' }}>{children}</Link>
+                        }
+                        return <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>{children}</a>
+                      },
                     }}
                   >
                     {blog.content}

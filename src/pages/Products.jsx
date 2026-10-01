@@ -133,12 +133,60 @@ export default function Products() {
     setModalOpen(true)
   }
 
+  const productsBreadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.avaniagrofoods.com/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Products",
+        "item": "https://www.avaniagrofoods.com/products"
+      }
+    ]
+  }
+
+  const moringaProductSchema = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": "Moringa Powder (Export Grade)",
+    "image": "https://www.avaniagrofoods.com/moringa.png",
+    "description": "Export-grade Moringa oleifera leaf powder coordinated from vetted Indian processing partners in Maharashtra. 80-100 mesh, moisture <= 7.0%.",
+    "category": "Botanical Leaf Powder",
+    "brand": {
+      "@type": "Brand",
+      "name": "AVANI AGRO FOODS"
+    }
+  }
+
+  const onionProductSchema = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": "Red Onion Powder (Dehydrated)",
+    "image": "https://www.avaniagrofoods.com/onion.png",
+    "description": "Standardized dehydrated Indian Red Onion Powder engineered for consistent pungency, moisture <= 6.0%, and 24-month ambient shelf stability.",
+    "category": "Dehydrated Food Ingredient",
+    "brand": {
+      "@type": "Brand",
+      "name": "AVANI AGRO FOODS"
+    }
+  }
+
+  const pageSchemas = [productsBreadcrumbSchema, moringaProductSchema, onionProductSchema]
+
   return (
     <>
       <SEO
         title="B2B Sourcing: Moringa Powder & Red Onion Powder | AVANI AGRO FOODS"
         description="Specifications, packaging details, and export parameters for Moringa Powder and Red Onion Powder coordinated by AVANI AGRO FOODS from India. Request B2B FOB/CIF quotes."
         keywords="moringa powder specifications, red onion powder wholesale, moringa export grade india, onion powder B2B india, moringa leaf powder supplier"
+        schema={pageSchemas}
       />
 
       <div className="page-top">
@@ -207,12 +255,15 @@ export default function Products() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                     <button onClick={() => openModal(product)} className="btn btn-primary" style={{ gap: 8, padding: '12px 24px' }}>
                       <Zap size={16} /> Request B2B Quote
                     </button>
-                    <Link to="/contact" className="btn" style={{ gap: 8, background: 'white', border: '1px solid var(--color-border)' }}>
+                    <Link to={`/contact?product=${product.id}&type=sample`} className="btn" style={{ gap: 8, background: 'white', border: '1px solid var(--color-border)' }}>
                       Request Samples <ArrowRight size={16} />
+                    </Link>
+                    <Link to={`/catalog/${product.id === 'moringa' ? 'moringa-powder' : 'red-onion-powder'}`} className="btn" style={{ gap: 8, background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}>
+                      View Technical Specs <FileText size={16} />
                     </Link>
                   </div>
                 </div>

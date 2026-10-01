@@ -15,12 +15,32 @@ export default function Blog() {
     return matchSearch && matchCat
   })
 
+  const blogBreadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.avaniagrofoods.com/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Blog",
+        "item": "https://www.avaniagrofoods.com/blog"
+      }
+    ]
+  }
+
   return (
     <>
       <SEO
         title="Export & Health Blog — Moringa, Onion, B2B"
         description="Expert blog on Moringa Powder benefits, export business guides, affiliate marketing strategies, and Indian agri-business insights."
         keywords="moringa powder blog, moringa benefits india, export blog india, onion powder food industry"
+        schema={blogBreadcrumbSchema}
       />
 
       <div className="page-top">

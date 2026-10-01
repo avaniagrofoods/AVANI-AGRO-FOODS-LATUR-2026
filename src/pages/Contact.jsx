@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import SEO from '../components/SEO'
 import { sendContactEmail, sendAutoReply } from '../lib/emailjs'
 import { logInquiry } from '../lib/googleSheets'
@@ -41,6 +41,7 @@ const INCOTERMS = [
 
 export default function Contact() {
   const navigate = useNavigate()
+  const location = useLocation()
   const redirectTimer = useRef(null)
   const { email, phone, whatsapp, address } = BUSINESS_INFO
 
@@ -72,10 +73,63 @@ export default function Contact() {
   const [isSuccess, setIsSuccess] = useState(false)
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(location.search)
+    const productParam = searchParams.get('product')
+    const typeParam = searchParams.get('type')
+    const volumeParam = searchParams.get('volume') || searchParams.get('quantity')
+
+    setForm(prev => {
+      let updatedProduct = prev.product
+      let updatedMesh = prev.meshSize
+      let updatedMoisture = prev.moisture
+      let updatedPackaging = prev.packaging
+
+      if (productParam) {
+        const pLower = productParam.toLowerCase()
+        if (pLower.includes('moringa')) {
+          updatedProduct = 'Moringa Powder'
+          updatedMesh = '80–100 Mesh'
+          updatedMoisture = '≤ 7.0%'
+          updatedPackaging = '25 kg Drums / Kraft Sacks'
+        } else if (pLower.includes('onion')) {
+          updatedProduct = 'Red Onion Powder'
+          updatedMesh = '60–80 Mesh'
+          updatedMoisture = '≤ 6.0%'
+          updatedPackaging = '20 kg Cartons / 25 kg Sacks'
+        } else if (pLower.includes('both')) {
+          updatedProduct = 'Both Products'
+        }
+      }
+
+      let updatedQuantity = volumeParam || prev.quantity
+      let updatedNotes = prev.additionalMessage
+
+      if (typeParam === 'sample') {
+        updatedQuantity = '1 kg Sample'
+        if (!updatedNotes) {
+          updatedNotes = `Requesting pre-shipment evaluation sample for ${updatedProduct}.`
+        }
+      } else if (typeParam === 'quote' || typeParam === 'rfq') {
+        if (!updatedNotes) {
+          updatedNotes = `Requesting formal commercial FOB / CIF proforma quote for ${updatedProduct}.`
+        }
+      }
+
+      return {
+        ...prev,
+        product: updatedProduct,
+        meshSize: updatedMesh,
+        moisture: updatedMoisture,
+        packaging: updatedPackaging,
+        quantity: updatedQuantity,
+        additionalMessage: updatedNotes
+      }
+    })
+
     return () => {
       if (redirectTimer.current) clearTimeout(redirectTimer.current)
     }
-  }, [])
+  }, [location.search])
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
@@ -229,12 +283,32 @@ ${form.additionalMessage}
     setLoading(false)
   }
 
+  const contactBreadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.avaniagrofoods.com/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Contact & RFQ",
+        "item": "https://www.avaniagrofoods.com/contact"
+      }
+    ]
+  }
+
   return (
     <>
       <SEO
         title="Send Your B2B Product Requirement | AVANI AGRO FOODS"
         description="Submit your B2B agricultural sourcing requirements for Moringa Powder and Red Onion Powder. AVANI AGRO FOODS coordinates with vetted Indian manufacturers for indicative quotations."
         keywords="b2b product requirement, moringa rfq, red onion powder quotation, agro sourcing inquiry india, sachin shinde latur"
+        schema={contactBreadcrumbSchema}
       />
 
       <div className="page-top" style={{ minHeight: '100vh', background: '#f8faf8', paddingBottom: 80 }}>

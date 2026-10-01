@@ -91,12 +91,81 @@ export default function Catalog() {
 
   const activeProduct = slug ? CATALOG_ITEMS.find(item => item.slug === slug) : null
 
+  // Dynamic schema for B2B Product and Breadcrumb
+  const productSchema = activeProduct ? {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": activeProduct.name,
+    "image": `https://www.avaniagrofoods.com${activeProduct.img}`,
+    "description": activeProduct.overview,
+    "category": activeProduct.category,
+    "brand": {
+      "@type": "Brand",
+      "name": "AVANI AGRO FOODS"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": `https://www.avaniagrofoods.com/catalog/${activeProduct.slug}`,
+      "priceCurrency": "USD",
+      "price": "0.00",
+      "priceValidUntil": "2027-12-31",
+      "availability": "https://schema.org/InStock",
+      "itemCondition": "https://schema.org/NewCondition",
+      "description": "Wholesale commercial B2B quotation available on request based on volume, mesh size, packaging, and destination port."
+    }
+  } : null
+
+  const breadcrumbSchema = activeProduct ? {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.avaniagrofoods.com/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Catalog",
+        "item": "https://www.avaniagrofoods.com/catalog"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": activeProduct.name,
+        "item": `https://www.avaniagrofoods.com/catalog/${activeProduct.slug}`
+      }
+    ]
+  } : {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.avaniagrofoods.com/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Catalog",
+        "item": "https://www.avaniagrofoods.com/catalog"
+      }
+    ]
+  }
+
+  const catalogSchemas = activeProduct ? [productSchema, breadcrumbSchema] : [breadcrumbSchema]
+
   return (
     <>
       <SEO
         title={activeProduct ? `${activeProduct.name} — B2B Export Catalog | AVANI AGRO FOODS` : 'B2B Agricultural Export Catalog | AVANI AGRO FOODS'}
         description={activeProduct ? activeProduct.overview : 'Digital B2B Product Catalog for Moringa Powder and Red Onion Powder coordinated by AVANI AGRO FOODS from India. Technical specifications, packaging, and commercial terms.'}
         keywords="moringa powder catalog, red onion powder export catalog, B2B spice catalog india, agricultural export specifications"
+        schema={catalogSchemas}
       />
 
       <div className="page-top" style={{ minHeight: '100vh', background: '#f8faf8', paddingBottom: 80 }}>
@@ -198,10 +267,10 @@ export default function Catalog() {
                       {product.overview}
                     </p>
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                      <Link to="/contact" className="btn btn-primary" style={{ fontSize: '0.85rem', padding: '10px 20px', gap: 6 }}>
+                      <Link to={`/contact?product=${product.slug === 'moringa-powder' ? 'moringa' : 'onion'}&type=quote`} className="btn btn-primary" style={{ fontSize: '0.85rem', padding: '10px 20px', gap: 6 }}>
                         <Send size={14} /> Request Quotation
                       </Link>
-                      <Link to="/contact" className="btn" style={{ fontSize: '0.85rem', padding: '10px 20px', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)', gap: 6 }}>
+                      <Link to={`/contact?product=${product.slug === 'moringa-powder' ? 'moringa' : 'onion'}&type=sample`} className="btn" style={{ fontSize: '0.85rem', padding: '10px 20px', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)', gap: 6 }}>
                         Request Sample
                       </Link>
                       <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi Sachin, I am reviewing the catalog for ${product.name} and would like to request an RFQ.`)}`} target="_blank" rel="noopener noreferrer" className="btn" style={{ fontSize: '0.85rem', padding: '10px 20px', background: '#25D366', color: 'white', border: 'none' }}>

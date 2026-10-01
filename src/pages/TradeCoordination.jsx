@@ -59,12 +59,32 @@ const WORKFLOW_STEPS = [
 ]
 
 export default function TradeCoordination() {
+  const tradeBreadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.avaniagrofoods.com/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Trade Coordination",
+        "item": "https://www.avaniagrofoods.com/trade-coordination"
+      }
+    ]
+  }
+
   return (
     <>
       <SEO
         title="B2B Trade Coordination & Sourcing Services | AVANI AGRO FOODS"
         description="Learn how AVANI AGRO FOODS coordinates agricultural export sourcing from India. 8-stage trade coordination process connecting global buyers with qualified Indian processors."
         keywords="trade coordination india, agricultural sourcing partner, B2B food export coordination, moringa sourcing agent india, red onion powder coordinator"
+        schema={tradeBreadcrumbSchema}
       />
 
       <div className="page-top" style={{ minHeight: '100vh', background: '#f8faf8', paddingBottom: 80 }}>

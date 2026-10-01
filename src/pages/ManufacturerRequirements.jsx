@@ -182,12 +182,32 @@ export default function ManufacturerRequirements() {
     setTimeout(() => { setSubmitted(true); setLoading(false) }, 800)
   }
 
+  const manufacturerBreadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.avaniagrofoods.com/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Manufacturer Requirements",
+        "item": "https://www.avaniagrofoods.com/manufacturer-requirements"
+      }
+    ]
+  }
+
   return (
     <>
       <SEO
         title="Manufacturer Requirements & Export Compliance | AVANI AGRO FOODS"
         description="Requirements for Indian food manufacturers to partner with Avani Agro Foods. FSSAI, IEC, COA, lab reports, packaging, traceability and export documentation checklist for Moringa and Red Onion Powder."
         keywords="manufacturer requirements exporter india, food manufacturer documentation, FSSAI manufacturer requirements, export compliance india, moringa manufacturer india, onion powder manufacturer"
+        schema={manufacturerBreadcrumbSchema}
       />
 
       <div className="page-top">

@@ -236,12 +236,32 @@ export default function ExportCompliance() {
     })
   }, [search, activeRegion])
 
+  const complianceBreadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.avaniagrofoods.com/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Export Compliance",
+        "item": "https://www.avaniagrofoods.com/export-compliance"
+      }
+    ]
+  }
+
   return (
     <>
       <SEO
         title="Global Export Documentation & Compliance Guide (35 Markets) | AVANI AGRO FOODS"
         description="Comprehensive country-by-country export documentation and regulatory compliance guide for Moringa Powder and Red Onion Powder across 35 international markets (USA, EU, UK, UAE, Japan, Canada, Australia & more)."
         keywords="export compliance guide india, moringa export documentation, red onion powder export regulations, FDA moringa requirements, EU novel food moringa, UAE food import standards, food export customs documentation"
+        schema={complianceBreadcrumbSchema}
       />
 
       <div className="page-top">

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-export default function SEO({ title, description, keywords, image, noindex = false }) {
+export default function SEO({ title, description, keywords, image, noindex = false, schema = null }) {
   useEffect(() => {
     // Format title
     let fullTitle = 'AVANI AGRO FOODS — Premium Moringa & Onion Powder Exporter'
@@ -53,7 +53,21 @@ export default function SEO({ title, description, keywords, image, noindex = fal
       document.head.appendChild(canonicalLink)
     }
     canonicalLink.setAttribute('href', canonicalUrl)
-  }, [title, description, keywords, image, noindex])
+
+    // Dynamic JSON-LD structured data injection
+    let scriptEl = document.querySelector('script#dynamic-seo-schema')
+    if (schema) {
+      if (!scriptEl) {
+        scriptEl = document.createElement('script')
+        scriptEl.setAttribute('type', 'application/ld+json')
+        scriptEl.setAttribute('id', 'dynamic-seo-schema')
+        document.head.appendChild(scriptEl)
+      }
+      scriptEl.textContent = JSON.stringify(schema)
+    } else if (scriptEl) {
+      scriptEl.remove()
+    }
+  }, [title, description, keywords, image, noindex, schema])
 
   return null
 }
