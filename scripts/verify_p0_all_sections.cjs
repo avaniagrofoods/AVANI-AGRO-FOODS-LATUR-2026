@@ -36,7 +36,7 @@ async function request(urlStr, options = {}) {
     const req = client.request(urlStr, {
       method: options.method || 'GET',
       headers: options.headers || {},
-      timeout: options.timeout || 15000,
+      timeout: options.timeout || 35000,
     }, (res) => {
       const chunks = [];
       res.on('data', chunk => chunks.push(chunk));
@@ -315,7 +315,7 @@ async function main() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'INQUIRY', inquiryId: 'UNAUTH-TEST' }),
         redirect: 'follow',
-        signal: AbortSignal.timeout(15000)
+        signal: AbortSignal.timeout(30000)
       });
       const unauthText = await unauthGas.text();
       let unauthJson = null;
@@ -331,7 +331,7 @@ async function main() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ webhookSecret: 'invalid_wrong_secret_123', type: 'INQUIRY' }),
         redirect: 'follow',
-        signal: AbortSignal.timeout(15000)
+        signal: AbortSignal.timeout(30000)
       });
       const badSecretText = await badSecretGas.text();
       let badSecretJson = null;
@@ -358,7 +358,7 @@ async function main() {
             product: 'Moringa Leaf Powder'
           }),
           redirect: 'follow',
-          signal: AbortSignal.timeout(15000)
+          signal: AbortSignal.timeout(30000)
         });
         const validText = await validGas.text();
         let validJson = null;

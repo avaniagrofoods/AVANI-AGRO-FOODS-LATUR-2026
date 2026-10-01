@@ -11,7 +11,8 @@
 // 5. Copy the deployment URL and paste into VITE_GOOGLE_SHEETS_WEBHOOK in .env.local
 // ============================================================
 
-const WEBHOOK_URL = import.meta.env.VITE_GOOGLE_SHEETS_WEBHOOK || '';
+// Direct client-to-sheets calls disabled for security; CRM writes handled server-side via /api/save-lead with CRM_WEBHOOK_SECRET
+const WEBHOOK_URL = '';
 
 /**
  * Log an affiliate event to Google Sheets
