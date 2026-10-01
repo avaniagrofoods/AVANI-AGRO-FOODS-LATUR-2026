@@ -7,7 +7,7 @@ import {
   Users, Building2, FileText, Plus, ArrowRight,
   TrendingUp, ShieldCheck, CheckCircle2, AlertCircle,
   Clock, Download, RefreshCw, Search, Phone, Mail, Globe,
-  ExternalLink, FileSpreadsheet
+  ExternalLink, FileSpreadsheet, Eye, X, Check
 } from 'lucide-react'
 import { BUSINESS_INFO, WHATSAPP_NUMBER } from '../data/links'
 import { matchProductMaster, parseQuantityKg, parseUnitRate } from '../data/productMaster'
@@ -17,6 +17,8 @@ export default function PrivateDashboard() {
   const [importers, setImporters] = useState([])
   const [manufacturers, setManufacturers] = useState({ small: [], medium: [], large: [], all: [] })
   const [quotations, setQuotations] = useState([])
+  const [leads, setLeads] = useState([])
+  const [selectedLead, setSelectedLead] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const loadData = async () => {
@@ -64,7 +66,6 @@ export default function PrivateDashboard() {
       const savedQuotes = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
       const localEnquiries = JSON.parse(localStorage.getItem('avani_enquiries') || '[]')
       const enquiryQuotes = localEnquiries.map((e, idx) => {
-        // If there's already a full quotation saved for this enquiry, use it
         const matchedQuote = savedQuotes.find(q => q.quoteId === e.quoteId || (e.inquiryId && q.inquiryId === e.inquiryId))
         if (matchedQuote) return matchedQuote
 
@@ -95,6 +96,37 @@ export default function PrivateDashboard() {
       const unique = Array.from(new Map(merged.map(q => [q.quoteId, q])).values())
       setQuotations(unique)
 
+      // 4. Load Canonical B2B Leads (P4.1)
+      const savedLeads = JSON.parse(localStorage.getItem('avani_leads') || '[]')
+      const synthesizedLeads = localEnquiries.map((e, idx) => ({
+        leadId: e.inquiryId && e.inquiryId.startsWith('AAF-L') ? e.inquiryId : `AAF-L-2026-${2001 + idx}`,
+        createdAt: e.date || new Date().toISOString(),
+        buyer: {
+          name: e.fullName || e.name || 'Direct Buyer',
+          company: e.companyName || e.company || 'B2B Importer',
+          country: e.country || 'India',
+          email: e.email || 'N/A',
+          phone: e.phone || 'N/A'
+        },
+        inquiry: {
+          product: e.product || 'Moringa Leaf Powder',
+          hsCode: matchProductMaster(e.product || '').hsCode,
+          quantity: parseQuantityKg(e.quantityNormalizedKg || e.quantity),
+          quantityUnit: 'KG',
+          destination: e.destinationPort || e.country || 'Nhava Sheva (JNPT Mumbai)',
+          incoterm: e.incoterm || 'FOB Nhava Sheva (JNPT Mumbai)',
+          mesh: e.meshSize || '80–100 Mesh',
+          moisture: e.moisture || 'Max 7–8%',
+          packaging: e.packaging || '25 kg Bags',
+          timeline: e.deliveryTimeline || '60–75 Days',
+          additionalRequirements: e.message || ''
+        },
+        qualification: { status: 'NEW', buyerType: e.businessType || 'Importer' },
+        workflow: { status: 'NEW', nextAction: 'Review requirement & coordinate with Indian processors', owner: 'Sachin Shinde' }
+      }))
+      const allLeads = Array.from(new Map([...savedLeads, ...synthesizedLeads].map(l => [l.leadId, l])).values())
+      setLeads(allLeads)
+
     } catch (err) {
       console.error('Error loading dashboard data:', err)
     } finally {
@@ -104,6 +136,13 @@ export default function PrivateDashboard() {
 
   useEffect(() => {
     loadData()
+    const handleUpdate = () => loadData()
+    window.addEventListener('lead-updated', handleUpdate)
+    window.addEventListener('enquiry-updated', handleUpdate)
+    return () => {
+      window.removeEventListener('lead-updated', handleUpdate)
+      window.removeEventListener('enquiry-updated', handleUpdate)
+    }
   }, [])
 
   // Derived real metrics
@@ -333,6 +372,237 @@ export default function PrivateDashboard() {
 
             </div>
           </div>
+
+          {/* P4.1 Canonical B2B Leads & Qualification Pipeline */}
+          <div className="card" style={{ padding: '32px', background: 'white', marginBottom: 36, borderTop: '4px solid var(--color-primary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>
+                    B2B Commercial Leads &amp; Qualification Pipeline
+                  </h3>
+                  <span className="badge" style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', fontSize: '0.75rem' }}>
+                    {leads.length} Canonical Leads
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.84rem', color: 'var(--color-text-light)', margin: '4px 0 0' }}>
+                  Canonical RFQ submissions structured for qualification, pricing coordination, and proforma generation
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={loadData} className="btn" style={{ padding: '6px 12px', fontSize: '0.78rem', gap: 6, background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}>
+                  <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh Leads
+                </button>
+              </div>
+            </div>
+
+            {leads.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--color-text-light)', fontSize: '0.88rem' }}>
+                No RFQ leads recorded yet. Submissions from the website RFQ form will appear here with structured commercial parameters.
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--color-bg-alt)', borderBottom: '2px solid var(--color-border)', textAlign: 'left' }}>
+                      <th style={{ padding: '10px 14px' }}>Lead ID</th>
+                      <th style={{ padding: '10px 14px' }}>Date</th>
+                      <th style={{ padding: '10px 14px' }}>Buyer &amp; Company</th>
+                      <th style={{ padding: '10px 14px' }}>Country</th>
+                      <th style={{ padding: '10px 14px' }}>Product</th>
+                      <th style={{ padding: '10px 14px' }}>Quantity</th>
+                      <th style={{ padding: '10px 14px' }}>Destination</th>
+                      <th style={{ padding: '10px 14px' }}>Status</th>
+                      <th style={{ padding: '10px 14px' }}>Next Action</th>
+                      <th style={{ padding: '10px 14px', textAlign: 'right' }}>Requirement</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leads.map((l) => (
+                      <tr key={l.leadId} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                        <td style={{ padding: '12px 14px', fontWeight: 800, color: 'var(--color-primary)', fontFamily: 'monospace' }}>
+                          {l.leadId}
+                        </td>
+                        <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', color: 'var(--color-text-light)' }}>
+                          {l.createdAt ? (l.createdAt.includes('T') ? l.createdAt.split('T')[0] : l.createdAt.split(',')[0]) : 'Recent'}
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <div style={{ fontWeight: 700 }}>{l.buyer?.name || 'Direct Buyer'}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>{l.buyer?.company || 'Commercial Importer'}</div>
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>{l.buyer?.country || 'International'}</td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <span style={{ fontWeight: 600 }}>{l.inquiry?.product || 'Moringa Powder'}</span>
+                          {l.inquiry?.hsCode && (
+                            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)', fontFamily: 'monospace' }}>HS: {l.inquiry.hsCode}</div>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 14px', fontWeight: 700 }}>
+                          {Number(l.inquiry?.quantity || 0).toLocaleString()} {l.inquiry?.quantityUnit || 'KG'}
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <div>{l.inquiry?.destination || 'Nhava Sheva (JNPT)'}</div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>{l.inquiry?.incoterm || 'FOB'}</div>
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <span className="badge" style={{
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            background: l.workflow?.status === 'QUALIFIED' ? '#f0fdf4' : '#eff6ff',
+                            color: l.workflow?.status === 'QUALIFIED' ? '#166534' : '#1d4ed8',
+                            border: `1px solid ${l.workflow?.status === 'QUALIFIED' ? '#bbf7d0' : '#bfdbfe'}`
+                          }}>
+                            {l.workflow?.status || 'NEW'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 14px', fontSize: '0.78rem', color: 'var(--color-text-light)', maxWidth: 180 }}>
+                          {l.workflow?.nextAction || 'Review specs & verify processor stock'}
+                        </td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                          <button
+                            onClick={() => setSelectedLead(l)}
+                            className="btn"
+                            style={{ padding: '5px 10px', fontSize: '0.75rem', gap: 4, background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}
+                          >
+                            <Eye size={13} /> Inspect
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Lead Requirement Inspection Modal */}
+          {selectedLead && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.65)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 20
+            }}>
+              <div className="card" style={{
+                background: 'white',
+                maxWidth: 720,
+                width: '100%',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                borderRadius: 12,
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+                padding: '32px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--color-border)', paddingBottom: 16, marginBottom: 20 }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: '1.2rem', fontWeight: 900, fontFamily: 'monospace', color: 'var(--color-primary)' }}>
+                        {selectedLead.leadId}
+                      </span>
+                      <span className="badge" style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                        {selectedLead.workflow?.status || 'NEW'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: 4 }}>
+                      Received: {selectedLead.createdAt} | Channel: {selectedLead.source?.channel || 'Website RFQ'}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedLead(null)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)', padding: 4 }}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, marginBottom: 24 }}>
+                  {/* Buyer Card */}
+                  <div style={{ background: 'var(--color-bg-alt)', padding: 16, borderRadius: 8 }}>
+                    <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-light)', marginBottom: 12 }}>
+                      Buyer Information
+                    </h4>
+                    <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>
+                      <div><strong>Contact:</strong> {selectedLead.buyer?.name}</div>
+                      <div><strong>Company:</strong> {selectedLead.buyer?.company}</div>
+                      <div><strong>Country:</strong> {selectedLead.buyer?.country}</div>
+                      <div><strong>Email:</strong> {selectedLead.buyer?.email}</div>
+                      <div><strong>Phone/WhatsApp:</strong> {selectedLead.buyer?.phone || selectedLead.buyer?.whatsapp || 'N/A'}</div>
+                    </div>
+                  </div>
+
+                  {/* Commercial Specifications */}
+                  <div style={{ background: 'var(--color-bg-alt)', padding: 16, borderRadius: 8 }}>
+                    <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-light)', marginBottom: 12 }}>
+                      Commercial Requirement
+                    </h4>
+                    <div style={{ fontSize: '0.88rem', lineHeight: 1.6 }}>
+                      <div><strong>Product:</strong> {selectedLead.inquiry?.product}</div>
+                      <div><strong>HS Code:</strong> {selectedLead.inquiry?.hsCode || 'N/A'}</div>
+                      <div><strong>Quantity:</strong> {Number(selectedLead.inquiry?.quantity || 0).toLocaleString()} {selectedLead.inquiry?.quantityUnit || 'KG'}</div>
+                      <div><strong>Packaging:</strong> {selectedLead.inquiry?.packaging || 'Standard Export Pack'}</div>
+                      <div><strong>Mesh / Specs:</strong> {selectedLead.inquiry?.mesh || 'Standard'}</div>
+                      <div><strong>Moisture:</strong> {selectedLead.inquiry?.moisture || 'Standard'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Trade & Logistics */}
+                <div style={{ background: '#f8fafc', padding: 16, borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 20 }}>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-light)', marginBottom: 10 }}>
+                    Trade Terms &amp; Documentation
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, fontSize: '0.85rem' }}>
+                    <div><strong>Incoterm:</strong> {selectedLead.inquiry?.incoterm}</div>
+                    <div><strong>Destination Port:</strong> {selectedLead.inquiry?.destination}</div>
+                    <div><strong>Delivery Timeline:</strong> {selectedLead.inquiry?.timeline || '60–75 Days'}</div>
+                    <div><strong>Sample Required:</strong> {selectedLead.inquiry?.sampleRequired ? 'YES' : 'No'}</div>
+                    <div><strong>COA Required:</strong> {selectedLead.inquiry?.coaRequired ? 'YES' : 'Standard'}</div>
+                    <div><strong>Heavy Metals / Lab:</strong> {selectedLead.inquiry?.testingRequired ? 'YES' : 'Standard'}</div>
+                  </div>
+                  {selectedLead.inquiry?.additionalRequirements && (
+                    <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed #cbd5e1', fontSize: '0.82rem' }}>
+                      <strong>Buyer Notes / Remarks:</strong>
+                      <p style={{ margin: '4px 0 0', color: 'var(--color-text)', whiteSpace: 'pre-wrap' }}>
+                        {selectedLead.inquiry.additionalRequirements}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Next Workflow Steps */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, borderTop: '1px solid var(--color-border)', paddingTop: 20 }}>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--color-text-light)' }}>
+                    Next Step: <strong>{selectedLead.workflow?.nextAction || 'Review & Coordinate Quotation'}</strong>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <Link
+                      to={`/private/quotations?tab=builder&leadId=${selectedLead.leadId}&product=${encodeURIComponent(selectedLead.inquiry?.product || '')}&qty=${selectedLead.inquiry?.quantity || ''}&buyer=${encodeURIComponent(selectedLead.buyer?.name || '')}&company=${encodeURIComponent(selectedLead.buyer?.company || '')}&country=${encodeURIComponent(selectedLead.buyer?.country || '')}`}
+                      className="btn btn-primary"
+                      style={{ fontSize: '0.82rem', padding: '8px 16px' }}
+                    >
+                      Draft Quotation (P4.3 Readiness)
+                    </Link>
+                    <button
+                      onClick={() => setSelectedLead(null)}
+                      className="btn"
+                      style={{ fontSize: '0.82rem', padding: '8px 16px', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
 
           {/* Recent Sourcing Inquiries & Quotations */}
           <div className="card" style={{ padding: '32px', background: 'white' }}>

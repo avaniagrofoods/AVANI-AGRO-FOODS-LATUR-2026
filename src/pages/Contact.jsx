@@ -71,12 +71,13 @@ export default function Contact() {
   const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [submittedLeadId, setSubmittedLeadId] = useState('')
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search)
     const productParam = searchParams.get('product')
     const typeParam = searchParams.get('type')
-    const volumeParam = searchParams.get('volume') || searchParams.get('quantity')
+    const volumeParam = searchParams.get('qty') || searchParams.get('volume') || searchParams.get('quantity')
 
     setForm(prev => {
       let updatedProduct = prev.product
@@ -177,24 +178,76 @@ ${form.additionalMessage}
         derivedCurrency = 'EUR'
       }
 
-      // 1. EmailJS Notification
-      await sendContactEmail({
-        firstName: form.fullName,
-        lastName: `(${form.country} - ${form.companyName})`,
-        email: form.email,
-        inquiryType: `B2B RFQ: ${form.product} (${form.quantity})`,
-        message: formattedMessage,
-        phone: form.phone,
-        company: form.companyName
-      })
-
-      // 2. Serverless Lead Capture & Auto-Quotation Draft
+      // 1. Submit to Canonical B2B Leads API (P4.1)
       let leadResponse = null
+      let generatedLeadId = null
       try {
-        const res = await fetch('/api/save-lead', {
+        const leadRes = await fetch('/api/leads', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            name: form.fullName,
+            email: form.email,
+            phone: form.phone,
+            company: form.companyName,
+            country: form.country,
+            businessType: form.businessType,
+            product: form.product,
+            quantity: form.quantity,
+            targetPrice: form.targetPrice,
+            currency: derivedCurrency,
+            incoterm: form.incoterm,
+            destination: form.destinationPort || form.country,
+            destinationPort: form.destinationPort,
+            meshSize: form.meshSize,
+            moisture: form.moisture,
+            packaging: form.packaging,
+            deliveryTimeline: form.deliveryTimeline,
+            testingReqs: form.testingReqs,
+            message: form.additionalMessage,
+            source: 'Website_Contact_RFQ',
+            page: location.pathname + location.search,
+            referrer: document.referrer
+          })
+        })
+        if (leadRes.ok) {
+          leadResponse = await leadRes.json()
+          if (leadResponse?.leadId) {
+            generatedLeadId = leadResponse.leadId
+          }
+        }
+      } catch (err) {
+        console.warn('Leads API call error:', err)
+      }
+
+      // Fallback lead ID if network was offline
+      if (!generatedLeadId) {
+        generatedLeadId = `AAF-L-2026-${Math.floor(1000 + Math.random() * 9000)}`
+      }
+      setSubmittedLeadId(generatedLeadId)
+
+      // 2. EmailJS Notification
+      try {
+        await sendContactEmail({
+          firstName: form.fullName,
+          lastName: `(${form.country} - ${form.companyName})`,
+          email: form.email,
+          inquiryType: `B2B RFQ [${generatedLeadId}]: ${form.product} (${form.quantity})`,
+          message: formattedMessage,
+          phone: form.phone,
+          company: form.companyName
+        })
+      } catch (err) {
+        console.warn('Email notification warning:', err)
+      }
+
+      // 3. Backward-compatible serverless lead capture & sheets
+      try {
+        await fetch('/api/save-lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            inquiryId: generatedLeadId,
             name: form.fullName,
             email: form.email,
             phone: form.phone,
@@ -213,14 +266,11 @@ ${form.additionalMessage}
             source: 'Website_Contact_RFQ'
           })
         })
-        if (res.ok) {
-          leadResponse = await res.json()
-        }
       } catch (err) {
-        console.error('Save Lead API Error:', err)
+        console.warn('Save-lead fallback notice:', err)
       }
 
-      // 3. Google Sheets Logging Fallback
+      // 4. Google Sheets Logging Fallback
       try {
         await logInquiry({
           firstName: form.fullName,
@@ -234,7 +284,7 @@ ${form.additionalMessage}
         })
       } catch (err) { console.error('Sheets Error:', err) }
 
-      // 4. Auto Reply to Customer
+      // 5. Auto Reply to Customer
       try {
         await sendAutoReply({
           firstName: form.fullName,
@@ -242,23 +292,32 @@ ${form.additionalMessage}
         })
       } catch {}
 
-      // 5. Analytics Event
+      // 6. Analytics Event (Zero PII sent)
       trackContactSubmit(`B2B RFQ: ${form.product}`)
 
       setStatus('success')
       setIsSuccess(true)
 
-      // Save to LocalStorage for Admin Dashboard with linked IDs
-      const generatedInquiryId = leadResponse?.inquiryId || `AAF-INQ-2026-${Math.floor(100000 + Math.random() * 900000)}`
-      const generatedQuoteId = leadResponse?.quoteId || `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`
+      // 7. Save Canonical Lead to LocalStorage
+      const canonicalLead = leadResponse?.lead || {
+        leadId: generatedLeadId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        source: { channel: 'website', page: location.pathname + location.search },
+        buyer: { name: form.fullName, company: form.companyName, country: form.country, email: form.email, phone: form.phone },
+        inquiry: { product: form.product, quantity: form.quantity, destination: form.destinationPort || form.country, incoterm: form.incoterm },
+        workflow: { status: 'NEW', nextAction: 'Review requirement & coordinate with Indian processors', owner: 'Sachin Shinde' }
+      }
+      const existingLeads = JSON.parse(localStorage.getItem('avani_leads') || '[]')
+      localStorage.setItem('avani_leads', JSON.stringify([canonicalLead, ...existingLeads.filter(l => l.leadId !== generatedLeadId)]))
 
+      // Also save to avani_enquiries for backward compatibility with private dashboard
       const newEnquiry = {
         id: Date.now(),
-        inquiryId: generatedInquiryId,
-        quoteId: generatedQuoteId,
+        inquiryId: generatedLeadId,
+        quoteId: `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`,
         ...form,
-        quantityNormalizedKg: leadResponse?.inquiry?.quantityNormalizedKg || form.quantity,
-        requestedPrice: leadResponse?.inquiry?.requestedPrice || form.targetPrice,
+        quantityNormalizedKg: form.quantity,
         currency: derivedCurrency,
         date: new Date().toLocaleString(),
         isFulfilled: false
@@ -266,15 +325,8 @@ ${form.additionalMessage}
       const existingEnquiries = JSON.parse(localStorage.getItem('avani_enquiries') || '[]')
       localStorage.setItem('avani_enquiries', JSON.stringify([newEnquiry, ...existingEnquiries]))
 
-      // Also store automatic quotation draft locally if generated
-      const draftQuote = leadResponse?.quotationDraft || leadResponse?.quote
-      if (draftQuote) {
-        const existingQuotes = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
-        const updatedQuotes = [draftQuote, ...existingQuotes.filter(q => q.quoteId !== draftQuote.quoteId)]
-        localStorage.setItem('avani_quotations', JSON.stringify(updatedQuotes))
-      }
-
       window.dispatchEvent(new Event('enquiry-updated'))
+      window.dispatchEvent(new Event('lead-updated'))
 
     } catch (err) {
       console.error(err)
@@ -417,11 +469,16 @@ ${form.additionalMessage}
                   <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'rgba(26,77,46,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                     <CheckCircle2 size={38} color="var(--color-primary)" />
                   </div>
-                  <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-primary)', marginBottom: 12 }}>
-                    Requirement Received Successfully
+                  <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-primary)', marginBottom: 8 }}>
+                    RFQ Received Successfully
                   </h2>
+                  {submittedLeadId && (
+                    <div style={{ display: 'inline-block', background: 'rgba(26,77,46,0.08)', color: 'var(--color-primary)', fontWeight: 800, padding: '6px 16px', borderRadius: 6, fontSize: '0.9rem', marginBottom: 14, fontFamily: 'monospace', border: '1px solid rgba(26,77,46,0.2)' }}>
+                      Reference ID: {submittedLeadId}
+                    </div>
+                  )}
                   <p style={{ color: 'var(--color-text)', fontSize: '0.95rem', lineHeight: 1.7, maxWidth: 520, margin: '0 auto 24px' }}>
-                    Thank you, <strong>{form.fullName}</strong>. Your sourcing requirement for <strong>{form.product}</strong> ({form.quantity} kg) has been submitted to AVANI AGRO FOODS. Our trade coordination desk will review specifications and respond to <strong>{form.email}</strong> within 24 business hours.
+                    Thank you, <strong>{form.fullName}</strong>. Your sourcing requirement for <strong>{form.product}</strong> ({form.quantity}) has been registered under reference <strong>{submittedLeadId}</strong>. Our team will review your requirement and contact you regarding specifications, availability, sample/COA requirements, and quotation.
                   </p>
                   <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
                     <button onClick={() => setIsSuccess(false)} className="btn" style={{ background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}>
