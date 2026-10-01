@@ -11,8 +11,34 @@ import {
 } from 'lucide-react'
 import { BUSINESS_INFO, WHATSAPP_NUMBER } from '../data/links'
 import { PRODUCT_MASTER, getProductById, matchProductMaster, parseQuantityKg, parseUnitRate, validateQuotation } from '../data/productMaster'
+import {
+  CANONICAL_QUOTATION_STATUSES,
+  PROCESSOR_VERIFICATION_STATUSES,
+  PROCESSOR_CHECKLIST_DEFINITIONS,
+  SOURCING_POSITIONING_NOTICES,
+  createInitialProcessorVerification,
+  evaluateProcessorVerification,
+  validateStatusTransition,
+  transitionQuotationStatus,
+  reviseQuotation,
+  updateNegotiation,
+  recordPoReceipt,
+  updateProcessorChecklist,
+  createQuotationFromLead
+} from '../data/quotationModel'
 
-const STATUS_LIST = ['ALL', 'DRAFT', 'SENT', 'VIEWED', 'NEGOTIATION', 'REVISED', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'CANCELLED']
+const STATUS_LIST = [
+  'ALL',
+  'DRAFT',
+  'PROCESSOR_CHECK',
+  'READY_FOR_BUYER',
+  'SENT_TO_BUYER',
+  'NEGOTIATION',
+  'REVISED',
+  'ACCEPTED',
+  'PO_RECEIVED',
+  'CANCELLED'
+]
 
 const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AED']
 const INCOTERMS = [
@@ -53,10 +79,21 @@ export default function AdminQuotations() {
   const [editingMasterId, setEditingMasterId] = useState(null)
   const [editMasterForm, setEditMasterForm] = useState({})
 
+  // Modal / Transition State
+  const [validationAlert, setValidationAlert] = useState(null)
+  const [showRevisionModal, setShowRevisionModal] = useState(false)
+  const [revisionReasonInput, setRevisionReasonInput] = useState('')
+  const [showPoModal, setShowPoModal] = useState(false)
+  const [poForm, setPoForm] = useState({ poNumber: '', poDate: new Date().toISOString().split('T')[0], poNotes: '' })
+  const [showNegotiationModal, setShowNegotiationModal] = useState(false)
+  const [negotiationForm, setNegotiationForm] = useState({ buyerRequestedPrice: '', buyerRequestedQuantity: '', requestedChanges: '', internalCounterOffer: '', note: '' })
+
   // Builder / Editor Form State
   const [builderForm, setBuilderForm] = useState({
-    quoteId: `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-    inquiryId: `AAF-INQ-2026-${Math.floor(100000 + Math.random() * 900000)}`,
+    quoteId: `AAF-Q-2026-9075`,
+    quotationId: `AAF-Q-2026-9075`,
+    inquiryId: `AAF-INQ-2026-000001`,
+    leadId: 'AAF-L-2026-1001',
     date: new Date().toISOString().split('T')[0],
     validUntil: '12 Oct 2026',
     buyerName: 'VIKRAM',
@@ -94,7 +131,48 @@ export default function AdminQuotations() {
     insuranceCharges: 0,
     documentationCharges: 0,
     otherCharges: 0,
-    status: 'DRAFT'
+    status: 'DRAFT',
+    processorVerification: createInitialProcessorVerification(),
+    commercialRequirement: {
+      productId: 'moringa-leaf-powder',
+      product: 'Moringa Leaf Powder',
+      hsCode: '12119029',
+      quantity: 18000,
+      quantityUnit: 'KG',
+      specification: 'Natural Green, 80–100 Mesh, Max 7–8% Moisture',
+      mesh: '80–100 Mesh',
+      moisture: 'Max 7–8%',
+      packaging: '25 kg Food-Grade HDPE Bags',
+      destinationPort: 'NHAVA SHEVA (JNPT MUMBAI)',
+      incoterm: 'FOB NHAVA SHEVA (JNPT MUMBAI)',
+      timeline: '60–75 Days',
+      targetPrice: null
+    },
+    revision: {
+      revisionNumber: 0,
+      previousRevisionId: null,
+      createdAt: new Date().toISOString(),
+      changedBy: 'Sachin Shinde',
+      changeReason: 'Initial Commercial Draft',
+      changeSummary: 'Standard 18 MT export draft'
+    },
+    revisionHistory: [],
+    negotiation: {
+      buyerRequestedPrice: null,
+      buyerRequestedQuantity: null,
+      requestedChanges: '',
+      internalCounterOffer: null,
+      counterOfferDate: null,
+      negotiationNotes: []
+    },
+    po: {
+      poNumber: '',
+      poDate: null,
+      poFileReference: '',
+      poNotes: '',
+      receivedBy: ''
+    },
+    activity: []
   })
 
   // Load Quotations Data
@@ -125,7 +203,9 @@ export default function AdminQuotations() {
         const rate = parseUnitRate(e.requestedPrice || e.targetPrice || e.rate, fallbackRate)
         return {
           quoteId: e.quoteId || `AAF-Q-2026-${2000 + idx}`,
+          quotationId: e.quoteId || `AAF-Q-2026-${2000 + idx}`,
           inquiryId: e.inquiryId || `AAF-INQ-2026-${1000 + idx}`,
+          leadId: e.inquiryId || `AAF-L-2026-${1000 + idx}`,
           date: e.date ? e.date.split(',')[0] : new Date().toISOString().split('T')[0],
           validUntil: '12 Oct 2026',
           buyerName: e.fullName || e.name || 'Direct Buyer',
@@ -159,7 +239,9 @@ export default function AdminQuotations() {
       // Default sample 18 MT Vikram quotation if registry is empty
       const defaultVikramQuote = {
         quoteId: 'AAF-Q-2026-9075',
+        quotationId: 'AAF-Q-2026-9075',
         inquiryId: 'AAF-INQ-2026-000001',
+        leadId: 'AAF-L-2026-1001',
         date: '2026-09-29',
         validUntil: '12 Oct 2026',
         buyerName: 'VIKRAM',
@@ -198,7 +280,7 @@ export default function AdminQuotations() {
       }
 
       const combined = [defaultVikramQuote, ...serverQuotes, ...enquiryQuotes, ...localQuotes]
-      const unique = Array.from(new Map(combined.map(q => [q.quoteId, q])).values())
+      const unique = Array.from(new Map(combined.map(q => [q.quotationId || q.quoteId, q])).values())
       setQuotations(unique)
 
       // Also load custom product master overrides from localStorage
@@ -215,41 +297,91 @@ export default function AdminQuotations() {
     loadData()
   }, [])
 
-  // Handle URL pre-fill from Importers or Catalog
+  // Handle URL pre-fill from Importers, Catalog, or Qualified Leads (P4.3)
   useEffect(() => {
     const tab = searchParams.get('tab')
-    const buyer = searchParams.get('buyer')
-    const company = searchParams.get('company')
-    const email = searchParams.get('email')
-    const country = searchParams.get('country')
-    const product = searchParams.get('product')
+    const qIdParam = searchParams.get('quotationId') || searchParams.get('quoteId')
+    const lIdParam = searchParams.get('leadId')
 
-    if (tab === 'builder' || buyer || company) {
-      const pm = product ? matchProductMaster(product) : PRODUCT_MASTER[0]
+    if (tab === 'builder' || qIdParam || lIdParam) {
       setActiveTab('builder')
-      setBuilderForm(prev => ({
-        ...prev,
-        quoteId: `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-        buyerName: buyer || prev.buyerName,
-        companyName: company || prev.companyName,
-        email: email || prev.email,
-        country: country || prev.country,
-        currency: (country && country.toLowerCase().includes('india')) ? 'INR' : prev.currency,
-        items: [
-          {
-            id: 1,
-            productId: pm.productId,
-            name: pm.productName,
-            description: pm.fullDescription,
-            hscode: pm.hsCode,
-            quantity: 18000,
-            unit: 'KG',
-            rate: (country && country.toLowerCase().includes('india')) ? pm.defaultRateInr : pm.defaultRateUsd,
-            amount: 18000 * ((country && country.toLowerCase().includes('india')) ? pm.defaultRateInr : pm.defaultRateUsd),
-            packaging: pm.defaultPackaging
+
+      // 1. Try to find existing quotation by quotationId or leadId
+      const localQuotes = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
+      let foundQuote = null
+      if (qIdParam) {
+        foundQuote = localQuotes.find(q => (q.quotationId === qIdParam || q.quoteId === qIdParam))
+      }
+      if (!foundQuote && lIdParam) {
+        foundQuote = localQuotes.find(q => (q.leadId === lIdParam || q.inquiryId === lIdParam || q.source?.leadId === lIdParam))
+      }
+
+      if (foundQuote) {
+        handleEditQuote(foundQuote)
+        return
+      }
+
+      // 2. If no quotation exists yet but leadId is provided, try loading the lead from storage and auto-create draft
+      if (lIdParam) {
+        const localLeads = JSON.parse(localStorage.getItem('avani_leads') || '[]')
+        const foundLead = localLeads.find(l => l.leadId === lIdParam)
+        if (foundLead) {
+          try {
+            const newQuote = createQuotationFromLead(foundLead)
+            const updated = [newQuote, ...localQuotes.filter(q => (q.quotationId || q.quoteId) !== newQuote.quotationId)]
+            localStorage.setItem('avani_quotations', JSON.stringify(updated))
+            setQuotations(prev => [newQuote, ...prev.filter(q => (q.quotationId || q.quoteId) !== newQuote.quotationId)])
+            handleEditQuote(newQuote)
+            return
+          } catch (e) {
+            console.warn('Could not auto-create quote from lead:', e.message)
           }
-        ]
-      }))
+        }
+      }
+
+      // 3. Fallback URL param prefill
+      const buyer = searchParams.get('buyer')
+      const company = searchParams.get('company')
+      const email = searchParams.get('email')
+      const country = searchParams.get('country')
+      const product = searchParams.get('product')
+      const qtyParam = searchParams.get('qty')
+      const incotermParam = searchParams.get('incoterm')
+      const destParam = searchParams.get('dest')
+
+      if (buyer || company || product) {
+        const pm = product ? matchProductMaster(product) : PRODUCT_MASTER[0]
+        const cleanQty = qtyParam ? parseQuantityKg(qtyParam) : 18000
+        const isIndia = (country && country.toLowerCase().includes('india'))
+        const defRate = isIndia ? pm.defaultRateInr : pm.defaultRateUsd
+        setBuilderForm(prev => ({
+          ...prev,
+          quoteId: qIdParam || `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+          quotationId: qIdParam || `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+          leadId: lIdParam || prev.leadId,
+          buyerName: buyer || prev.buyerName,
+          companyName: company || prev.companyName,
+          email: email || prev.email,
+          country: country || prev.country,
+          destinationPort: destParam || prev.destinationPort,
+          incoterm: incotermParam || prev.incoterm,
+          currency: isIndia ? 'INR' : prev.currency,
+          items: [
+            {
+              id: 1,
+              productId: pm.productId,
+              name: pm.productName,
+              description: pm.fullDescription,
+              hscode: pm.hsCode,
+              quantity: cleanQty,
+              unit: 'KG',
+              rate: defRate,
+              amount: cleanQty * defRate,
+              packaging: pm.defaultPackaging
+            }
+          ]
+        }))
+      }
     }
   }, [searchParams])
 
@@ -386,18 +518,49 @@ export default function AdminQuotations() {
   // Edit Existing Quotation
   const handleEditQuote = (q) => {
     const sanitized = sanitizeQuote(q)
+    const qId = q.quotationId || sanitized.quoteId || `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`
+    const lId = q.leadId || sanitized.inquiryId || q.source?.leadId || 'AAF-L-2026-1001'
+    const bName = q.buyer?.name || sanitized.buyerName || sanitized.customerName || ''
+    const comp = q.buyer?.company || sanitized.companyName || ''
+    const ctry = q.buyer?.country || sanitized.country || 'INDIA'
+    const mail = q.buyer?.email || sanitized.email || ''
+    const ph = q.buyer?.phone || sanitized.phone || ''
+
+    const commReq = q.commercialRequirement || {
+      product: sanitized.items?.[0]?.name || sanitized.product || 'Moringa Leaf Powder',
+      quantity: sanitized.items?.[0]?.quantity || 18000,
+      quantityUnit: 'KG',
+      specification: sanitized.items?.[0]?.description || '',
+      mesh: '80–100 Mesh',
+      moisture: 'Max 7–8%',
+      packaging: '25 kg Food-Grade HDPE Bags',
+      destinationPort: sanitized.destinationPort || 'NHAVA SHEVA (JNPT MUMBAI)',
+      incoterm: sanitized.incoterm || INCOTERMS[0],
+      timeline: '60–75 Days',
+      targetPrice: null
+    }
+
+    const pv = q.processorVerification || createInitialProcessorVerification()
+    const rev = q.revision || { revisionNumber: 0, previousRevisionId: null, changeReason: 'Initial Draft' }
+    const revHist = q.revisionHistory || []
+    const neg = q.negotiation || { buyerRequestedPrice: null, buyerRequestedQuantity: null, requestedChanges: '', internalCounterOffer: null, negotiationNotes: [] }
+    const po = q.po || { poNumber: '', poDate: null, poFileReference: '', poNotes: '', receivedBy: '' }
+    const act = q.activity || []
+
     setBuilderForm({
-      quoteId: sanitized.quoteId,
-      inquiryId: sanitized.inquiryId || `AAF-INQ-2026-${Math.floor(100000 + Math.random() * 900000)}`,
+      quoteId: qId,
+      quotationId: qId,
+      inquiryId: lId || sanitized.inquiryId,
+      leadId: lId,
       date: sanitized.date || new Date().toISOString().split('T')[0],
       validUntil: sanitized.validUntil || '12 Oct 2026',
-      buyerName: sanitized.buyerName || sanitized.customerName || '',
-      companyName: sanitized.companyName || '',
-      country: sanitized.country || 'INDIA',
+      buyerName: bName,
+      companyName: comp,
+      country: ctry,
       destinationPort: sanitized.destinationPort || 'NHAVA SHEVA (JNPT MUMBAI)',
       address: sanitized.address || '',
-      email: sanitized.email || '',
-      phone: sanitized.phone || '',
+      email: mail,
+      phone: ph,
       currency: sanitized.currency || 'INR',
       incoterm: sanitized.incoterm || INCOTERMS[0],
       origin: sanitized.origin || 'Latur, Maharashtra, India / JNPT Nhava Sheva, Mumbai',
@@ -417,8 +580,8 @@ export default function AdminQuotations() {
           hscode: sanitized.hsCode || sanitized.hscode || '12119029',
           quantity: Number(sanitized.quantityKg || sanitized.quantity) || 18000,
           unit: sanitized.unit || 'KG',
-          rate: Number(sanitized.unitRate || sanitized.rate) || 350,
-          amount: (Number(sanitized.quantityKg || sanitized.quantity) || 18000) * (Number(sanitized.unitRate || sanitized.rate) || 350),
+          rate: Number(sanitized.unitRate !== undefined ? sanitized.unitRate : sanitized.rate) || 350,
+          amount: (Number(sanitized.quantityKg || sanitized.quantity) || 18000) * (Number(sanitized.unitRate !== undefined ? sanitized.unitRate : sanitized.rate) || 350),
           packaging: '25 kg Food-Grade HDPE Bags'
         }
       ],
@@ -426,9 +589,243 @@ export default function AdminQuotations() {
       insuranceCharges: sanitized.insuranceCharges || 0,
       documentationCharges: sanitized.documentationCharges || 0,
       otherCharges: sanitized.otherCharges || 0,
-      status: sanitized.status || 'DRAFT'
+      status: sanitized.status || 'DRAFT',
+      processorVerification: pv,
+      commercialRequirement: commReq,
+      revision: rev,
+      revisionHistory: revHist,
+      negotiation: neg,
+      po: po,
+      activity: act
     })
+    setValidationAlert(null)
     setActiveTab('builder')
+  }
+
+  // P4.3 Processor Verification Handlers
+  const handleProcessorCheckToggle = (key, value) => {
+    setBuilderForm(prev => {
+      const updatedPV = {
+        ...(prev.processorVerification || createInitialProcessorVerification()),
+        [key]: value
+      }
+      updatedPV.status = evaluateProcessorVerification(updatedPV)
+      return {
+        ...prev,
+        processorVerification: updatedPV
+      }
+    })
+  }
+
+  const handleAdminOverrideToggle = (override, reason) => {
+    setBuilderForm(prev => {
+      const updatedPV = {
+        ...(prev.processorVerification || createInitialProcessorVerification()),
+        adminOverride: override,
+        overrideReason: reason !== undefined ? reason : (prev.processorVerification?.overrideReason || '')
+      }
+      updatedPV.status = evaluateProcessorVerification(updatedPV)
+      return {
+        ...prev,
+        processorVerification: updatedPV
+      }
+    })
+  }
+
+  // P4.3 Workflow State Machine Transition
+  const handleStatusTransition = (targetStatus, details = {}) => {
+    const currentQuote = {
+      ...builderForm,
+      quotationId: builderForm.quoteId || builderForm.quotationId,
+      status: builderForm.status,
+      buyer: {
+        name: builderForm.buyerName,
+        company: builderForm.companyName,
+        email: builderForm.email,
+        country: builderForm.country
+      },
+      commercialRequirement: builderForm.commercialRequirement || {
+        product: builderForm.items[0]?.name,
+        quantity: builderForm.items[0]?.quantity,
+        destinationPort: builderForm.destinationPort
+      },
+      quotation: {
+        items: builderForm.items,
+        grandTotal: grandTotal
+      },
+      processorVerification: builderForm.processorVerification
+    }
+
+    const check = validateStatusTransition(builderForm.status, targetStatus, currentQuote, details)
+    if (!check.allowed) {
+      setValidationAlert({
+        targetStatus,
+        reason: check.reason,
+        checklist: check.checklist
+      })
+      alert(`Cannot transition to ${targetStatus}: ${check.reason}`)
+      return
+    }
+
+    setValidationAlert(null)
+    const now = new Date().toISOString()
+    const updatedForm = {
+      ...builderForm,
+      status: targetStatus,
+      updatedAt: now,
+      activity: [
+        ...(builderForm.activity || []),
+        {
+          timestamp: now,
+          actor: 'Sachin Shinde',
+          event: targetStatus === 'PROCESSOR_CHECK' ? 'PROCESSOR_CHECK_STARTED'
+            : targetStatus === 'READY_FOR_BUYER' ? 'QUOTATION_UPDATED'
+            : targetStatus === 'SENT_TO_BUYER' ? 'QUOTATION_SENT'
+            : targetStatus === 'NEGOTIATION' ? 'NEGOTIATION_STARTED'
+            : targetStatus === 'ACCEPTED' ? 'QUOTATION_ACCEPTED'
+            : targetStatus === 'PO_RECEIVED' ? 'PO_RECEIVED'
+            : 'QUOTATION_CANCELLED',
+          quotationId: builderForm.quoteId,
+          details: details.reason || `Status transitioned to ${targetStatus}`
+        }
+      ]
+    }
+    setBuilderForm(updatedForm)
+
+    // Save to storage
+    const existing = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
+    const updated = [updatedForm, ...existing.filter(q => (q.quotationId || q.quoteId) !== updatedForm.quoteId)]
+    localStorage.setItem('avani_quotations', JSON.stringify(updated))
+    setQuotations(prev => [updatedForm, ...prev.filter(q => (q.quotationId || q.quoteId) !== updatedForm.quoteId)])
+    alert(`Quotation status transitioned to ${targetStatus}!`)
+  }
+
+  // P4.3 Revision Handler
+  const handleCreateRevisionSubmit = () => {
+    if (!revisionReasonInput.trim()) {
+      alert('Please provide a reason for this commercial revision.')
+      return
+    }
+    const currentRev = builderForm.revision?.revisionNumber || 0
+    const newRev = currentRev + 1
+    const now = new Date().toISOString()
+
+    const snapshot = {
+      revisionNumber: currentRev,
+      previousRevisionId: builderForm.revision?.previousRevisionId || null,
+      savedAt: now,
+      changedBy: 'Sachin Shinde',
+      changeReason: builderForm.revision?.changeReason || 'Previous Revision',
+      changeSummary: `Revision ${currentRev}`,
+      items: JSON.parse(JSON.stringify(builderForm.items)),
+      grandTotal: grandTotal
+    }
+
+    const updated = {
+      ...builderForm,
+      status: 'REVISED',
+      revision: {
+        revisionNumber: newRev,
+        previousRevisionId: `${builderForm.quoteId}-R${currentRev}`,
+        createdAt: now,
+        changedBy: 'Sachin Shinde',
+        changeReason: revisionReasonInput.trim(),
+        changeSummary: `Commercial Rev ${newRev}`
+      },
+      revisionHistory: [...(builderForm.revisionHistory || []), snapshot],
+      activity: [
+        ...(builderForm.activity || []),
+        {
+          timestamp: now,
+          actor: 'Sachin Shinde',
+          event: 'QUOTATION_REVISED',
+          quotationId: builderForm.quoteId,
+          details: `Revision ${newRev} created: ${revisionReasonInput.trim()}`
+        }
+      ]
+    }
+
+    setBuilderForm(updated)
+    const existing = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
+    const updatedList = [updated, ...existing.filter(q => (q.quotationId || q.quoteId) !== updated.quoteId)]
+    localStorage.setItem('avani_quotations', JSON.stringify(updatedList))
+    setQuotations(prev => [updated, ...prev.filter(q => (q.quotationId || q.quoteId) !== updated.quoteId)])
+    setShowRevisionModal(false)
+    setRevisionReasonInput('')
+    alert(`Revision ${newRev} created successfully.`)
+  }
+
+  // P4.3 PO Receipt Handler
+  const handleRecordPoSubmit = () => {
+    if (!poForm.poNumber.trim()) {
+      alert('PO Number is mandatory to record PO receipt.')
+      return
+    }
+    const now = new Date().toISOString()
+    const updated = {
+      ...builderForm,
+      status: 'PO_RECEIVED',
+      po: {
+        poNumber: poForm.poNumber.trim(),
+        poDate: poForm.poDate || now.split('T')[0],
+        poNotes: poForm.poNotes.trim(),
+        receivedBy: 'Sachin Shinde'
+      },
+      activity: [
+        ...(builderForm.activity || []),
+        {
+          timestamp: now,
+          actor: 'Sachin Shinde',
+          event: 'PO_RECEIVED',
+          quotationId: builderForm.quoteId,
+          details: `PO ${poForm.poNumber.trim()} received`
+        }
+      ]
+    }
+    setBuilderForm(updated)
+    const existing = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
+    const updatedList = [updated, ...existing.filter(q => (q.quotationId || q.quoteId) !== updated.quoteId)]
+    localStorage.setItem('avani_quotations', JSON.stringify(updatedList))
+    setQuotations(prev => [updated, ...prev.filter(q => (q.quotationId || q.quoteId) !== updated.quoteId)])
+    setShowPoModal(false)
+    alert(`Purchase Order ${poForm.poNumber.trim()} recorded successfully. Status set to PO_RECEIVED.`)
+  }
+
+  // P4.3 Negotiation Handler
+  const handleNegotiationSubmit = () => {
+    const now = new Date().toISOString()
+    const updated = {
+      ...builderForm,
+      status: 'NEGOTIATION',
+      negotiation: {
+        buyerRequestedPrice: negotiationForm.buyerRequestedPrice ? parseUnitRate(negotiationForm.buyerRequestedPrice, null) : builderForm.negotiation?.buyerRequestedPrice,
+        buyerRequestedQuantity: negotiationForm.buyerRequestedQuantity ? parseQuantityKg(negotiationForm.buyerRequestedQuantity) : builderForm.negotiation?.buyerRequestedQuantity,
+        requestedChanges: negotiationForm.requestedChanges || builderForm.negotiation?.requestedChanges || '',
+        internalCounterOffer: negotiationForm.internalCounterOffer ? parseUnitRate(negotiationForm.internalCounterOffer, null) : builderForm.negotiation?.internalCounterOffer,
+        counterOfferDate: negotiationForm.internalCounterOffer ? now : builderForm.negotiation?.counterOfferDate,
+        negotiationNotes: negotiationForm.note ? [
+          ...(builderForm.negotiation?.negotiationNotes || []),
+          { date: now, author: 'Sachin Shinde', note: negotiationForm.note.trim() }
+        ] : (builderForm.negotiation?.negotiationNotes || [])
+      },
+      activity: [
+        ...(builderForm.activity || []),
+        {
+          timestamp: now,
+          actor: 'Sachin Shinde',
+          event: 'NEGOTIATION_UPDATED',
+          quotationId: builderForm.quoteId,
+          details: negotiationForm.note || 'Updated negotiation terms'
+        }
+      ]
+    }
+    setBuilderForm(updated)
+    const existing = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
+    const updatedList = [updated, ...existing.filter(q => (q.quotationId || q.quoteId) !== updated.quoteId)]
+    localStorage.setItem('avani_quotations', JSON.stringify(updatedList))
+    setQuotations(prev => [updated, ...prev.filter(q => (q.quotationId || q.quoteId) !== updated.quoteId)])
+    setShowNegotiationModal(false)
+    alert('Negotiation terms recorded.')
   }
 
   // Duplicate Quotation Handler (Copies current saved values with new quoteId)
@@ -462,19 +859,28 @@ export default function AdminQuotations() {
 
     const record = sanitizeQuote({
       ...builderForm,
+      quotationId: builderForm.quoteId || builderForm.quotationId,
+      leadId: builderForm.leadId || builderForm.inquiryId,
       customerName: builderForm.buyerName,
       commercialTerms: DEFAULT_TERMS,
       product: builderForm.items.map(i => i.name).join(' + '),
+      processorVerification: builderForm.processorVerification,
+      commercialRequirement: builderForm.commercialRequirement,
+      revision: builderForm.revision,
+      revisionHistory: builderForm.revisionHistory,
+      negotiation: builderForm.negotiation,
+      po: builderForm.po,
+      activity: builderForm.activity,
       updatedAt: new Date().toISOString(),
       updatedBy: 'Admin (Sachin Shinde)'
     })
 
     // Save locally
     const existing = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
-    const updated = [record, ...existing.filter(q => q.quoteId !== record.quoteId)]
+    const updated = [record, ...existing.filter(q => (q.quoteId !== record.quoteId && q.quotationId !== record.quoteId))]
     localStorage.setItem('avani_quotations', JSON.stringify(updated))
 
-    setQuotations(prev => [record, ...prev.filter(q => q.quoteId !== record.quoteId)])
+    setQuotations(prev => [record, ...prev.filter(q => (q.quoteId !== record.quoteId && q.quotationId !== record.quoteId))])
     setSelectedQuote(record)
 
     // Save to server & Google Sheets CRM
@@ -859,14 +1265,342 @@ export default function AdminQuotations() {
                   </p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-primary)', background: 'var(--color-bg-alt)', padding: '6px 14px', borderRadius: 6, fontFamily: 'monospace' }}>
-                    {builderForm.quoteId}
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    <span style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 900,
+                      padding: '4px 10px',
+                      borderRadius: 12,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      background: builderForm.status === 'PO_RECEIVED' ? '#ecfdf5' : builderForm.status === 'ACCEPTED' ? '#dcfce7' : builderForm.status === 'READY_FOR_BUYER' ? '#eff6ff' : builderForm.status === 'PROCESSOR_CHECK' ? '#f5f3ff' : builderForm.status === 'CANCELLED' ? '#fef2f2' : '#fffbeb',
+                      color: builderForm.status === 'PO_RECEIVED' ? '#065f46' : builderForm.status === 'ACCEPTED' ? '#166534' : builderForm.status === 'READY_FOR_BUYER' ? '#1d4ed8' : builderForm.status === 'PROCESSOR_CHECK' ? '#6d28d9' : builderForm.status === 'CANCELLED' ? '#991b1b' : '#92400e',
+                      border: '1px solid currentColor'
+                    }}>
+                      Status: {builderForm.status || 'DRAFT'}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '4px 8px', borderRadius: 6, background: '#f1f5f9', color: '#475569' }}>
+                      Rev {builderForm.revision?.revisionNumber || 0}
+                    </span>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--color-primary)', background: 'var(--color-bg-alt)', padding: '6px 14px', borderRadius: 6, fontFamily: 'monospace' }}>
+                      {builderForm.quoteId}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: 4 }}>
-                    Inquiry Ref: {builderForm.inquiryId}
+                  {builderForm.leadId && (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: 4 }}>
+                      Lead Ref: <strong>{builderForm.leadId}</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* P4.3 WORKFLOW STATE ACTIONS BAR */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '14px 18px', marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                  <div>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b' }}>
+                      Commercial Workflow Actions:
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {builderForm.status === 'DRAFT' && (
+                      <button
+                        type="button"
+                        onClick={() => handleStatusTransition('PROCESSOR_CHECK')}
+                        className="btn"
+                        style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#f5f3ff', color: '#6d28d9', border: '1px solid #ddd6fe', fontWeight: 700 }}
+                      >
+                        Initiate Processor Check →
+                      </button>
+                    )}
+                    {builderForm.status === 'PROCESSOR_CHECK' && (
+                      <button
+                        type="button"
+                        onClick={() => handleStatusTransition('READY_FOR_BUYER')}
+                        className="btn"
+                        style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', fontWeight: 700 }}
+                      >
+                        Mark Ready for Buyer →
+                      </button>
+                    )}
+                    {builderForm.status === 'READY_FOR_BUYER' && (
+                      <button
+                        type="button"
+                        onClick={() => handleStatusTransition('SENT_TO_BUYER')}
+                        className="btn"
+                        style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#312e81', color: 'white', border: 'none', fontWeight: 700 }}
+                      >
+                        Mark Sent to Buyer →
+                      </button>
+                    )}
+                    {['READY_FOR_BUYER', 'SENT_TO_BUYER', 'NEGOTIATION'].includes(builderForm.status) && (
+                      <button
+                        type="button"
+                        onClick={() => setShowNegotiationModal(true)}
+                        className="btn"
+                        style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#fff7ed', color: '#c2410c', border: '1px solid #ffedd5', fontWeight: 700 }}
+                      >
+                        Record Negotiation
+                      </button>
+                    )}
+                    {['SENT_TO_BUYER', 'NEGOTIATION', 'REVISED'].includes(builderForm.status) && (
+                      <button
+                        type="button"
+                        onClick={() => handleStatusTransition('ACCEPTED')}
+                        className="btn"
+                        style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', fontWeight: 700 }}
+                      >
+                        Mark Buyer Accepted
+                      </button>
+                    )}
+                    {['ACCEPTED', 'SENT_TO_BUYER'].includes(builderForm.status) && (
+                      <button
+                        type="button"
+                        onClick={() => setShowPoModal(true)}
+                        className="btn"
+                        style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#065f46', color: 'white', border: 'none', fontWeight: 700 }}
+                      >
+                        Record PO Receipt →
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowRevisionModal(true)}
+                      className="btn"
+                      style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', fontWeight: 700 }}
+                    >
+                      + Create Revision
+                    </button>
+                    {builderForm.status !== 'CANCELLED' && builderForm.status !== 'PO_RECEIVED' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const r = window.prompt('Reason for quotation cancellation:')
+                          if (r) handleStatusTransition('CANCELLED', { reason: r })
+                        }}
+                        className="btn"
+                        style={{ padding: '6px 10px', fontSize: '0.75rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}
+                      >
+                        Cancel
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
+
+              {/* PRICE SAFETY & PENDING INTERNAL INPUT BANNER */}
+              {builderForm.items.some(i => !i.rate || Number(i.rate) <= 0) && (
+                <div style={{ background: '#fffbeb', border: '2px solid #f59e0b', borderRadius: 8, padding: '12px 16px', marginBottom: 20, color: '#92400e', fontSize: '0.85rem' }}>
+                  <div style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    ⚠️ Commercial Price Input Required (PENDING_INTERNAL_INPUT)
+                  </div>
+                  <div style={{ marginTop: 4 }}>
+                    Unit rate required before buyer-ready quotation. The quotation rate must be entered by AVANI commercial coordinator before this draft can transition to <strong>READY_FOR_BUYER</strong>.
+                  </div>
+                </div>
+              )}
+
+              {/* VALIDATION ALERT BANNER */}
+              {validationAlert && (
+                <div style={{ background: '#fef2f2', border: '2px solid #ef4444', borderRadius: 8, padding: '14px 16px', marginBottom: 20, color: '#991b1b', fontSize: '0.85rem' }}>
+                  <div style={{ fontWeight: 800 }}>
+                    ⛔ Cannot transition to {validationAlert.targetStatus}:
+                  </div>
+                  <div style={{ marginTop: 4 }}>
+                    {validationAlert.reason}
+                  </div>
+                  {validationAlert.checklist && (
+                    <ul style={{ margin: '8px 0 0 18px', padding: 0 }}>
+                      {!validationAlert.checklist.buyerValid && <li>Buyer name, company, email, and country are required.</li>}
+                      {!validationAlert.checklist.productValid && <li>Supported product is required.</li>}
+                      {!validationAlert.checklist.quantityValid && <li>Order quantity must be greater than zero.</li>}
+                      {!validationAlert.checklist.destinationValid && <li>Destination port or country is required.</li>}
+                      {!validationAlert.checklist.priceEntered && <li><strong>Unit rate required before buyer-ready quotation.</strong></li>}
+                      {!validationAlert.checklist.processorVerified && <li>All mandatory processor verification items must be confirmed (or admin override applied with reason).</li>}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              {/* THREE-WAY COMMERCIAL AUDIT CARD */}
+              <div style={{ background: '#fcfcfc', border: '1px solid var(--color-border)', borderRadius: 8, padding: '18px', marginBottom: 24 }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-primary)', marginBottom: 12 }}>
+                  Three-Way Requirement &amp; Verification Audit
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
+                  {/* Col 1: Buyer Requirement */}
+                  <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 6, padding: '12px' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
+                      1. Buyer Inquired Requirement
+                    </div>
+                    <div style={{ fontSize: '0.82rem', lineHeight: 1.5 }}>
+                      <div><strong>Product:</strong> {builderForm.commercialRequirement?.product || builderForm.items[0]?.name}</div>
+                      <div><strong>Quantity:</strong> {builderForm.commercialRequirement?.quantity ? `${Number(builderForm.commercialRequirement.quantity).toLocaleString()} KG` : `${builderForm.items[0]?.quantity?.toLocaleString()} KG`}</div>
+                      <div><strong>Mesh:</strong> {builderForm.commercialRequirement?.mesh || 'Standard'}</div>
+                      <div><strong>Moisture:</strong> {builderForm.commercialRequirement?.moisture || 'Standard'}</div>
+                      <div><strong>Destination:</strong> {builderForm.destinationPort || 'Nhava Sheva'}</div>
+                      <div><strong>Target Price:</strong> {builderForm.commercialRequirement?.targetPrice ? `${builderForm.currency} ${builderForm.commercialRequirement.targetPrice}` : 'None provided'}</div>
+                    </div>
+                  </div>
+
+                  {/* Col 2: Processor Verification */}
+                  <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 6, padding: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                        2. Processor Verification
+                      </span>
+                      <span style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 800,
+                        padding: '2px 6px',
+                        borderRadius: 8,
+                        background: builderForm.processorVerification?.status === 'CONFIRMED' ? '#dcfce7' : builderForm.processorVerification?.status === 'PARTIALLY_CONFIRMED' ? '#fef3c7' : '#f1f5f9',
+                        color: builderForm.processorVerification?.status === 'CONFIRMED' ? '#166534' : builderForm.processorVerification?.status === 'PARTIALLY_CONFIRMED' ? '#92400e' : '#475569'
+                      }}>
+                        {builderForm.processorVerification?.status || 'PENDING'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.82rem', lineHeight: 1.5 }}>
+                      <div><strong>Availability:</strong> {builderForm.processorVerification?.availabilityConfirmed ? '✅ Confirmed' : '⏳ Pending'}</div>
+                      <div><strong>Capacity:</strong> {builderForm.processorVerification?.capacityConfirmed ? '✅ Confirmed' : '⏳ Pending'}</div>
+                      <div><strong>Specification:</strong> {builderForm.processorVerification?.specificationConfirmed ? '✅ Confirmed' : '⏳ Pending'}</div>
+                      <div><strong>Admin Override:</strong> {builderForm.processorVerification?.adminOverride ? `⚠️ Active (${builderForm.processorVerification?.overrideReason})` : 'None'}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 4, fontStyle: 'italic' }}>
+                        Availability subject to processor confirmation.
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Col 3: Avani Commercial Input */}
+                  <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 6, padding: '12px' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
+                      3. Avani Commercial Terms
+                    </div>
+                    <div style={{ fontSize: '0.82rem', lineHeight: 1.5 }}>
+                      <div><strong>Currency:</strong> {builderForm.currency}</div>
+                      <div><strong>Quoted Grand Total:</strong> {builderForm.currency} {formatNumber(grandTotal)}</div>
+                      <div><strong>Incoterm:</strong> {builderForm.incoterm}</div>
+                      <div><strong>Price Basis:</strong> FOB Nhava Sheva (JNPT)</div>
+                      <div><strong>Timeline:</strong> 60–75 Days from Advance</div>
+                      <div><strong>Payment:</strong> 50% Advance, 50% Before Dispatch</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* PROCESSOR VERIFICATION CHECKLIST SECTION */}
+              <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 8, padding: '18px', marginBottom: 24 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                  <div>
+                    <h3 style={{ fontSize: '0.95rem', fontWeight: 800, margin: 0, color: '#1e293b' }}>
+                      Processor Verification Checklist
+                    </h3>
+                    <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '2px 0 0' }}>
+                      Verify with Indian manufacturing partner before releasing quotation to buyer. Boxes must be explicitly checked.
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569' }}>
+                      Status:
+                    </span>
+                    <span style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 900,
+                      padding: '3px 8px',
+                      borderRadius: 12,
+                      background: builderForm.processorVerification?.status === 'CONFIRMED' ? '#dcfce7' : builderForm.processorVerification?.status === 'PARTIALLY_CONFIRMED' ? '#fef3c7' : '#f1f5f9',
+                      color: builderForm.processorVerification?.status === 'CONFIRMED' ? '#166534' : builderForm.processorVerification?.status === 'PARTIALLY_CONFIRMED' ? '#92400e' : '#475569'
+                    }}>
+                      {builderForm.processorVerification?.status || 'PENDING'}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
+                  {PROCESSOR_CHECKLIST_ITEMS.map(chk => (
+                    <label
+                      key={chk.key}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        background: 'white',
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        border: '1px solid #e2e8f0',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={Boolean(builderForm.processorVerification?.[chk.key])}
+                        onChange={e => handleProcessorCheckToggle(chk.key, e.target.checked)}
+                        style={{ width: 16, height: 16, cursor: 'pointer' }}
+                      />
+                      <span>
+                        {chk.label}
+                        {chk.mandatory && <span style={{ color: '#dc2626', marginLeft: 4 }}>*</span>}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+
+                {/* Admin Override */}
+                <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #e2e8f0' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', fontWeight: 700, color: '#b45309', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(builderForm.processorVerification?.adminOverride)}
+                      onChange={e => handleAdminOverrideToggle(e.target.checked)}
+                      style={{ width: 16, height: 16 }}
+                    />
+                    Enable Administrative Verification Override (Recorded in audit trail)
+                  </label>
+                  {builderForm.processorVerification?.adminOverride && (
+                    <div style={{ marginTop: 8 }}>
+                      <input
+                        className="input"
+                        placeholder="Reason for administrative override (mandatory)..."
+                        value={builderForm.processorVerification?.overrideReason || ''}
+                        onChange={e => handleAdminOverrideToggle(true, e.target.value)}
+                        style={{ fontSize: '0.8rem', background: '#fffbeb', borderColor: '#fcd34d' }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Positioning Disclaimer */}
+                <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 10, fontStyle: 'italic', borderTop: '1px dashed #e2e8f0', paddingTop: 8 }}>
+                  AVANI AGRO FOODS is an Indian sourcing and export coordination partner. Manufacturing partner subject to confirmation. Specification and capacity to be confirmed with the manufacturing partner.
+                </div>
+              </div>
+
+              {/* REVISION HISTORY & NEGOTIATION TRACKER (if active) */}
+              {(builderForm.revisionHistory?.length > 0 || builderForm.negotiation?.buyerRequestedPrice || builderForm.negotiation?.negotiationNotes?.length > 0) && (
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '14px 18px', marginBottom: 20 }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', marginBottom: 8 }}>
+                    Commercial Audit: Revision &amp; Negotiation History
+                  </div>
+                  {builderForm.revisionHistory?.length > 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>Revisions:</div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+                        {builderForm.revisionHistory.map((rev, rIdx) => (
+                          <span key={rIdx} style={{ fontSize: '0.72rem', background: 'white', border: '1px solid #cbd5e1', padding: '4px 8px', borderRadius: 4 }}>
+                            Rev {rev.revisionNumber} ({rev.savedAt?.split('T')[0]}): {builderForm.currency} {formatNumber(rev.grandTotal)} — {rev.changeReason}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {builderForm.negotiation?.buyerRequestedPrice && (
+                    <div style={{ fontSize: '0.78rem', color: '#0f172a', background: 'white', padding: '8px 12px', borderRadius: 6, border: '1px solid #fed7aa' }}>
+                      <strong>Buyer Counter-Offer:</strong> {builderForm.currency} {builderForm.negotiation.buyerRequestedPrice}/kg | Qty: {builderForm.negotiation.buyerRequestedQuantity || 'As original'} | Changes: {builderForm.negotiation.requestedChanges || 'None'}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <form onSubmit={handleSaveQuotation} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 
@@ -1397,6 +2131,200 @@ export default function AdminQuotations() {
                     })}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════ */}
+          {/* MODAL: CREATE REVISION                                     */}
+          {/* ══════════════════════════════════════════════════════════ */}
+          {showRevisionModal && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
+              <div style={{ background: 'white', borderRadius: 8, padding: 24, maxWidth: 500, width: '100%', boxShadow: 'var(--shadow-xl)' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '0 0 8px', color: 'var(--color-primary)' }}>
+                  Create Controlled Commercial Revision
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 16px', lineHeight: 1.4 }}>
+                  Creating Revision {(builderForm.revision?.revisionNumber || 0) + 1}. The current quotation state will be snapshotted in the audit history.
+                </p>
+                <div style={{ marginBottom: 16 }}>
+                  <label className="label">Reason for Commercial Revision *</label>
+                  <textarea
+                    className="input"
+                    rows={3}
+                    placeholder="e.g. Buyer requested price reduction for 18 MT volume / updated packing specification..."
+                    value={revisionReasonInput}
+                    onChange={e => setRevisionReasonInput(e.target.value)}
+                    required
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => { setShowRevisionModal(false); setRevisionReasonInput(''); }}
+                    className="btn"
+                    style={{ background: 'var(--color-bg-alt)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreateRevisionSubmit}
+                    className="btn btn-primary"
+                  >
+                    Create Revision {(builderForm.revision?.revisionNumber || 0) + 1}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════ */}
+          {/* MODAL: RECORD PURCHASE ORDER (PO_RECEIVED)                 */}
+          {/* ══════════════════════════════════════════════════════════ */}
+          {showPoModal && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
+              <div style={{ background: 'white', borderRadius: 8, padding: 24, maxWidth: 500, width: '100%', boxShadow: 'var(--shadow-xl)' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '0 0 8px', color: '#065f46' }}>
+                  Record Commercial Purchase Order (PO)
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 16px', lineHeight: 1.4 }}>
+                  Administrative PO receipt transition. No payment processing is triggered in this workflow step.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+                  <div>
+                    <label className="label">Buyer PO Number *</label>
+                    <input
+                      className="input"
+                      placeholder="e.g. PO-USA-2026-881"
+                      value={poForm.poNumber}
+                      onChange={e => setPoForm({ ...poForm, poNumber: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="label">PO Date</label>
+                    <input
+                      type="date"
+                      className="input"
+                      value={poForm.poDate}
+                      onChange={e => setPoForm({ ...poForm, poDate: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">PO Notes / Reference</label>
+                    <textarea
+                      className="input"
+                      rows={2}
+                      placeholder="e.g. Signed purchase order received via email. Awaiting advance payment."
+                      value={poForm.poNotes}
+                      onChange={e => setPoForm({ ...poForm, poNotes: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowPoModal(false)}
+                    className="btn"
+                    style={{ background: 'var(--color-bg-alt)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRecordPoSubmit}
+                    className="btn"
+                    style={{ background: '#065f46', color: 'white', border: 'none' }}
+                  >
+                    Record PO &amp; Set PO_RECEIVED
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════ */}
+          {/* MODAL: RECORD NEGOTIATION                                  */}
+          {/* ══════════════════════════════════════════════════════════ */}
+          {showNegotiationModal && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
+              <div style={{ background: 'white', borderRadius: 8, padding: 24, maxWidth: 520, width: '100%', boxShadow: 'var(--shadow-xl)' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: '0 0 8px', color: '#c2410c' }}>
+                  Record Commercial Negotiation
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 16px', lineHeight: 1.4 }}>
+                  Tracks buyer requested revisions and internal counter-offers without overwriting the original inquiry baseline.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div>
+                    <label className="label">Buyer Target Rate ({builderForm.currency})</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="e.g. 330"
+                      value={negotiationForm.buyerRequestedPrice}
+                      onChange={e => setNegotiationForm({ ...negotiationForm, buyerRequestedPrice: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Buyer Requested Qty (KG)</label>
+                    <input
+                      type="number"
+                      className="input"
+                      placeholder="e.g. 20000"
+                      value={negotiationForm.buyerRequestedQuantity}
+                      onChange={e => setNegotiationForm({ ...negotiationForm, buyerRequestedQuantity: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <label className="label">Avani Internal Counter-Offer Rate ({builderForm.currency})</label>
+                  <input
+                    type="number"
+                    className="input"
+                    placeholder="e.g. 340"
+                    value={negotiationForm.internalCounterOffer}
+                    onChange={e => setNegotiationForm({ ...negotiationForm, internalCounterOffer: e.target.value })}
+                  />
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <label className="label">Requested Changes / Terms</label>
+                  <input
+                    className="input"
+                    placeholder="e.g. Buyer asked for CFR Hamburg shipping quote"
+                    value={negotiationForm.requestedChanges}
+                    onChange={e => setNegotiationForm({ ...negotiationForm, requestedChanges: e.target.value })}
+                  />
+                </div>
+                <div style={{ marginBottom: 16 }}>
+                  <label className="label">Negotiation Note / Summary</label>
+                  <textarea
+                    className="input"
+                    rows={2}
+                    placeholder="e.g. Discussed with trade partner; agreed on 340/kg if 18 MT volume is confirmed."
+                    value={negotiationForm.note}
+                    onChange={e => setNegotiationForm({ ...negotiationForm, note: e.target.value })}
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowNegotiationModal(false)}
+                    className="btn"
+                    style={{ background: 'var(--color-bg-alt)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNegotiationSubmit}
+                    className="btn"
+                    style={{ background: '#c2410c', color: 'white', border: 'none' }}
+                  >
+                    Save Negotiation Record
+                  </button>
+                </div>
               </div>
             </div>
           )}

@@ -198,6 +198,117 @@ export default async function handler(req, res) {
         });
       }
 
+      if (action === 'create-draft') {
+        const { leadData, overrides } = req.body || {};
+        if (!leadData || typeof leadData !== 'object') {
+          return res.status(400).json({ error: 'Valid leadData object required to create draft quotation.' });
+        }
+        const { createQuotationFromLead, validateLeadForQuotation } = await import('./_lib/quotationModel.js');
+        const validation = validateLeadForQuotation(leadData);
+        if (!validation.eligible) {
+          return res.status(400).json({
+            error: `Quotation cannot be prepared yet. Missing: ${validation.errors.join('; ')}`,
+            validation
+          });
+        }
+        const quotation = createQuotationFromLead(leadData, overrides || {});
+        return res.status(200).json({
+          success: true,
+          message: `Draft quotation ${quotation.quotationId} created successfully.`,
+          quotation
+        });
+      }
+
+      if (action === 'transition') {
+        const { quotation, targetStatus, actor, details } = req.body || {};
+        if (!quotation || !targetStatus) {
+          return res.status(400).json({ error: 'quotation and targetStatus required.' });
+        }
+        const { transitionQuotationStatus } = await import('./_lib/quotationModel.js');
+        try {
+          const updated = transitionQuotationStatus(quotation, targetStatus, actor || 'Sachin Shinde', details || {});
+          return res.status(200).json({
+            success: true,
+            message: `Quotation transitioned to ${targetStatus}.`,
+            quotation: updated
+          });
+        } catch (tErr) {
+          return res.status(400).json({ error: tErr.message });
+        }
+      }
+
+      if (action === 'processor-check') {
+        const { quotation, updates, actor } = req.body || {};
+        if (!quotation || !updates) {
+          return res.status(400).json({ error: 'quotation and updates required.' });
+        }
+        const { updateProcessorChecklist } = await import('./_lib/quotationModel.js');
+        try {
+          const updated = updateProcessorChecklist(quotation, updates, actor || 'Sachin Shinde');
+          return res.status(200).json({
+            success: true,
+            message: `Processor verification updated. Status: ${updated.processorVerification.status}`,
+            quotation: updated
+          });
+        } catch (pErr) {
+          return res.status(400).json({ error: pErr.message });
+        }
+      }
+
+      if (action === 'revise') {
+        const { quotation, changes, changeReason, changedBy } = req.body || {};
+        if (!quotation) {
+          return res.status(400).json({ error: 'quotation object required for revision.' });
+        }
+        const { reviseQuotation } = await import('./_lib/quotationModel.js');
+        try {
+          const revised = reviseQuotation(quotation, changes || {}, changeReason || '', changedBy || 'Sachin Shinde');
+          return res.status(200).json({
+            success: true,
+            message: `Revision ${revised.revision.revisionNumber} created successfully.`,
+            quotation: revised
+          });
+        } catch (rErr) {
+          return res.status(400).json({ error: rErr.message });
+        }
+      }
+
+      if (action === 'negotiate') {
+        const { quotation, negotiationData, actor } = req.body || {};
+        if (!quotation || !negotiationData) {
+          return res.status(400).json({ error: 'quotation and negotiationData required.' });
+        }
+        const { updateNegotiation } = await import('./_lib/quotationModel.js');
+        try {
+          const updated = updateNegotiation(quotation, negotiationData, actor || 'Sachin Shinde');
+          return res.status(200).json({
+            success: true,
+            message: 'Negotiation terms updated.',
+            quotation: updated
+          });
+        } catch (nErr) {
+          return res.status(400).json({ error: nErr.message });
+        }
+      }
+
+      if (action === 'record-po') {
+        const { quotation, poData, actor } = req.body || {};
+        if (!quotation || !poData) {
+          return res.status(400).json({ error: 'quotation and poData required.' });
+        }
+        const { recordPoReceipt } = await import('./_lib/quotationModel.js');
+        try {
+          const updated = recordPoReceipt(quotation, poData, actor || 'Sachin Shinde');
+          return res.status(200).json({
+            success: true,
+            message: `PO ${poData.poNumber} recorded.`,
+            quotation: updated
+          });
+        } catch (poErr) {
+          return res.status(400).json({ error: poErr.message });
+        }
+      }
+
       if (action === 'update-status') {
         return res.status(200).json({
           success: true,

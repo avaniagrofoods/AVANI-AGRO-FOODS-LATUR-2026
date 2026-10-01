@@ -17,12 +17,19 @@ import {
   CANONICAL_PRIORITY,
   CANONICAL_BUYER_TYPES
 } from '../data/qualificationModel'
+import {
+  validateLeadForQuotation,
+  createQuotationFromLead,
+  CANONICAL_QUOTATION_STATUSES
+} from '../data/quotationModel'
 
 export default function PrivateDashboard() {
   const navigate = useNavigate()
   const [importers, setImporters] = useState([])
   const [manufacturers, setManufacturers] = useState({ small: [], medium: [], large: [], all: [] })
   const [quotations, setQuotations] = useState([])
+  const [quotFilterStatus, setQuotFilterStatus] = useState('ALL')
+  const [quotSortBy, setQuotSortBy] = useState('NEWEST')
   const [leads, setLeads] = useState([])
   const [selectedLead, setSelectedLead] = useState(null)
   const [filterStatus, setFilterStatus] = useState('ALL')
@@ -75,7 +82,7 @@ export default function PrivateDashboard() {
       const savedQuotes = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
       const localEnquiries = JSON.parse(localStorage.getItem('avani_enquiries') || '[]')
       const enquiryQuotes = localEnquiries.map((e, idx) => {
-        const matchedQuote = savedQuotes.find(q => q.quoteId === e.quoteId || (e.inquiryId && q.inquiryId === e.inquiryId))
+        const matchedQuote = savedQuotes.find(q => (q.quotationId === e.quoteId || q.quoteId === e.quoteId) || (e.inquiryId && (q.inquiryId === e.inquiryId || q.leadId === e.inquiryId)))
         if (matchedQuote) return matchedQuote
 
         const pm = matchProductMaster(e.product || '')
@@ -86,8 +93,8 @@ export default function PrivateDashboard() {
         const subtotal = Number((qty * rate).toFixed(2))
 
         return {
-          quoteId: e.quoteId || `AAF-Q-2026-${1001 + idx}`,
-          inquiryId: e.inquiryId || `AAF-INQ-2026-${1001 + idx}`,
+          quotationId: e.quoteId || `AAF-Q-2026-${1001 + idx}`,
+          leadId: e.inquiryId || `AAF-L-2026-${1001 + idx}`,
           customerName: e.fullName || e.name || 'Direct Buyer',
           companyName: e.companyName || e.company || 'B2B Importer',
           country: e.country || (isIndia ? 'INDIA' : 'International'),
@@ -102,8 +109,45 @@ export default function PrivateDashboard() {
       })
 
       const merged = [...savedQuotes, ...enquiryQuotes, ...serverQuotes]
-      const unique = Array.from(new Map(merged.map(q => [q.quoteId, q])).values())
-      setQuotations(unique)
+      const unique = Array.from(new Map(merged.map(q => [q.quotationId || q.quoteId, q])).values())
+
+      // Normalize all quotation records into uniform canonical display format
+      const normalizedQuotes = unique.map(q => {
+        const qId = q.quotationId || q.quoteId
+        const lId = q.leadId || q.inquiryId || q.source?.leadId || 'N/A'
+        const bName = q.buyer?.name || q.buyerName || q.customerName || 'Direct Buyer'
+        const comp = q.buyer?.company || q.companyName || 'B2B Importer'
+        const ctry = q.buyer?.country || q.country || 'India'
+        const prod = q.commercialRequirement?.product || q.product || q.items?.[0]?.name || 'Moringa Leaf Powder'
+        const qty = q.commercialRequirement?.quantity || q.quantityKg || q.quantity || q.items?.[0]?.quantity || 0
+        const curr = q.quotation?.currency || q.currency || 'INR'
+        const total = Number(q.quotation?.grandTotal !== undefined ? q.quotation.grandTotal : (q.grandTotal || 0))
+        const stat = q.status || 'DRAFT'
+        const procCheck = q.processorVerification?.status || 'PENDING'
+        const rev = q.revision?.revisionNumber !== undefined ? q.revision.revisionNumber : 0
+        const created = q.createdAt || q.date || new Date().toISOString()
+        const next = q.workflow?.nextAction || (stat === 'READY_FOR_BUYER' ? 'Ready to send to buyer' : 'Review requirement with Indian processors')
+        return {
+          ...q,
+          quotationId: qId,
+          quoteId: qId,
+          leadId: lId,
+          buyerName: bName,
+          customerName: bName,
+          companyName: comp,
+          country: ctry,
+          product: prod,
+          quantity: qty,
+          currency: curr,
+          grandTotal: total,
+          status: stat,
+          processorCheckStatus: procCheck,
+          revisionNumber: rev,
+          createdAt: created,
+          nextAction: next
+        }
+      })
+      setQuotations(normalizedQuotes)
 
       // 4. Load Canonical B2B Leads (P4.1)
       const savedLeads = JSON.parse(localStorage.getItem('avani_leads') || '[]')
@@ -213,13 +257,99 @@ export default function PrivateDashboard() {
     setAdminNote('')
   }
 
+  // P4.3 Create Draft Quotation from Qualified Lead
+  const handleCreateDraftQuotation = (lead) => {
+    try {
+      const validation = validateLeadForQuotation(lead)
+      if (!validation.eligible) {
+        alert('Quotation cannot be prepared yet. Missing: ' + validation.errors.join('; '))
+        return
+      }
+
+      const quote = createQuotationFromLead(lead)
+      const existingQuotes = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
+      const updatedQuotes = [quote, ...existingQuotes.filter(q => (q.quotationId || q.quoteId) !== quote.quotationId)]
+      localStorage.setItem('avani_quotations', JSON.stringify(updatedQuotes))
+
+      // Update lead with latest quotation linkage
+      const savedLeads = JSON.parse(localStorage.getItem('avani_leads') || '[]')
+      let found = false
+      const updatedLeads = savedLeads.map(l => {
+        if (l.leadId !== lead.leadId) return l
+        found = true
+        return {
+          ...l,
+          latestQuotationId: quote.quotationId,
+          latestQuotationStatus: quote.status,
+          quotationCount: (l.quotationCount || 0) + 1,
+          activity: [
+            ...(l.activity || []),
+            {
+              type: 'LEAD_TO_QUOTATION',
+              timestamp: new Date().toISOString(),
+              actor: 'Sachin Shinde',
+              quotationId: quote.quotationId,
+              details: `Draft Quotation ${quote.quotationId} created from Qualified Lead`
+            }
+          ]
+        }
+      })
+      if (!found) {
+        updatedLeads.push({
+          ...lead,
+          latestQuotationId: quote.quotationId,
+          latestQuotationStatus: quote.status,
+          quotationCount: 1,
+          activity: [
+            ...(lead.activity || []),
+            {
+              type: 'LEAD_TO_QUOTATION',
+              timestamp: new Date().toISOString(),
+              actor: 'Sachin Shinde',
+              quotationId: quote.quotationId,
+              details: `Draft Quotation ${quote.quotationId} created from Qualified Lead`
+            }
+          ]
+        })
+      }
+      localStorage.setItem('avani_leads', JSON.stringify(updatedLeads))
+
+      window.dispatchEvent(new Event('lead-updated'))
+      window.dispatchEvent(new Event('quotation-updated'))
+
+      navigate(`/private/quotations?tab=builder&quotationId=${encodeURIComponent(quote.quotationId)}&leadId=${encodeURIComponent(lead.leadId)}`)
+    } catch (err) {
+      alert('Error creating draft quotation: ' + err.message)
+    }
+  }
+
   // P4.2 Lead Qualification Evaluation & Pipeline Filtering
   const evaluatedLeads = leads.map(l => {
     const qual = evaluateLeadQualification(l)
+    const leadQuotes = quotations.filter(q => q.leadId === l.leadId)
+    const latestQuote = leadQuotes.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0]
     return {
       ...l,
-      qual
+      qual,
+      quotationCount: leadQuotes.length,
+      latestQuotationId: latestQuote?.quotationId || l.latestQuotationId || null,
+      latestQuotationStatus: latestQuote?.status || l.latestQuotationStatus || null
     }
+  })
+
+  // P4.3 Quotation Pipeline Filtering & Sorting
+  const filteredQuotations = quotations.filter(q => {
+    if (quotFilterStatus === 'ALL') return true
+    return (q.status || '').toUpperCase() === quotFilterStatus.toUpperCase()
+  })
+
+  const sortedQuotations = [...filteredQuotations].sort((a, b) => {
+    if (quotSortBy === 'NEWEST') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    if (quotSortBy === 'OLDEST') return new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
+    if (quotSortBy === 'VALUE') return Number(b.grandTotal || 0) - Number(a.grandTotal || 0)
+    if (quotSortBy === 'QUANTITY') return Number(b.quantity || 0) - Number(a.quantity || 0)
+    if (quotSortBy === 'STATUS') return String(a.status || '').localeCompare(String(b.status || ''))
+    return 0
   })
 
   const filteredLeads = evaluatedLeads.filter(l => {
@@ -589,7 +719,19 @@ export default function PrivateDashboard() {
                       return (
                         <tr key={l.leadId} style={{ borderBottom: '1px solid var(--color-border)' }}>
                           <td style={{ padding: '12px', fontWeight: 800, color: 'var(--color-primary)', fontFamily: 'monospace' }}>
-                            {l.leadId}
+                            <div>{l.leadId}</div>
+                            {l.quotationCount > 0 ? (
+                              <div style={{ marginTop: 4, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <span className="badge" style={{ fontSize: '0.66rem', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '2px 6px' }}>
+                                  {l.quotationCount} {l.quotationCount === 1 ? 'Quote' : 'Quotes'}
+                                </span>
+                                {l.latestQuotationStatus && (
+                                  <span style={{ fontSize: '0.66rem', color: '#64748b' }}>({l.latestQuotationStatus})</span>
+                                )}
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: 2 }}>0 Quotes</div>
+                            )}
                           </td>
                           <td style={{ padding: '12px' }}>
                             <div style={{ fontWeight: 700 }}>{l.buyer?.name || 'Direct Buyer'}</div>
@@ -994,27 +1136,57 @@ export default function PrivateDashboard() {
                       </button>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, borderTop: '1px solid #e2e8f0', paddingTop: 16 }}>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)' }}>
-                        P4.3 Readiness: Sourcing parameters structured for Quotation Builder calculation engine.
-                      </div>
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <Link
-                          to={`/private/quotations?tab=builder&leadId=${encodeURIComponent(selectedLead.leadId)}&product=${encodeURIComponent(proc.product || inq.product || '')}&qty=${proc.quantityKg || inq.quantity || ''}&buyer=${encodeURIComponent(buyer.name || '')}&company=${encodeURIComponent(buyer.company || '')}&country=${encodeURIComponent(buyer.country || '')}&incoterm=${encodeURIComponent(proc.incoterm || inq.incoterm || '')}&dest=${encodeURIComponent(proc.destination || inq.destination || '')}&mesh=${encodeURIComponent(proc.mesh || inq.mesh || '')}&moisture=${encodeURIComponent(proc.moisture || inq.moisture || '')}&packaging=${encodeURIComponent(proc.packaging || inq.packaging || '')}&timeline=${encodeURIComponent(proc.timeline || inq.timeline || '')}&targetPrice=${encodeURIComponent(proc.targetPrice || inq.targetPrice || '')}&additionalReqs=${encodeURIComponent(proc.additionalRequirements || inq.additionalRequirements || '')}`}
-                          className="btn btn-primary"
-                          style={{ fontSize: '0.84rem', padding: '8px 18px', gap: 6 }}
-                        >
-                          <Plus size={14} /> Create Draft Quotation (P4.3 Readiness)
-                        </Link>
-                        <button
-                          onClick={() => setSelectedLead(null)}
-                          className="btn"
-                          style={{ fontSize: '0.84rem', padding: '8px 16px', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}
-                        >
-                          Close Inspector
-                        </button>
-                      </div>
-                    </div>
+                    {(() => {
+                      const quotValidation = validateLeadForQuotation(selectedLead)
+                      return (
+                        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 16 }}>
+                          {!quotValidation.eligible && (
+                            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '12px 16px', marginBottom: 14 }}>
+                              <div style={{ fontWeight: 800, color: '#991b1b', fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <AlertCircle size={15} /> Quotation cannot be prepared yet. Missing:
+                              </div>
+                              <ul style={{ margin: '6px 0 0 18px', padding: 0, fontSize: '0.8rem', color: '#b91c1c', lineHeight: 1.5 }}>
+                                {quotValidation.errors.map((err, i) => (
+                                  <li key={i}>{err}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                            <div style={{ fontSize: '0.8rem', color: quotValidation.eligible ? '#166534' : 'var(--color-text-light)' }}>
+                              {quotValidation.eligible
+                                ? '✓ Mandatory commercial parameters verified. Ready to create canonical Draft Quotation.'
+                                : 'Complete missing details before generating a formal draft quotation.'}
+                            </div>
+                            <div style={{ display: 'flex', gap: 10 }}>
+                              <button
+                                onClick={() => handleCreateDraftQuotation(selectedLead)}
+                                disabled={!quotValidation.eligible}
+                                className="btn btn-primary"
+                                style={{
+                                  fontSize: '0.84rem',
+                                  padding: '8px 18px',
+                                  gap: 6,
+                                  background: quotValidation.eligible ? 'var(--color-accent)' : '#94a3b8',
+                                  cursor: quotValidation.eligible ? 'pointer' : 'not-allowed',
+                                  opacity: quotValidation.eligible ? 1 : 0.6
+                                }}
+                              >
+                                <Plus size={14} /> Create Draft Quotation
+                              </button>
+                              <button
+                                onClick={() => setSelectedLead(null)}
+                                className="btn"
+                                style={{ fontSize: '0.84rem', padding: '8px 16px', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}
+                              >
+                                Close Inspector
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })()}
                   </div>
 
                 </div>
@@ -1022,76 +1194,192 @@ export default function PrivateDashboard() {
             )
           })()}
 
-          {/* Recent Sourcing Inquiries & Quotations */}
+          {/* P4.3 Quotation Pipeline */}
           <div className="card" style={{ padding: '32px', background: 'white' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>
-                  Recent Inquiries &amp; Quotations Activity
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--color-text)' }}>
+                  Quotation Pipeline (P4.3 Commercial Desk)
                 </h3>
                 <p style={{ fontSize: '0.82rem', color: 'var(--color-text-light)', margin: '4px 0 0' }}>
-                  Latest buyer RFQ submissions and generated commercial quotations
+                  End-to-end commercial workflow: Draft → Processor Check → Ready for Buyer → Sent → Negotiation → PO Received
                 </p>
               </div>
-              <button onClick={loadData} className="btn" style={{ padding: '6px 12px', fontSize: '0.78rem', gap: 6, background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}>
-                <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh Data
-              </button>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-light)', fontWeight: 600 }}>Sort:</span>
+                  <select
+                    value={quotSortBy}
+                    onChange={(e) => setQuotSortBy(e.target.value)}
+                    style={{ padding: '6px 10px', fontSize: '0.8rem', borderRadius: 6, border: '1px solid var(--color-border)', background: 'white' }}
+                  >
+                    <option value="NEWEST">Newest First</option>
+                    <option value="OLDEST">Oldest First</option>
+                    <option value="VALUE">Value (High to Low)</option>
+                    <option value="QUANTITY">Quantity (High to Low)</option>
+                    <option value="STATUS">Status</option>
+                  </select>
+                </div>
+                <button onClick={loadData} className="btn" style={{ padding: '6px 12px', fontSize: '0.78rem', gap: 6, background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}>
+                  <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
+                </button>
+                <Link to="/private/quotations?tab=builder" className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '0.8rem', gap: 6 }}>
+                  <Plus size={14} /> New Quotation
+                </Link>
+              </div>
             </div>
 
-            {quotations.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--color-text-light)', fontSize: '0.88rem' }}>
-                No quotations or inquiries recorded yet. Use the Contact form or Quotation Builder to generate records.
+            {/* Filter Pills */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--color-border)' }}>
+              {[
+                { id: 'ALL', label: 'All' },
+                { id: 'DRAFT', label: 'Draft' },
+                { id: 'PROCESSOR_CHECK', label: 'Processor Check' },
+                { id: 'READY_FOR_BUYER', label: 'Ready for Buyer' },
+                { id: 'SENT_TO_BUYER', label: 'Sent to Buyer' },
+                { id: 'NEGOTIATION', label: 'Negotiation' },
+                { id: 'REVISED', label: 'Revised' },
+                { id: 'ACCEPTED', label: 'Accepted' },
+                { id: 'PO_RECEIVED', label: 'PO Received' },
+                { id: 'CANCELLED', label: 'Cancelled' }
+              ].map(f => {
+                const count = f.id === 'ALL'
+                  ? quotations.length
+                  : quotations.filter(q => (q.status || '').toUpperCase() === f.id).length
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setQuotFilterStatus(f.id)}
+                    style={{
+                      padding: '5px 12px',
+                      fontSize: '0.76rem',
+                      fontWeight: quotFilterStatus === f.id ? 800 : 500,
+                      borderRadius: 20,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      background: quotFilterStatus === f.id ? 'var(--color-primary)' : 'var(--color-bg-alt)',
+                      color: quotFilterStatus === f.id ? 'white' : 'var(--color-text)',
+                      border: `1px solid ${quotFilterStatus === f.id ? 'var(--color-primary)' : 'var(--color-border)'}`
+                    }}
+                  >
+                    {f.label} ({count})
+                  </button>
+                )
+              })}
+            </div>
+
+            {sortedQuotations.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--color-text-light)', fontSize: '0.88rem' }}>
+                No quotations found matching filter <strong>"{quotFilterStatus}"</strong>.
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
                   <thead>
                     <tr style={{ background: 'var(--color-bg-alt)', borderBottom: '2px solid var(--color-border)', textAlign: 'left' }}>
-                      <th style={{ padding: '10px 14px' }}>Quote / Lead ID</th>
-                      <th style={{ padding: '10px 14px' }}>Buyer &amp; Company</th>
-                      <th style={{ padding: '10px 14px' }}>Country</th>
-                      <th style={{ padding: '10px 14px' }}>Product</th>
-                      <th style={{ padding: '10px 14px' }}>Volume</th>
-                      <th style={{ padding: '10px 14px' }}>Incoterm</th>
-                      <th style={{ padding: '10px 14px' }}>Total Est.</th>
-                      <th style={{ padding: '10px 14px' }}>Status</th>
-                      <th style={{ padding: '10px 14px', textAlign: 'right' }}>Actions</th>
+                      <th style={{ padding: '10px 12px' }}>Quotation ID</th>
+                      <th style={{ padding: '10px 12px' }}>Lead ID</th>
+                      <th style={{ padding: '10px 12px' }}>Buyer</th>
+                      <th style={{ padding: '10px 12px' }}>Company</th>
+                      <th style={{ padding: '10px 12px' }}>Product</th>
+                      <th style={{ padding: '10px 12px' }}>Quantity</th>
+                      <th style={{ padding: '10px 12px' }}>Currency</th>
+                      <th style={{ padding: '10px 12px' }}>Grand Total</th>
+                      <th style={{ padding: '10px 12px' }}>Status</th>
+                      <th style={{ padding: '10px 12px' }}>Processor Check</th>
+                      <th style={{ padding: '10px 12px' }}>Revision</th>
+                      <th style={{ padding: '10px 12px' }}>Created</th>
+                      <th style={{ padding: '10px 12px' }}>Next Action</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'right' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {quotations.slice(0, 5).map((q) => (
-                      <tr key={q.quoteId} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                        <td style={{ padding: '12px 14px', fontWeight: 800, color: 'var(--color-primary)', fontFamily: 'monospace' }}>
-                          {q.quoteId}
-                        </td>
-                        <td style={{ padding: '12px 14px' }}>
-                          <div style={{ fontWeight: 700 }}>{q.customerName}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)' }}>{q.companyName}</div>
-                        </td>
-                        <td style={{ padding: '12px 14px' }}>{q.country}</td>
-                        <td style={{ padding: '12px 14px' }}>{q.product}</td>
-                        <td style={{ padding: '12px 14px', fontWeight: 700 }}>{q.quantity} kg</td>
-                        <td style={{ padding: '12px 14px' }}>{q.incoterm}</td>
-                        <td style={{ padding: '12px 14px', fontWeight: 800 }}>
-                          ${Number(q.grandTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </td>
-                        <td style={{ padding: '12px 14px' }}>
-                          <span className="badge" style={{
-                            fontSize: '0.7rem',
-                            background: q.status === 'SENT' || q.status === 'ACCEPTED' ? '#f0fdf4' : '#fffbeb',
-                            color: q.status === 'SENT' || q.status === 'ACCEPTED' ? '#166534' : '#92400e',
-                            border: `1px solid ${q.status === 'SENT' || q.status === 'ACCEPTED' ? '#bbf7d0' : '#fde68a'}`
-                          }}>
-                            {q.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                          <Link to={`/private/quotations`} className="btn" style={{ padding: '4px 8px', fontSize: '0.75rem', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}>
-                            View in Portal
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
+                    {sortedQuotations.map((q) => {
+                      const statusColor =
+                        q.status === 'ACCEPTED' || q.status === 'PO_RECEIVED' ? { bg: '#f0fdf4', text: '#166534', border: '#bbf7d0' } :
+                        q.status === 'READY_FOR_BUYER' ? { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' } :
+                        q.status === 'SENT_TO_BUYER' ? { bg: '#f5f3ff', text: '#6d28d9', border: '#ddd6fe' } :
+                        q.status === 'NEGOTIATION' ? { bg: '#fff7ed', text: '#c2410c', border: '#fed7aa' } :
+                        q.status === 'PROCESSOR_CHECK' ? { bg: '#fffbeb', text: '#92400e', border: '#fde68a' } :
+                        q.status === 'CANCELLED' ? { bg: '#fef2f2', text: '#991b1b', border: '#fecaca' } :
+                        { bg: '#f3f4f6', text: '#4b5563', border: '#e5e7eb' }
+
+                      const procColor =
+                        q.processorCheckStatus === 'CONFIRMED' ? { bg: '#f0fdf4', text: '#166534' } :
+                        q.processorCheckStatus === 'PARTIALLY_CONFIRMED' ? { bg: '#eff6ff', text: '#1d4ed8' } :
+                        q.processorCheckStatus === 'REQUIRES_REVIEW' ? { bg: '#fef2f2', text: '#991b1b' } :
+                        { bg: '#fffbeb', text: '#92400e' }
+
+                      return (
+                        <tr key={q.quotationId} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                          <td style={{ padding: '10px 12px', fontWeight: 800, color: 'var(--color-primary)', fontFamily: 'monospace' }}>
+                            {q.quotationId}
+                          </td>
+                          <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: 'var(--color-text-light)' }}>
+                            {q.leadId}
+                          </td>
+                          <td style={{ padding: '10px 12px', fontWeight: 600 }}>
+                            {q.buyerName}
+                          </td>
+                          <td style={{ padding: '10px 12px' }}>
+                            {q.companyName}
+                          </td>
+                          <td style={{ padding: '10px 12px' }}>
+                            {q.product}
+                          </td>
+                          <td style={{ padding: '10px 12px', fontWeight: 700 }}>
+                            {Number(q.quantity || 0).toLocaleString()} KG
+                          </td>
+                          <td style={{ padding: '10px 12px', fontWeight: 700 }}>
+                            {q.currency}
+                          </td>
+                          <td style={{ padding: '10px 12px', fontWeight: 800 }}>
+                            {Number(q.grandTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <span className="badge" style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              background: statusColor.bg,
+                              color: statusColor.text,
+                              border: `1px solid ${statusColor.border}`,
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {q.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px 12px' }}>
+                            <span className="badge" style={{
+                              fontSize: '0.66rem',
+                              fontWeight: 700,
+                              background: procColor.bg,
+                              color: procColor.text,
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {q.processorCheckStatus}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--color-text-light)' }}>
+                            Rev {q.revisionNumber}
+                          </td>
+                          <td style={{ padding: '10px 12px', fontSize: '0.76rem', color: 'var(--color-text-light)' }}>
+                            {q.createdAt ? q.createdAt.split('T')[0] : 'N/A'}
+                          </td>
+                          <td style={{ padding: '10px 12px', fontSize: '0.76rem', color: 'var(--color-text)', maxWidth: 220 }}>
+                            {q.nextAction}
+                          </td>
+                          <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                            <Link
+                              to={`/private/quotations?tab=builder&quotationId=${encodeURIComponent(q.quotationId)}&leadId=${encodeURIComponent(q.leadId !== 'N/A' ? q.leadId : '')}`}
+                              className="btn"
+                              style={{ padding: '4px 10px', fontSize: '0.74rem', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)', whiteSpace: 'nowrap' }}
+                            >
+                              Open Builder
+                            </Link>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>

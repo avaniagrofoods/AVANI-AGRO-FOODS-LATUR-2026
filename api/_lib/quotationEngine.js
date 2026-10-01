@@ -138,9 +138,11 @@ export function calculateQuotation(input = {}) {
         name: item.name || pm.productName,
         description,
         hscode,
+        hsCode: hscode,
         quantity: qty,
         unit: (item.unit || pm.unit || 'KG').toUpperCase(),
         rate,
+        unitRate: rate,
         total,
         amount: total,
         packaging: item.packaging || pm.defaultPackaging
@@ -176,9 +178,11 @@ export function calculateQuotation(input = {}) {
         name: pm.productName,
         description,
         hscode,
+        hsCode: hscode,
         quantity: parsedQty,
         unit: 'KG',
         rate,
+        unitRate: rate,
         total,
         amount: total,
         packaging: input.packaging || pm.defaultPackaging
