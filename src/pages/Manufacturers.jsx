@@ -6,14 +6,14 @@ import PrivateNav from '../components/PrivateNav'
 import {
   Search, Download, Plus, Edit, Trash2, MapPin,
   Globe, Mail, Phone, ExternalLink, Filter, CheckCircle2,
-  Building2, ShieldCheck, Eye, X, RefreshCw, Package, Award
+  Building2, ShieldCheck, Eye, X, RefreshCw, Package, Award, FileText
 } from 'lucide-react'
 
 const SCALES = [
   { id: 'all', label: 'All Scales' },
-  { id: 'small', label: 'Small Scale (20 Units)' },
-  { id: 'medium', label: 'Medium Scale (20 Units)' },
-  { id: 'large', label: 'Large Scale (20 Units)' },
+  { id: 'small', label: 'Small Scale' },
+  { id: 'medium', label: 'Medium Scale' },
+  { id: 'large', label: 'Large Scale' },
 ]
 
 const STATES = [
@@ -288,7 +288,7 @@ export default function Manufacturers() {
                   Indian Manufacturer &amp; Processor Database
                 </h1>
                 <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.88rem', margin: 0 }}>
-                  60 verified Indian processing plants, dehydration units &amp; botanical milling facilities.
+                  {data.all.length} Indian processing plants, dehydration units &amp; botanical partner facilities (Subject to independent verification).
                 </p>
               </div>
 
@@ -489,16 +489,28 @@ export default function Manufacturers() {
                       {item.contactPerson && (
                         <div><strong>Contact:</strong> {item.contactPerson} ({item.designation || 'Head'})</div>
                       )}
-                      {item.email && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Mail size={12} color="var(--color-primary)" />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Mail size={12} color="var(--color-primary)" />
+                        {item.email && item.email !== 'Not Available' ? (
                           <a href={`mailto:${item.email}`} style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>{item.email}</a>
-                        </div>
-                      )}
-                      {item.phone && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Phone size={12} color="var(--color-primary)" />
+                        ) : (
+                          <span style={{ color: 'var(--color-text-light)' }}>Email: Not Available</span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Phone size={12} color="var(--color-primary)" />
+                        {item.phone && item.phone !== 'Not Available' ? (
                           <span>{item.phone}</span>
+                        ) : (
+                          <span style={{ color: 'var(--color-text-light)' }}>Phone: Not Available</span>
+                        )}
+                      </div>
+                      {item.website && item.website !== 'Not Available' && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Globe size={12} color="var(--color-primary)" />
+                          <a href={item.website.startsWith('http') ? item.website : `https://${item.website}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>
+                            {item.website.replace(/^https?:\/\//, '')}
+                          </a>
                         </div>
                       )}
                     </div>
@@ -533,13 +545,23 @@ export default function Manufacturers() {
                       </button>
                     </div>
 
-                    <a
-                      href={`mailto:${item.email}?subject=${encodeURIComponent(`Sourcing Requirement — AVANI AGRO FOODS`)}`}
-                      className="btn btn-primary"
-                      style={{ padding: '6px 12px', fontSize: '0.78rem', gap: 6 }}
-                    >
-                      <Mail size={13} /> Contact
-                    </a>
+                    {item.email && item.email !== 'Not Available' ? (
+                      <a
+                        href={`mailto:${item.email}?subject=${encodeURIComponent(`Sourcing Requirement — AVANI AGRO FOODS`)}`}
+                        className="btn btn-primary"
+                        style={{ padding: '6px 12px', fontSize: '0.78rem', gap: 6 }}
+                      >
+                        <Mail size={13} /> Contact
+                      </a>
+                    ) : (
+                      <button
+                        onClick={() => setSelectedSupplier(item)}
+                        className="btn btn-primary"
+                        style={{ padding: '6px 12px', fontSize: '0.78rem', gap: 6, opacity: 0.9 }}
+                      >
+                        <FileText size={13} /> Specs
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -630,12 +652,40 @@ export default function Manufacturers() {
                 <h4 style={{ fontSize: '0.9rem', fontWeight: 800, marginBottom: 8 }}>Commercial Contact Information</h4>
                 <div style={{ fontSize: '0.85rem', lineHeight: 1.8, color: 'var(--color-text)' }}>
                   <div><strong>Contact Person:</strong> {selectedSupplier.contactPerson || 'Commercial Head'} ({selectedSupplier.designation || 'Lead'})</div>
-                  <div><strong>Email:</strong> <a href={`mailto:${selectedSupplier.email}`} style={{ color: 'var(--color-primary)' }}>{selectedSupplier.email}</a></div>
-                  <div><strong>Phone:</strong> {selectedSupplier.phone || selectedSupplier.contact}</div>
-                  {selectedSupplier.website && selectedSupplier.website !== 'N/A' && (
-                    <div><strong>Website:</strong> <a href={`https://${selectedSupplier.website.replace('https://', '')}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)' }}>{selectedSupplier.website}</a></div>
-                  )}
+                  <div>
+                    <strong>Email:</strong>{' '}
+                    {selectedSupplier.email && selectedSupplier.email !== 'Not Available' ? (
+                      <a href={`mailto:${selectedSupplier.email}`} style={{ color: 'var(--color-primary)' }}>{selectedSupplier.email}</a>
+                    ) : (
+                      <span style={{ color: 'var(--color-text-light)' }}>Not Available</span>
+                    )}
+                  </div>
+                  <div>
+                    <strong>Phone:</strong>{' '}
+                    {selectedSupplier.phone && selectedSupplier.phone !== 'Not Available' ? (
+                      <span>{selectedSupplier.phone}</span>
+                    ) : (
+                      <span style={{ color: 'var(--color-text-light)' }}>Not Available</span>
+                    )}
+                  </div>
+                  <div>
+                    <strong>Website:</strong>{' '}
+                    {selectedSupplier.website && selectedSupplier.website !== 'Not Available' && selectedSupplier.website !== 'N/A' ? (
+                      <a href={selectedSupplier.website.startsWith('http') ? selectedSupplier.website : `https://${selectedSupplier.website}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)' }}>
+                        {selectedSupplier.website}
+                      </a>
+                    ) : (
+                      <span style={{ color: 'var(--color-text-light)' }}>Not Available</span>
+                    )}
+                  </div>
+                  <div>
+                    <strong>Source Provenance:</strong> {selectedSupplier.sourceFile || 'Manufacture Data.xlsx'} ({selectedSupplier.sourceSheet || 'General'})
+                  </div>
                 </div>
+              </div>
+
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: 12, borderRadius: 6, fontSize: '0.8rem', color: '#64748b', marginBottom: 20 }}>
+                <em>Note: Manufacturing partner facility — stated capacities, specifications, and certifications are subject to independent commercial verification and batch testing before contract execution.</em>
               </div>
 
               {selectedSupplier.notes && (

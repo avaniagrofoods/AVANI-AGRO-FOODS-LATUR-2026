@@ -11,7 +11,6 @@ import {
 } from 'lucide-react'
 import { WHATSAPP_NUMBER } from '../data/links'
 
-const REGIONS = ['All', 'USA', 'Europe', 'Middle East', 'Asia Pacific', 'Africa', 'Canada']
 const PRIORITIES = ['All', 'HIGH', 'MEDIUM', 'LOW']
 const STATUSES = ['All', 'NEW', 'RESEARCHING', 'VERIFIED', 'CONTACTED', 'REPLIED', 'QUALIFIED', 'SAMPLE', 'QUOTATION', 'NEGOTIATION', 'ORDER', 'FOLLOW-UP']
 const VERIFICATIONS = ['All', 'VERIFIED', 'PARTIALLY VERIFIED', 'UNVERIFIED', 'NEEDS REVIEW']
@@ -26,102 +25,43 @@ export default function Importers() {
 
   // Filters & Search
   const [search, setSearch] = useState('')
+  const [selectedCountry, setSelectedCountry] = useState('All')
   const [selectedRegion, setSelectedRegion] = useState('All')
+  const [selectedProduct, setSelectedProduct] = useState('All')
   const [selectedPriority, setSelectedPriority] = useState('All')
   const [selectedStatus, setSelectedStatus] = useState('All')
   const [selectedVerification, setSelectedVerification] = useState('All')
   const [sortBy, setSortBy] = useState('name') // name, priority, country, date
 
-  // Modal States
-  const [selectedImporter, setSelectedImporter] = useState(null)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [editFormData, setEditFormData] = useState(null)
-  const [newFormData, setNewFormData] = useState({
-    name: '',
-    companyName: '',
-    country: '',
-    region: 'USA',
-    city: '',
-    products: 'Moringa Powder, Red Onion Powder',
-    businessType: 'Importer & Distributor',
-    contactPerson: '',
-    designation: 'Procurement Manager',
-    email: '',
-    phone: '',
-    whatsapp: '',
-    website: '',
-    verificationStatus: 'VERIFIED',
-    priority: 'HIGH',
-    outreachStatus: 'NEW',
-    moq: '500 kg',
-    estimatedRequirement: '2,000 kg / order',
-    targetPrice: 'USD 4.50 / kg',
-    preferredIncoterm: 'FOB Nhava Sheva',
-    destinationPort: '',
-    notes: ''
-  })
-
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1)
-  const pageSize = 12
-
-  const fetchData = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const res = await fetch('/api/importers', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-      })
-      if (res.ok) {
-        const json = await res.json()
-        setImporters(json.importers || [])
-      } else {
-        setError('Authentication required to load importer records.')
-      }
-    } catch (err) {
-      setError('Network error loading data. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  useEffect(() => {
-    if (searchParams.get('action') === 'new') {
-      setIsAddModalOpen(true)
-    }
-  }, [searchParams])
+  // Dynamically derived countries from imported dataset
+  const availableCountries = ['All', ...Array.from(new Set(importers.map(i => i.country).filter(Boolean))).sort()]
 
   // Filter & Sort logic
   const filtered = importers.filter(item => {
-    const q = search.toLowerCase()
+    const q = search.toLowerCase().trim()
     const matchSearch = !q ||
       item.name?.toLowerCase().includes(q) ||
       item.companyName?.toLowerCase().includes(q) ||
       item.country?.toLowerCase().includes(q) ||
+      item.city?.toLowerCase().includes(q) ||
+      item.location?.toLowerCase().includes(q) ||
       item.products?.toLowerCase().includes(q) ||
       item.email?.toLowerCase().includes(q) ||
-      item.contactPerson?.toLowerCase().includes(q)
+      item.phone?.toLowerCase().includes(q) ||
+      item.contactPerson?.toLowerCase().includes(q) ||
+      item.businessType?.toLowerCase().includes(q)
 
-    const matchRegion = selectedRegion === 'All' ||
-      (selectedRegion === 'USA' && (item.region === 'USA' || item.country?.includes('USA'))) ||
-      (selectedRegion === 'Europe' && (item.region === 'Europe' || ['France', 'Germany', 'UK', 'Netherlands', 'Ireland', 'Sweden', 'Italy'].some(c => item.country?.includes(c) || item.location?.includes(c)))) ||
-      (selectedRegion === 'Middle East' && (item.region === 'Middle East' || ['UAE', 'Saudi', 'Kuwait'].some(c => item.country?.includes(c) || item.location?.includes(c)))) ||
-      (selectedRegion === 'Asia Pacific' && (item.region === 'Asia Pacific' || ['Japan', 'China', 'Australia', 'Singapore', 'Korea', 'Malaysia'].some(c => item.country?.includes(c) || item.location?.includes(c)))) ||
-      (selectedRegion === 'Africa' && (item.region === 'Africa' || ['Kenya', 'Nigeria', 'South Africa'].some(c => item.country?.includes(c) || item.location?.includes(c)))) ||
-      (selectedRegion === 'Canada' && (item.region === 'Canada' || item.country?.includes('Canada') || item.location?.includes('Canada')))
+    const matchCountry = selectedCountry === 'All' || item.country === selectedCountry
+    const matchRegion = selectedRegion === 'All' || item.region === selectedRegion || (selectedRegion === 'USA' && item.country === 'USA')
+    const matchProduct = selectedProduct === 'All' ||
+      (selectedProduct === 'Moringa' && (item.products?.toLowerCase().includes('moringa') || item.moringaInterest === 'High')) ||
+      (selectedProduct === 'Red Onion' && (item.products?.toLowerCase().includes('onion') || item.redOnionInterest === 'High'))
 
     const matchPriority = selectedPriority === 'All' || item.priority === selectedPriority
     const matchStatus = selectedStatus === 'All' || item.outreachStatus === selectedStatus
     const matchVerification = selectedVerification === 'All' || item.verificationStatus === selectedVerification
 
-    return matchSearch && matchRegion && matchPriority && matchStatus && matchVerification
+    return matchSearch && matchCountry && matchRegion && matchProduct && matchPriority && matchStatus && matchVerification
   })
 
   // Sort
@@ -256,7 +196,7 @@ export default function Importers() {
                   Importer Intelligence Database
                 </h1>
                 <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.88rem', margin: 0 }}>
-                  {importers.length} international agricultural buyers, supplement brands &amp; seasoning importers.
+                  {importers.length} international agricultural buyers, supplement brands &amp; seasoning importers across {availableCountries.length > 1 ? availableCountries.length - 1 : 0} countries.
                 </p>
               </div>
 
@@ -294,7 +234,7 @@ export default function Importers() {
                   <input
                     className="input"
                     style={{ paddingLeft: 40, height: 42, fontSize: '0.88rem', background: 'var(--color-bg-alt)' }}
-                    placeholder="Search company, contact person, country, product, email..."
+                    placeholder="Search company, contact person, country, city, product, email, phone..."
                     value={search}
                     onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
                   />
@@ -316,31 +256,65 @@ export default function Importers() {
                 </div>
               </div>
 
-              {/* Row 2: Category Filter Tabs */}
-              <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-                {REGIONS.map(reg => (
+              {/* Row 2: Country Filter Tabs & Dropdown */}
+              <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, alignItems: 'center' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-light)', marginRight: 4, whiteSpace: 'nowrap' }}>
+                  Country:
+                </span>
+                {['All', 'USA', 'UK', 'UAE', 'Germany', 'Netherlands', 'Canada', 'Australia', 'Singapore'].map(ctry => (
                   <button
-                    key={reg}
-                    onClick={() => { setSelectedRegion(reg); setCurrentPage(1); }}
+                    key={ctry}
+                    onClick={() => { setSelectedCountry(ctry); setCurrentPage(1); }}
                     className="btn"
                     style={{
-                      padding: '6px 14px',
-                      fontSize: '0.78rem',
+                      padding: '5px 12px',
+                      fontSize: '0.76rem',
                       borderRadius: 16,
                       fontWeight: 700,
-                      background: selectedRegion === reg ? 'var(--color-primary)' : 'var(--color-bg-alt)',
-                      color: selectedRegion === reg ? 'white' : 'var(--color-text)',
-                      border: selectedRegion === reg ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                      background: selectedCountry === ctry ? 'var(--color-primary)' : 'var(--color-bg-alt)',
+                      color: selectedCountry === ctry ? 'white' : 'var(--color-text)',
+                      border: selectedCountry === ctry ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
                       whiteSpace: 'nowrap'
                     }}
                   >
-                    {reg}
+                    {ctry === 'All' ? 'All Countries' : ctry}
                   </button>
                 ))}
+                <select
+                  value={selectedCountry}
+                  onChange={e => { setSelectedCountry(e.target.value); setCurrentPage(1); }}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: 16,
+                    fontSize: '0.76rem',
+                    border: '1px solid var(--color-border)',
+                    background: 'white',
+                    fontWeight: 600,
+                    marginLeft: 6
+                  }}
+                >
+                  <option value="All">All {availableCountries.length > 1 ? availableCountries.length - 1 : 0} Countries...</option>
+                  {availableCountries.filter(c => c !== 'All').map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Row 3: Secondary Filters */}
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', borderTop: '1px solid var(--color-border)', paddingTop: 12, fontSize: '0.82rem' }}>
+                <div>
+                  <span style={{ color: 'var(--color-text-light)', marginRight: 6 }}>Product:</span>
+                  <select
+                    value={selectedProduct}
+                    onChange={e => { setSelectedProduct(e.target.value); setCurrentPage(1); }}
+                    style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid var(--color-border)', background: 'white' }}
+                  >
+                    <option value="All">All Products</option>
+                    <option value="Moringa">Moringa Powder</option>
+                    <option value="Red Onion">Red Onion Powder</option>
+                  </select>
+                </div>
+
                 <div>
                   <span style={{ color: 'var(--color-text-light)', marginRight: 6 }}>Priority:</span>
                   <select
@@ -460,18 +434,30 @@ export default function Importers() {
                     {/* Contact Person & Direct Info */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.8rem', color: 'var(--color-text)', marginBottom: 16 }}>
                       {item.contactPerson && (
-                        <div><strong>Contact:</strong> {item.contactPerson} ({item.designation || 'Lead'})</div>
+                        <div><strong>Contact:</strong> {item.contactPerson} ({item.designation || item.jobTitle || 'Lead'})</div>
                       )}
-                      {item.email && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Mail size={12} color="var(--color-primary)" />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Mail size={12} color="var(--color-primary)" />
+                        {item.email && item.email !== 'Not Available' ? (
                           <a href={`mailto:${item.email}`} style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>{item.email}</a>
-                        </div>
-                      )}
-                      {item.phone && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Phone size={12} color="var(--color-primary)" />
+                        ) : (
+                          <span style={{ color: 'var(--color-text-light)' }}>Email: Not Available</span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Phone size={12} color="var(--color-primary)" />
+                        {item.phone && item.phone !== 'Not Available' ? (
                           <span>{item.phone}</span>
+                        ) : (
+                          <span style={{ color: 'var(--color-text-light)' }}>Phone: Not Available</span>
+                        )}
+                      </div>
+                      {item.website && item.website !== 'Not Available' && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Globe size={12} color="var(--color-primary)" />
+                          <a href={item.website.startsWith('http') ? item.website : `https://${item.website}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>
+                            {item.website.replace(/^https?:\/\//, '')}
+                          </a>
                         </div>
                       )}
                     </div>
@@ -600,12 +586,36 @@ export default function Importers() {
               <div style={{ marginBottom: 24 }}>
                 <h4 style={{ fontSize: '0.9rem', fontWeight: 800, marginBottom: 8 }}>Contact Person &amp; Communication</h4>
                 <div style={{ fontSize: '0.85rem', lineHeight: 1.8, color: 'var(--color-text)' }}>
-                  <div><strong>Name:</strong> {selectedImporter.contactPerson || 'Procurement Desk'} ({selectedImporter.designation || 'Manager'})</div>
-                  <div><strong>Email:</strong> <a href={`mailto:${selectedImporter.email}`} style={{ color: 'var(--color-primary)' }}>{selectedImporter.email}</a></div>
-                  <div><strong>Phone:</strong> {selectedImporter.phone || selectedImporter.contact}</div>
-                  {selectedImporter.website && (
-                    <div><strong>Website:</strong> <a href={`https://${selectedImporter.website.replace('https://', '')}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)' }}>{selectedImporter.website}</a></div>
-                  )}
+                  <div><strong>Name:</strong> {selectedImporter.contactPerson || 'Procurement Desk'} ({selectedImporter.designation || selectedImporter.jobTitle || 'Manager'})</div>
+                  <div>
+                    <strong>Email:</strong>{' '}
+                    {selectedImporter.email && selectedImporter.email !== 'Not Available' ? (
+                      <a href={`mailto:${selectedImporter.email}`} style={{ color: 'var(--color-primary)' }}>{selectedImporter.email}</a>
+                    ) : (
+                      <span style={{ color: 'var(--color-text-light)' }}>Not Available</span>
+                    )}
+                  </div>
+                  <div>
+                    <strong>Phone:</strong>{' '}
+                    {selectedImporter.phone && selectedImporter.phone !== 'Not Available' ? (
+                      <span>{selectedImporter.phone}</span>
+                    ) : (
+                      <span style={{ color: 'var(--color-text-light)' }}>Not Available</span>
+                    )}
+                  </div>
+                  <div>
+                    <strong>Website:</strong>{' '}
+                    {selectedImporter.website && selectedImporter.website !== 'Not Available' && selectedImporter.website !== 'N/A' ? (
+                      <a href={selectedImporter.website.startsWith('http') ? selectedImporter.website : `https://${selectedImporter.website}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)' }}>
+                        {selectedImporter.website}
+                      </a>
+                    ) : (
+                      <span style={{ color: 'var(--color-text-light)' }}>Not Available</span>
+                    )}
+                  </div>
+                  <div>
+                    <strong>Source Provenance:</strong> {selectedImporter.source || 'B2B Database'} ({selectedImporter.sourceFile || 'N/A'} - {selectedImporter.sourceSheet || 'N/A'})
+                  </div>
                 </div>
               </div>
 
