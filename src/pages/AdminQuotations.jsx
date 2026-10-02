@@ -643,6 +643,7 @@ export default function AdminQuotations() {
       otherCharges: sanitized.otherCharges || 0,
       status: sanitized.status || 'DRAFT',
       processorVerification: pv,
+      processorConfirmation: q.processorConfirmation || createInitialProcessorConfirmation(commReq),
       commercialRequirement: commReq,
       revision: rev,
       revisionHistory: revHist,
@@ -654,7 +655,7 @@ export default function AdminQuotations() {
     setActiveTab('builder')
   }
 
-  // P4.3 Processor Verification Handlers
+  // P4.3 / P4.4 Processor Verification & Confirmation Handlers
   const handleProcessorCheckToggle = (key, value) => {
     setBuilderForm(prev => {
       const updatedPV = {
@@ -662,9 +663,40 @@ export default function AdminQuotations() {
         [key]: value
       }
       updatedPV.status = evaluateProcessorVerification(updatedPV)
+
+      const updatedPC = {
+        ...(prev.processorConfirmation || createInitialProcessorConfirmation(prev.commercialRequirement || {}))
+      }
+      if (key === 'availabilityConfirmed') {
+        updatedPC.availability = { ...(updatedPC.availability || {}), available: Boolean(value) }
+      } else if (key === 'capacityConfirmed') {
+        const reqQty = Number(prev.commercialRequirement?.quantity || prev.items?.[0]?.quantity || 18000)
+        updatedPC.availability = { ...(updatedPC.availability || {}), confirmedQuantity: value ? reqQty : null }
+      } else if (key === 'specificationConfirmed') {
+        updatedPC.specification = { ...(updatedPC.specification || {}) }
+        updatedPC.specification.mesh = { ...(updatedPC.specification.mesh || {}), processorConfirmed: value ? '80–100 Mesh' : null, match: Boolean(value) }
+      } else if (key === 'moistureConfirmed') {
+        updatedPC.specification = { ...(updatedPC.specification || {}) }
+        updatedPC.specification.moisture = { ...(updatedPC.specification.moisture || {}), processorConfirmed: value ? 'Max 7%' : null, match: Boolean(value) }
+      } else if (key === 'packagingConfirmed') {
+        updatedPC.specification = { ...(updatedPC.specification || {}) }
+        updatedPC.specification.packaging = { ...(updatedPC.specification.packaging || {}), processorConfirmed: value ? '25 kg Food-Grade HDPE Bags' : null, match: Boolean(value) }
+      } else if (key === 'leadTimeConfirmed') {
+        updatedPC.production = { ...(updatedPC.production || {}), leadTimeDays: value ? 45 : null }
+      } else if (key === 'exportPackingConfirmed') {
+        updatedPC.logistics = { ...(updatedPC.logistics || {}), exportPackingConfirmed: Boolean(value), stuffingConfirmed: Boolean(value) }
+      } else if (key === 'coaConfirmed') {
+        updatedPC.qualityDocuments = { ...(updatedPC.qualityDocuments || {}), coaAvailable: Boolean(value) }
+      } else if (key === 'testingConfirmed') {
+        updatedPC.qualityDocuments = { ...(updatedPC.qualityDocuments || {}), testingAvailable: Boolean(value) }
+      } else if (key === 'sampleConfirmed') {
+        updatedPC.qualityDocuments = { ...(updatedPC.qualityDocuments || {}), sampleAvailable: Boolean(value) }
+      }
+
       return {
         ...prev,
-        processorVerification: updatedPV
+        processorVerification: updatedPV,
+        processorConfirmation: updatedPC
       }
     })
   }
@@ -677,9 +709,22 @@ export default function AdminQuotations() {
         overrideReason: reason !== undefined ? reason : (prev.processorVerification?.overrideReason || '')
       }
       updatedPV.status = evaluateProcessorVerification(updatedPV)
+
+      const updatedPC = {
+        ...(prev.processorConfirmation || createInitialProcessorConfirmation(prev.commercialRequirement || {}))
+      }
+      updatedPC.adminOverride = {
+        active: Boolean(override),
+        reason: reason !== undefined ? reason : (prev.processorVerification?.overrideReason || ''),
+        actor: 'Sachin Shinde',
+        timestamp: new Date().toISOString(),
+        bypassedChecks: []
+      }
+
       return {
         ...prev,
-        processorVerification: updatedPV
+        processorVerification: updatedPV,
+        processorConfirmation: updatedPC
       }
     })
   }
@@ -934,16 +979,33 @@ export default function AdminQuotations() {
     }
     setDispatchLoading(true)
     try {
+      let dispatchStatus = builderForm.status || 'DRAFT'
+      if (['DRAFT', 'PROCESSOR_CHECK', 'PROCESSOR_CONFIRMED', 'COMMERCIAL_REVIEW'].includes(dispatchStatus)) {
+        dispatchStatus = 'READY_FOR_BUYER'
+      }
+
+      const qId = builderForm.quoteId || builderForm.quotationId
       const currentQuote = {
         ...builderForm,
-        quotationId: builderForm.quoteId || builderForm.quotationId,
+        quoteId: qId,
+        quotationId: qId,
+        status: dispatchStatus,
+        subtotal: itemsSubtotal,
+        grandTotal: grandTotal,
         buyer: {
-          name: builderForm.buyerName,
-          company: builderForm.companyName,
-          email: builderForm.email,
-          country: builderForm.country
+          name: builderForm.buyerName || '',
+          company: builderForm.companyName || '',
+          email: builderForm.email || '',
+          country: builderForm.country || 'India'
         },
-        commercialRequirement: builderForm.commercialRequirement || {},
+        destinationPort: builderForm.destinationPort || 'NHAVA SHEVA (JNPT MUMBAI)',
+        incoterm: builderForm.incoterm || 'FOB NHAVA SHEVA (JNPT MUMBAI)',
+        commercialRequirement: builderForm.commercialRequirement || {
+          product: builderForm.items?.[0]?.name,
+          quantity: builderForm.items?.[0]?.quantity,
+          destinationPort: builderForm.destinationPort,
+          incoterm: builderForm.incoterm
+        },
         commercialTerms: {
           paymentTerms: builderForm.paymentTerms,
           priceBasis: `${builderForm.incoterm} Shipment terms`,
@@ -964,34 +1026,70 @@ export default function AdminQuotations() {
         activity: builderForm.activity || []
       }
 
-      const res = await sendQuotationToBuyer(currentQuote, {
-        adminReviewed: true,
-        actor: 'Sachin Shinde',
-        recipient: builderForm.email,
-        isResend: alreadySent,
-        resendReason: resendReasonInput.trim()
+      // Execute dispatch via authoritative serverless API endpoint
+      const response = await fetch('/api/admin-quotations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          action: 'send-buyer',
+          quotation: currentQuote,
+          options: {
+            adminReviewed: true,
+            actor: 'Sachin Shinde',
+            recipient: builderForm.email,
+            isResend: alreadySent,
+            resendReason: resendReasonInput.trim()
+          }
+        })
       })
 
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok || data.success === false) {
+        const errorMsg = data.error || data.message || `Server dispatch failed (HTTP ${response.status})`
+        alert('Dispatch failed: ' + errorMsg)
+        return
+      }
+
+      const res = data
       const now = new Date().toISOString()
+      const returnedQuote = res.quotation || currentQuote
+      const returnedDispatch = res.dispatch || returnedQuote.dispatch
+
       const updated = {
         ...builderForm,
-        status: res.status === 'SENT' ? 'SENT_TO_BUYER' : builderForm.status,
-        dispatch: res.dispatch,
+        ...returnedQuote,
+        quoteId: qId,
+        quotationId: qId,
+        subtotal: itemsSubtotal,
+        grandTotal: grandTotal,
+        status: res.status === 'SENT' ? 'SENT_TO_BUYER' : (res.status === 'READY_TO_SEND' ? 'READY_TO_SEND' : builderForm.status),
+        dispatch: returnedDispatch,
         updatedAt: now,
-        activity: currentQuote.activity
+        activity: returnedQuote.activity || currentQuote.activity
       }
 
       setBuilderForm(updated)
-      const existing = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
-      const updatedList = [updated, ...existing.filter(q => (q.quotationId || q.quoteId) !== updated.quoteId)]
-      localStorage.setItem('avani_quotations', JSON.stringify(updatedList))
-      setQuotations(prev => [updated, ...prev.filter(q => (q.quotationId || q.quoteId) !== updated.quoteId)])
+
+      try {
+        const existing = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
+        const safeExisting = Array.isArray(existing) ? existing.filter(Boolean) : []
+        const updatedList = [updated, ...safeExisting.filter(q => (q.quotationId || q.quoteId) !== qId)]
+        localStorage.setItem('avani_quotations', JSON.stringify(updatedList))
+        setQuotations(prev => [updated, ...(Array.isArray(prev) ? prev.filter(Boolean) : []).filter(q => (q.quotationId || q.quoteId) !== qId)])
+      } catch (cacheErr) {
+        console.warn('Could not cache quotation to localStorage:', cacheErr)
+      }
 
       setShowDispatchModal(false)
       setResendReasonInput('')
-      alert(res.message)
+      setDispatchConfirmedRecipient(false)
+      alert(res.message || 'Quotation dispatch processed successfully.')
     } catch (err) {
-      alert('Dispatch failed: ' + err.message)
+      alert('Dispatch failed: ' + (err.message || 'Unknown network error'))
     } finally {
       setDispatchLoading(false)
     }

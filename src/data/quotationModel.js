@@ -427,8 +427,37 @@ export function isPcItemOverridden(itemKey, pc = {}) {
 
 export function isCheckOverridden(itemKey, quotation = {}) {
   if (!quotation || typeof quotation !== 'object') return false;
+  const normKey = normalizeChecklistKey(itemKey);
   const pc = quotation.processorConfirmation || {};
-  return isPcItemOverridden(itemKey, pc);
+  if (isPcItemOverridden(itemKey, pc)) return true;
+
+  // Support processorVerification administrative override if substantive reason provided (>= 5 chars)
+  const pv = quotation.processorVerification || {};
+  if (pv.adminOverride || pv.override) {
+    const reason = String(pv.overrideReason || pv.reason || '').trim();
+    if (reason.length >= 5) {
+      // If pv has specific bypassedChecks, enforce item matching
+      if (Array.isArray(pv.bypassedChecks) && pv.bypassedChecks.length > 0) {
+        return pv.bypassedChecks.some(c => normalizeChecklistKey(c) === normKey);
+      }
+      if (pv.checkItem) {
+        return normalizeChecklistKey(pv.checkItem) === normKey;
+      }
+      // If pc has adminOverride with specific bypassedChecks or itemOverrides, respect pc's item-level restriction
+      if (pc.adminOverride?.active) {
+        if (Array.isArray(pc.adminOverride.bypassedChecks) && pc.adminOverride.bypassedChecks.length > 0) {
+          return pc.adminOverride.bypassedChecks.some(c => normalizeChecklistKey(c) === normKey);
+        }
+        if (pc.itemOverrides && Object.keys(pc.itemOverrides).length > 0) {
+          return Boolean(pc.itemOverrides[normKey]?.active);
+        }
+      }
+      // If no item-level restrictions are specified anywhere, general override applies
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -693,6 +722,7 @@ export function setAdminOverride(quotation, reasonOrOptions, actor = 'Sachin Shi
   quotation.processorVerification.overrideReason = cleanReason;
   quotation.processorVerification.verifiedBy = effectiveActor;
   quotation.processorVerification.verifiedAt = now;
+  quotation.processorVerification.bypassedChecks = normalizedBypassed;
 
   quotation.updatedAt = now;
 
@@ -877,8 +907,13 @@ export function evaluateBuyerReadyGate(quotation = {}) {
 
   // 18. No unresolved mandatory mismatch
   const noMismatch = Boolean(
-    (pc.specification?.mesh?.match !== false && pc.specification?.moisture?.match !== false && pc.specification?.packaging?.match !== false) ||
-    isCheckOverridden('mismatch', quotation)
+    isCheckOverridden('mismatch', quotation) ||
+    isCheckOverridden('specification', quotation) ||
+    (
+      (pc.specification?.mesh !== undefined ? (pc.specification.mesh.match !== false) : pv.specificationConfirmed) &&
+      (pc.specification?.moisture !== undefined ? (pc.specification.moisture.match !== false) : pv.moistureConfirmed) &&
+      (pc.specification?.packaging !== undefined ? (pc.specification.packaging.match !== false) : pv.packagingConfirmed)
+    )
   );
   if (!noMismatch) issues.push('Unresolved specification mismatch between buyer and processor');
 
@@ -1360,20 +1395,23 @@ export async function sendQuotationEmail({ quotation, recipient, subject, text, 
       if (idempotencyKey) {
         headers['Idempotency-Key'] = String(idempotencyKey);
       }
+      const bodyPayload = {
+        from: process.env.RESEND_FROM_EMAIL || 'AVANI AGRO FOODS <sales@avaniagrofoods.com>',
+        to: Array.isArray(recipient) ? recipient : [recipient],
+        subject,
+        text,
+        html: html || text.replace(/\n/g, '<br/>')
+      };
+      if (attachments && attachments.length > 0) {
+        bodyPayload.attachments = attachments.map(att => ({
+          filename: att.filename,
+          content: att.content
+        }));
+      }
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          from: process.env.RESEND_FROM_EMAIL || 'AVANI AGRO FOODS <sales@avaniagrofoods.com>',
-          to: recipient,
-          subject,
-          text,
-          html: html || text.replace(/\n/g, '<br/>'),
-          attachments: attachments.map(att => ({
-            filename: att.filename,
-            content: att.content
-          }))
-        })
+        body: JSON.stringify(bodyPayload)
       });
       if (res.ok) {
         const data = await res.json();

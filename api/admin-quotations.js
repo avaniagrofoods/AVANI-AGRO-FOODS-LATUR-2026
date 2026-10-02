@@ -346,12 +346,17 @@ export default async function handler(req, res) {
           return res.status(200).json({
             success: result.success,
             status: result.status,
-            message: result.message,
+            message: result.message || (result.success ? 'Quotation dispatched successfully.' : result.error),
+            error: result.error || null,
             dispatch: result.dispatch,
-            quotation
+            quotation: result.quotation || quotation
           });
         } catch (sErr) {
-          return res.status(400).json({ error: sErr.message });
+          return res.status(400).json({
+            error: sErr.message,
+            code: sErr.code || 'DISPATCH_ERROR',
+            issues: sErr.issues || [sErr.message]
+          });
         }
       }
 
