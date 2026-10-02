@@ -349,10 +349,86 @@ export function createInitialProcessorConfirmation(leadOrReq = {}, partner = {})
       timestamp: null,
       bypassedChecks: []
     },
+    itemOverrides: {},
+    overrideHistory: [],
     notes: '',
     confirmationEvidence: '',
     internalOnly: true
   };
+}
+
+export const OVERRIDABLE_PROCESSOR_CHECKS = [
+  'availability',
+  'capacity',
+  'mesh',
+  'moisture',
+  'packaging',
+  'leadTime',
+  'exportPacking',
+  'mismatch',
+  'coa',
+  'testing',
+  'sample'
+];
+
+export const NON_OVERRIDABLE_COMMERCIAL_CHECKS = [
+  'buyerName',
+  'company',
+  'email',
+  'country',
+  'currency',
+  'product',
+  'quantity',
+  'destinationPort',
+  'incoterm',
+  'unitRate',
+  'calculation',
+  'commercialTerms',
+  'documentReady'
+];
+
+export function normalizeChecklistKey(key) {
+  if (!key) return '';
+  const k = String(key).trim();
+  const lower = k.toLowerCase().replace(/[-_]/g, '');
+  if (lower.includes('avail')) return 'availability';
+  if (lower.includes('capac')) return 'capacity';
+  if (lower.includes('mesh')) return 'mesh';
+  if (lower.includes('moist')) return 'moisture';
+  if (lower.includes('packag')) return 'packaging';
+  if (lower.includes('leadtime') || lower.includes('lead_time')) return 'leadTime';
+  if (lower.includes('export') || lower.includes('stuff')) return 'exportPacking';
+  if (lower.includes('mismatch')) return 'mismatch';
+  if (lower.includes('coa')) return 'coa';
+  if (lower.includes('test')) return 'testing';
+  if (lower.includes('sample')) return 'sample';
+  return k;
+}
+
+export function isPcItemOverridden(itemKey, pc = {}) {
+  if (!pc || typeof pc !== 'object') return false;
+  const normKey = normalizeChecklistKey(itemKey);
+  if (!normKey) return false;
+
+  // 1. Check explicit itemOverrides map
+  if (pc.itemOverrides && pc.itemOverrides[normKey]?.active) {
+    return true;
+  }
+
+  // 2. Check bypassedChecks list on adminOverride
+  if (Array.isArray(pc.adminOverride?.bypassedChecks)) {
+    if (pc.adminOverride.bypassedChecks.some(c => normalizeChecklistKey(c) === normKey)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function isCheckOverridden(itemKey, quotation = {}) {
+  if (!quotation || typeof quotation !== 'object') return false;
+  const pc = quotation.processorConfirmation || {};
+  return isPcItemOverridden(itemKey, pc);
 }
 
 /**
@@ -368,45 +444,29 @@ export function evaluateProcessorConfirmation(pc = {}) {
     };
   }
 
-  // Check admin override first
+  // Check admin override validation
   if (pc.adminOverride?.active || pc.adminOverride?.override) {
     const reason = String(pc.adminOverride.reason || pc.adminOverride.overrideReason || '').trim();
-    if (reason.length >= 5) {
+    if (reason.length < 5) {
       return {
-        confirmed: true,
-        status: 'CONFIRMED',
-        overridden: true,
-        issues: [],
-        checklist: {
-          availability: true,
-          capacity: true,
-          mesh: true,
-          moisture: true,
-          packaging: true,
-          leadTime: true,
-          exportPacking: true,
-          stuffing: true
-        }
+        confirmed: false,
+        status: 'REQUIRES_REVIEW',
+        issues: ['Admin override requires a clear reason of at least 5 characters'],
+        checklist: {}
       };
     }
-    return {
-      confirmed: false,
-      status: 'REQUIRES_REVIEW',
-      issues: ['Admin override requires a clear reason of at least 5 characters'],
-      checklist: {}
-    };
   }
 
   const issues = [];
   const checklist = {
-    availability: Boolean(pc.availability?.available),
-    capacity: Boolean(pc.availability?.confirmedQuantity != null && Number(pc.availability.confirmedQuantity) >= Number(pc.availability.requestedQuantity || 0)),
-    mesh: Boolean(pc.specification?.mesh?.processorConfirmed != null && pc.specification.mesh.match !== false),
-    moisture: Boolean(pc.specification?.moisture?.processorConfirmed != null && pc.specification.moisture.match !== false),
-    packaging: Boolean(pc.specification?.packaging?.processorConfirmed != null && pc.specification.packaging.match !== false),
-    leadTime: Boolean(Number(pc.production?.leadTimeDays) > 0),
-    exportPacking: Boolean(pc.logistics?.exportPackingConfirmed),
-    stuffing: Boolean(pc.logistics?.stuffingConfirmed !== false && pc.logistics?.exportPackingConfirmed)
+    availability: Boolean(pc.availability?.available || isPcItemOverridden('availability', pc)),
+    capacity: Boolean((pc.availability?.confirmedQuantity != null && Number(pc.availability.confirmedQuantity) >= Number(pc.availability.requestedQuantity || 0)) || isPcItemOverridden('capacity', pc)),
+    mesh: Boolean((pc.specification?.mesh?.processorConfirmed != null && pc.specification.mesh.match !== false) || isPcItemOverridden('mesh', pc)),
+    moisture: Boolean((pc.specification?.moisture?.processorConfirmed != null && pc.specification.moisture.match !== false) || isPcItemOverridden('moisture', pc)),
+    packaging: Boolean((pc.specification?.packaging?.processorConfirmed != null && pc.specification.packaging.match !== false) || isPcItemOverridden('packaging', pc)),
+    leadTime: Boolean(Number(pc.production?.leadTimeDays) > 0 || isPcItemOverridden('leadTime', pc)),
+    exportPacking: Boolean(pc.logistics?.exportPackingConfirmed || isPcItemOverridden('exportPacking', pc)),
+    stuffing: Boolean((pc.logistics?.stuffingConfirmed !== false && pc.logistics?.exportPackingConfirmed) || isPcItemOverridden('exportPacking', pc))
   };
 
   if (!checklist.availability) issues.push('Manufacturing partner availability not confirmed');
@@ -557,25 +617,73 @@ export function updateProcessorConfirmation(quotation, updates = {}, actor = 'Sa
 }
 
 /**
- * Sets explicit Admin Override with required justification
+ * Sets explicit Admin Override with required justification and item-level targeting
  */
-export function setAdminOverride(quotation, reason, actor = 'Sachin Shinde', bypassedChecks = []) {
+export function setAdminOverride(quotation, reasonOrOptions, actor = 'Sachin Shinde', bypassedChecks = []) {
   if (!quotation || typeof quotation !== 'object') {
     throw new Error('Valid quotation object required for admin override');
   }
-  const cleanReason = String(reason || '').trim();
+
+  let cleanReason = '';
+  let effectiveActor = actor;
+  let checksToBypass = [];
+
+  if (typeof reasonOrOptions === 'object' && reasonOrOptions !== null) {
+    cleanReason = String(reasonOrOptions.reason || '').trim();
+    effectiveActor = reasonOrOptions.actor || actor || 'Sachin Shinde';
+    if (reasonOrOptions.checkItem) {
+      checksToBypass = [reasonOrOptions.checkItem];
+    } else if (Array.isArray(reasonOrOptions.bypassedChecks)) {
+      checksToBypass = reasonOrOptions.bypassedChecks;
+    }
+  } else {
+    cleanReason = String(reasonOrOptions || '').trim();
+    effectiveActor = actor || 'Sachin Shinde';
+    checksToBypass = Array.isArray(bypassedChecks) ? bypassedChecks : (bypassedChecks ? [bypassedChecks] : []);
+  }
+
   if (cleanReason.length < 5) {
     throw new Error('Substantive reason required: Admin override requires a clear justification of at least 5 characters');
   }
 
+  // Reject overriding non-overridable commercial/buyer checks
+  for (const c of checksToBypass) {
+    const rawKey = String(c).trim();
+    if (NON_OVERRIDABLE_COMMERCIAL_CHECKS.includes(rawKey)) {
+      throw new Error(`Commercial check "${rawKey}" cannot be overridden. Buyer and commercial terms are strictly mandatory.`);
+    }
+  }
+
   const now = new Date().toISOString();
   quotation.processorConfirmation = quotation.processorConfirmation || createInitialProcessorConfirmation(quotation.commercialRequirement || {});
+  quotation.processorConfirmation.itemOverrides = quotation.processorConfirmation.itemOverrides || {};
+  quotation.processorConfirmation.overrideHistory = quotation.processorConfirmation.overrideHistory || [];
+
+  const normalizedBypassed = [];
+  for (const c of checksToBypass) {
+    const norm = normalizeChecklistKey(c);
+    normalizedBypassed.push(norm);
+    quotation.processorConfirmation.itemOverrides[norm] = {
+      active: true,
+      checkItem: norm,
+      reason: cleanReason,
+      actor: effectiveActor,
+      timestamp: now
+    };
+    quotation.processorConfirmation.overrideHistory.push({
+      checkItem: norm,
+      reason: cleanReason,
+      actor: effectiveActor,
+      timestamp: now
+    });
+  }
+
   quotation.processorConfirmation.adminOverride = {
     active: true,
     reason: cleanReason,
-    actor,
+    actor: effectiveActor,
     timestamp: now,
-    bypassedChecks: Array.isArray(bypassedChecks) ? bypassedChecks : [],
+    bypassedChecks: normalizedBypassed,
     warning: 'ADMIN OVERRIDE — INTERNAL CONTROL',
     disclaimer: 'Override does not constitute processor confirmation.'
   };
@@ -583,20 +691,19 @@ export function setAdminOverride(quotation, reason, actor = 'Sachin Shinde', byp
   quotation.processorVerification = quotation.processorVerification || createInitialProcessorVerification();
   quotation.processorVerification.adminOverride = true;
   quotation.processorVerification.overrideReason = cleanReason;
-  quotation.processorVerification.verifiedBy = actor;
+  quotation.processorVerification.verifiedBy = effectiveActor;
   quotation.processorVerification.verifiedAt = now;
-  quotation.processorVerification.status = 'CONFIRMED';
 
   quotation.updatedAt = now;
 
   quotation.activity = quotation.activity || [];
   quotation.activity.push({
     timestamp: now,
-    actor,
+    actor: effectiveActor,
     event: 'ADMIN_OVERRIDE_APPLIED',
     quotationId: quotation.quotationId,
     leadId: quotation.leadId,
-    details: `ADMIN OVERRIDE — INTERNAL CONTROL: ${cleanReason}. Override does not constitute processor confirmation.`
+    details: `ADMIN OVERRIDE — INTERNAL CONTROL: ${cleanReason}. Items: [${normalizedBypassed.join(', ') || 'none'}]. Override does not constitute processor confirmation.`
   });
 
   return quotation;
@@ -720,7 +827,7 @@ export function evaluateBuyerReadyGate(quotation = {}) {
 
   // 11. Processor availability confirmed
   const availabilityConfirmed = Boolean(
-    isOverridden ||
+    isCheckOverridden('availability', quotation) ||
     (pc.availability !== undefined ? pc.availability.available : pv.availabilityConfirmed)
   );
   if (!availabilityConfirmed) issues.push('Processor availability has not been confirmed');
@@ -728,42 +835,42 @@ export function evaluateBuyerReadyGate(quotation = {}) {
   // 12. Processor quantity capacity confirmed
   const requestedQty = Number(pc.availability?.requestedQuantity || req.quantity || firstItem.quantity || 0);
   const capacityConfirmed = Boolean(
-    isOverridden ||
+    isCheckOverridden('capacity', quotation) ||
     (pc.availability !== undefined ? (pc.availability.confirmedQuantity != null && Number(pc.availability.confirmedQuantity) >= requestedQty) : pv.capacityConfirmed)
   );
   if (!capacityConfirmed) issues.push('Processor quantity capacity is unconfirmed or insufficient');
 
   // 13. Mesh confirmed
   const meshConfirmed = Boolean(
-    isOverridden ||
+    isCheckOverridden('mesh', quotation) ||
     (pc.specification?.mesh !== undefined ? (pc.specification.mesh.processorConfirmed != null && pc.specification.mesh.match !== false) : pv.specificationConfirmed)
   );
   if (!meshConfirmed) issues.push('Mesh specification has not been confirmed with processor');
 
   // 14. Moisture confirmed
   const moistureConfirmed = Boolean(
-    isOverridden ||
+    isCheckOverridden('moisture', quotation) ||
     (pc.specification?.moisture !== undefined ? (pc.specification.moisture.processorConfirmed != null && pc.specification.moisture.match !== false) : pv.moistureConfirmed)
   );
   if (!moistureConfirmed) issues.push('Moisture specification has not been confirmed with processor');
 
   // 15. Packaging confirmed
   const packagingConfirmed = Boolean(
-    isOverridden ||
+    isCheckOverridden('packaging', quotation) ||
     (pc.specification?.packaging !== undefined ? (pc.specification.packaging.processorConfirmed != null && pc.specification.packaging.match !== false) : pv.packagingConfirmed)
   );
   if (!packagingConfirmed) issues.push('Packaging specification has not been confirmed with processor');
 
   // 16. Production lead time confirmed
   const leadTimeConfirmed = Boolean(
-    isOverridden ||
+    isCheckOverridden('leadTime', quotation) ||
     (pc.production !== undefined ? Number(pc.production.leadTimeDays) > 0 : pv.leadTimeConfirmed)
   );
   if (!leadTimeConfirmed) issues.push('Production lead time has not been confirmed');
 
   // 17. Export packing / stuffing confirmed
   const exportPackingConfirmed = Boolean(
-    isOverridden ||
+    isCheckOverridden('exportPacking', quotation) ||
     (pc.logistics !== undefined ? (pc.logistics.exportPackingConfirmed && pc.logistics.stuffingConfirmed !== false) : pv.exportPackingConfirmed)
   );
   if (!exportPackingConfirmed) issues.push('Export packing and container stuffing have not been confirmed');
@@ -771,7 +878,7 @@ export function evaluateBuyerReadyGate(quotation = {}) {
   // 18. No unresolved mandatory mismatch
   const noMismatch = Boolean(
     (pc.specification?.mesh?.match !== false && pc.specification?.moisture?.match !== false && pc.specification?.packaging?.match !== false) ||
-    isOverridden
+    isCheckOverridden('mismatch', quotation)
   );
   if (!noMismatch) issues.push('Unresolved specification mismatch between buyer and processor');
 
@@ -797,19 +904,19 @@ export function evaluateBuyerReadyGate(quotation = {}) {
   };
 
   if (req.coaRequired) {
-    const coaAddressed = Boolean(pc.qualityDocuments?.coaAvailable || pv.coaConfirmed || isOverridden);
+    const coaAddressed = Boolean(pc.qualityDocuments?.coaAvailable || pv.coaConfirmed || isCheckOverridden('coa', quotation));
     optionalChecks.coa = coaAddressed;
     if (!coaAddressed) issues.push('Buyer requested COA, but COA availability has not been addressed with processor');
   }
 
   if (req.testingRequired) {
-    const testingAddressed = Boolean(pc.qualityDocuments?.testingAvailable || pv.testingConfirmed || isOverridden);
+    const testingAddressed = Boolean(pc.qualityDocuments?.testingAvailable || pv.testingConfirmed || isCheckOverridden('testing', quotation));
     optionalChecks.testing = testingAddressed;
     if (!testingAddressed) issues.push('Buyer requested testing, but testing availability has not been addressed with processor');
   }
 
   if (req.sampleRequired) {
-    const sampleAddressed = Boolean(pc.qualityDocuments?.sampleAvailable || pv.sampleConfirmed || isOverridden);
+    const sampleAddressed = Boolean(pc.qualityDocuments?.sampleAvailable || pv.sampleConfirmed || isCheckOverridden('sample', quotation));
     optionalChecks.sample = sampleAddressed;
     if (!sampleAddressed) issues.push('Buyer requested sample, but sample availability has not been addressed with processor');
   }
@@ -1086,9 +1193,140 @@ Email: info@avaniagrofoods.com`;
 }
 
 /**
+ * Synchronous pure JavaScript SHA-256 implementation adhering to NIST FIPS 180-4.
+ * Uses Node.js crypto when available; falls back to pure JS in browser environments.
+ * Outputs a 64-character lowercase hex string.
+ */
+export function sha256Sync(str) {
+  if (typeof str !== 'string') {
+    str = String(str || '');
+  }
+  if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+    try {
+      const nodeCrypto = typeof require !== 'undefined' ? require('crypto') : null;
+      if (nodeCrypto && nodeCrypto.createHash) {
+        return nodeCrypto.createHash('sha256').update(str, 'utf8').digest('hex');
+      }
+    } catch (_) {}
+  }
+
+  const bytes = [];
+  for (let i = 0; i < str.length; i++) {
+    let code = str.charCodeAt(i);
+    if (code < 0x80) {
+      bytes.push(code);
+    } else if (code < 0x800) {
+      bytes.push(0xc0 | (code >> 6), 0x80 | (code & 0x3f));
+    } else if (code < 0xd800 || code >= 0xe000) {
+      bytes.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f));
+    } else {
+      i++;
+      code = 0x10000 + (((code & 0x3ff) << 10) | (str.charCodeAt(i) & 0x3ff));
+      bytes.push(0xf0 | (code >> 18), 0x80 | ((code >> 12) & 0x3f), 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f));
+    }
+  }
+
+  const K = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+  ];
+
+  let H0 = 0x6a09e667, H1 = 0xbb67ae85, H2 = 0x3c6ef372, H3 = 0xa54ff53a;
+  let H4 = 0x510e527f, H5 = 0x9b05688c, H6 = 0x1f83d9ab, H7 = 0x5be0cd19;
+
+  const bitLength = bytes.length * 8;
+  bytes.push(0x80);
+  while ((bytes.length + 8) % 64 !== 0) {
+    bytes.push(0);
+  }
+  for (let i = 7; i >= 0; i--) {
+    bytes.push((bitLength / Math.pow(2, i * 8)) & 0xff);
+  }
+
+  const W = new Uint32Array(64);
+  for (let c = 0; c < bytes.length; c += 64) {
+    for (let i = 0; i < 16; i++) {
+      const idx = c + i * 4;
+      W[i] = ((bytes[idx] << 24) | (bytes[idx + 1] << 16) | (bytes[idx + 2] << 8) | bytes[idx + 3]) >>> 0;
+    }
+    for (let i = 16; i < 64; i++) {
+      const s0 = (((W[i - 15] >>> 7) | (W[i - 15] << 25)) ^ ((W[i - 15] >>> 18) | (W[i - 15] << 14)) ^ (W[i - 15] >>> 3)) >>> 0;
+      const s1 = (((W[i - 2] >>> 17) | (W[i - 2] << 15)) ^ ((W[i - 2] >>> 19) | (W[i - 2] << 13)) ^ (W[i - 2] >>> 10)) >>> 0;
+      W[i] = (W[i - 16] + s0 + W[i - 7] + s1) >>> 0;
+    }
+
+    let a = H0, b = H1, c0 = H2, d = H3, e = H4, f = H5, g = H6, h = H7;
+    for (let i = 0; i < 64; i++) {
+      const S1 = (((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7))) >>> 0;
+      const ch = ((e & f) ^ ((~e) & g)) >>> 0;
+      const temp1 = (h + S1 + ch + K[i] + W[i]) >>> 0;
+      const S0 = (((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10))) >>> 0;
+      const maj = ((a & b) ^ (a & c0) ^ (b & c0)) >>> 0;
+      const temp2 = (S0 + maj) >>> 0;
+
+      h = g; g = f; f = e; e = (d + temp1) >>> 0;
+      d = c0; c0 = b; b = a; a = (temp1 + temp2) >>> 0;
+    }
+
+    H0 = (H0 + a) >>> 0;
+    H1 = (H1 + b) >>> 0;
+    H2 = (H2 + c0) >>> 0;
+    H3 = (H3 + d) >>> 0;
+    H4 = (H4 + e) >>> 0;
+    H5 = (H5 + f) >>> 0;
+    H6 = (H6 + g) >>> 0;
+    H7 = (H7 + h) >>> 0;
+  }
+
+  const toHex = (n) => (n >>> 0).toString(16).padStart(8, '0');
+  return `${toHex(H0)}${toHex(H1)}${toHex(H2)}${toHex(H3)}${toHex(H4)}${toHex(H5)}${toHex(H6)}${toHex(H7)}`;
+}
+
+/**
+ * Generates a cryptographically strong UUID identifier.
+ * Uses globalThis.crypto.randomUUID() where supported.
+ */
+export function generateSecureId(prefix = 'idemp') {
+  let uuid = '';
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.randomUUID) {
+    try {
+      uuid = globalThis.crypto.randomUUID();
+    } catch (_) {}
+  }
+  if (!uuid && typeof process !== 'undefined' && process.versions && process.versions.node) {
+    try {
+      const nodeCrypto = typeof require !== 'undefined' ? require('crypto') : null;
+      if (nodeCrypto?.randomUUID) {
+        uuid = nodeCrypto.randomUUID();
+      }
+    } catch (_) {}
+  }
+  if (!uuid && typeof globalThis !== 'undefined' && globalThis.crypto?.getRandomValues) {
+    try {
+      const buf = new Uint8Array(16);
+      globalThis.crypto.getRandomValues(buf);
+      buf[6] = (buf[6] & 0x0f) | 0x40; // RFC4122 v4
+      buf[8] = (buf[8] & 0x3f) | 0x80;
+      const b = Array.from(buf).map(x => x.toString(16).padStart(2, '0')).join('');
+      uuid = `${b.slice(0, 8)}-${b.slice(8, 12)}-${b.slice(12, 16)}-${b.slice(16, 20)}-${b.slice(20)}`;
+    } catch (_) {}
+  }
+  if (!uuid) {
+    uuid = `uuid_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+  }
+  return prefix ? `${prefix}_${uuid}` : uuid;
+}
+
+/**
  * Provider-agnostic transactional email dispatch abstraction
  */
-export async function sendQuotationEmail({ quotation, recipient, subject, text, html, attachments = [], ...restOpts }) {
+export async function sendQuotationEmail({ quotation, recipient, subject, text, html, attachments = [], idempotencyKey, ...restOpts }) {
   const options = { ...restOpts, ...(restOpts.options || {}) };
   // 1. Simulation and mock checks (for deterministic testing & QA)
   if (options.simulateFailure || options.mockFailure) {
@@ -1115,12 +1353,16 @@ export async function sendQuotationEmail({ quotation, recipient, subject, text, 
   // 2. Resend API provider
   if (typeof process !== 'undefined' && process.env && process.env.RESEND_API_KEY) {
     try {
+      const headers = {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      };
+      if (idempotencyKey) {
+        headers['Idempotency-Key'] = String(idempotencyKey);
+      }
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
+        headers,
         body: JSON.stringify({
           from: process.env.RESEND_FROM_EMAIL || 'AVANI AGRO FOODS <sales@avaniagrofoods.com>',
           to: recipient,
@@ -1205,15 +1447,13 @@ export async function sendQuotationEmail({ quotation, recipient, subject, text, 
     }
   }
 
-  // 4. SMTP provider placeholder
+  // 4. SMTP provider check (not implemented in serverless runtime; fail closed)
   if (typeof process !== 'undefined' && process.env && process.env.SMTP_HOST) {
-    const smtpMsgId = `smtp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     return {
-      success: true,
-      status: 'SENT',
-      messageId: smtpMsgId,
-      provider: 'smtp',
-      timestamp: new Date().toISOString()
+      success: false,
+      status: 'SEND_FAILED',
+      error: 'SMTP transport not implemented in serverless runtime. Configure RESEND_API_KEY for live delivery.',
+      provider: 'smtp'
     };
   }
 
@@ -1273,7 +1513,7 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
 
   // Evaluate buyer-ready gate
   const gate = evaluateBuyerReadyGate(quotation);
-  if (!gate.passed && !gate.eligible && !options.bypassGate && !quotation.processorConfirmation?.adminOverride?.active && !quotation.processorVerification?.adminOverride) {
+  if (!gate.passed && !gate.eligible && !options.bypassGate) {
     const err = new Error(`Dispatch blocked by buyer-ready gate: ${gate.issues.join('; ')}`);
     err.code = 'DISPATCH_BLOCKED';
     err.issues = gate.issues;
@@ -1326,8 +1566,14 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
     });
   }
 
-  const attemptId = options.dispatchAttemptId || `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-  const idempotencyKey = options.idempotencyKey || `${quotation.quotationId || quotation.quoteId}_rev${quotation.revision?.revisionNumber || 0}_${Date.now()}`;
+  const isRetry = Boolean(
+    !isResend &&
+    quotation.dispatch?.idempotencyKey &&
+    ['READY_TO_SEND', 'SEND_FAILED'].includes(quotation.dispatch.status)
+  );
+
+  const attemptId = options.dispatchAttemptId || generateSecureId('att');
+  const idempotencyKey = options.idempotencyKey || (isRetry ? quotation.dispatch.idempotencyKey : generateSecureId('idemp'));
 
   quotation.dispatch.recipient = recipient;
   quotation.dispatch.recipientCompany = quotation.buyer?.company || quotation.companyName || '';
@@ -1346,6 +1592,7 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
     subject: emailContent.subject,
     text: emailContent.text,
     attachments: options.attachments || [],
+    idempotencyKey,
     options
   });
 
@@ -1443,10 +1690,12 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
   };
 }
 
+const seenWebhookEventIds = new Set();
+
 /**
- * Processes incoming delivery webhook events (P4.5)
+ * Processes incoming delivery webhook events (P4.5) with fail-closed authentication and replay protection
  */
-export function processDeliveryWebhook(quotation, eventPayload = {}, webhookSecret = '') {
+export function processDeliveryWebhook(quotation, eventPayload = {}, webhookSecret = '', options = {}) {
   if (!quotation || typeof quotation !== 'object') {
     throw new Error('Valid quotation object required for webhook processing');
   }
@@ -1455,12 +1704,38 @@ export function processDeliveryWebhook(quotation, eventPayload = {}, webhookSecr
     throw new Error('Invalid webhook payload');
   }
 
-  if (webhookSecret && webhookSecret !== (process.env.CRM_WEBHOOK_SECRET || process.env.WEBHOOK_SECRET || '')) {
-    throw new Error('Invalid webhook signature / secret');
+  const envSecret = (typeof process !== 'undefined' && process.env)
+    ? (process.env.CRM_WEBHOOK_SECRET || process.env.WEBHOOK_SECRET || process.env.RESEND_WEBHOOK_SECRET || '')
+    : '';
+
+  if (options.requireSecret || envSecret) {
+    if (!envSecret && !webhookSecret) {
+      throw new Error('Webhook processing failed: No webhook secret configured. Failing closed to protect quotation status.');
+    }
+    if (webhookSecret !== envSecret) {
+      throw new Error('Invalid webhook signature / secret');
+    }
+  } else if (webhookSecret) {
+    if (envSecret && webhookSecret !== envSecret) {
+      throw new Error('Invalid webhook signature / secret');
+    }
+  }
+
+  // Replay protection: reject duplicate event IDs
+  const eventId = eventPayload.id || eventPayload.eventId || eventPayload.data?.id;
+  if (eventId) {
+    if (seenWebhookEventIds.has(eventId)) {
+      throw new Error(`Duplicate webhook event rejected (replay protection): ${eventId}`);
+    }
+    seenWebhookEventIds.add(eventId);
+    if (seenWebhookEventIds.size > 1000) {
+      const first = seenWebhookEventIds.values().next().value;
+      seenWebhookEventIds.delete(first);
+    }
   }
 
   const eventType = String(eventPayload.eventType || eventPayload.event || eventPayload.type || '').toLowerCase();
-  const msgId = eventPayload.messageId || eventPayload.id || eventPayload.data?.messageId || eventPayload.data?.id;
+  const msgId = eventPayload.messageId || eventPayload.data?.messageId || eventPayload.data?.email_id || (eventPayload.data?.id && eventPayload.data.id !== eventId ? eventPayload.data.id : null);
   const eventTime = eventPayload.timestamp || eventPayload.data?.timestamp || new Date().toISOString();
 
   quotation.dispatch = quotation.dispatch || createInitialDispatchState();
@@ -1638,7 +1913,10 @@ export function updateFollowUp(quotation, followupData = {}, actor = 'Sachin Shi
 }
 
 /**
- * Generates deterministic 64-bit hex hash to certify commercial document parity
+ * Generates cryptographic SHA-256 integrity hash for commercial document parity.
+ * Deterministic: identical document state => identical 64-character hex hash.
+ * Changed document => different hash.
+ * Output clearly identifies SHA-256 cryptographic integrity hash (not a digital signature).
  */
 export function computeDocumentHash(quotation) {
   if (!quotation) return '';
@@ -1649,17 +1927,8 @@ export function computeDocumentHash(quotation) {
   const validity = quotation.commercialTerms?.validityDate || quotation.validUntil || '';
   const items = (quotation.quotation?.items || quotation.items || []).map(i => `${i.productId || i.id}:${i.quantity}:${i.rate}:${i.amount}`).join('|');
 
-  const payload = `${quoteId}:REV${rev}:${currency}:${grandTotal}:${validity}:${items}`;
-  let h1 = 0xdeadbeef ^ 0;
-  let h2 = 0x41c6ce57 ^ 0;
-  for (let i = 0; i < payload.length; i++) {
-    const ch = payload.charCodeAt(i);
-    h1 = Math.imul(h1 ^ ch, 2654435761);
-    h2 = Math.imul(h2 ^ ch, 1597334677);
-  }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(16, '0');
+  const payload = `SHA256:${quoteId}:REV${rev}:${currency}:${grandTotal}:${validity}:${items}`;
+  return sha256Sync(payload);
 }
 
 /**
@@ -2401,6 +2670,13 @@ if (typeof module !== 'undefined' && module.exports) {
     recordBuyerResponse,
     updateFollowUp,
     computeDocumentHash,
+    sha256Sync,
+    generateSecureId,
+    isCheckOverridden,
+    isPcItemOverridden,
+    normalizeChecklistKey,
+    OVERRIDABLE_PROCESSOR_CHECKS,
+    NON_OVERRIDABLE_COMMERCIAL_CHECKS,
     createQuotationFromLead,
     validateStatusTransition,
     transitionQuotationStatus,

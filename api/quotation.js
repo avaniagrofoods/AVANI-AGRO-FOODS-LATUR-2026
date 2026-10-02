@@ -4,7 +4,7 @@
 // - POST /api/quotation?action=calculate -> Returns JSON breakdown
 // - POST /api/quotation?action=download-pdf -> Generates & streams PDF
 // - POST /api/quotation?action=download-xlsx -> Generates & streams password-protected XLSX
-// - POST /api/quotation?action=send-email -> Sends quotation documents to customer
+// - POST /api/quotation?action=send-email -> DEPRECATED (Returns 403; requires authenticated controlled dispatch)
 // ============================================================
 
 import { calculateQuotation, generateExcelQuotation, generatePdfQuotation, generateDocxQuotation } from './_lib/quotationEngine.js';
@@ -59,12 +59,11 @@ export default async function handler(req, res) {
     }
 
     if (action === 'send-email') {
-      // In serverless, if EmailJS or SMTP is configured, send transactional email
-      return res.status(200).json({
-        success: true,
-        message: `Quotation ${quote.quoteId} queued for email delivery to ${quote.email}.`,
-        quoteId: quote.quoteId,
-        recipient: quote.email
+      // Deprecated unauthenticated endpoint. Quotation dispatches must be authorized through the controlled dispatch gate.
+      return res.status(403).json({
+        success: false,
+        error: 'DEPRECATED_ENDPOINT: Direct unauthenticated quotation emailing via /api/quotation is disabled. Use authenticated controlled buyer dispatch via /api/admin-quotations?action=send-buyer.',
+        code: 'DISPATCH_AUTH_REQUIRED'
       });
     }
 

@@ -321,13 +321,14 @@ async function main() {
     assert.strictEqual(q.buyer.email, 'procurement@millerbotanicals.com')
   })
 
-  // 11. PDF attachment / hash generated
-  runTest('Test 11: Document hash generated deterministically', () => {
+  // 11. PDF attachment / hash generated (SHA-256)
+  runTest('Test 11: Document hash generated deterministically with SHA-256', () => {
     const q = createValidBaseQuote()
     const hash1 = computeDocumentHash(q)
     const hash2 = computeDocumentHash(q)
     assert(typeof hash1 === 'string', 'Hash must be string')
-    assert.strictEqual(hash1.length, 16, 'Hash must be 16-character hex')
+    assert.strictEqual(hash1.length, 64, 'Hash must be 64-character SHA-256 hex string')
+    assert(/^[0-9a-f]{64}$/.test(hash1), 'Hash must be lowercase hexadecimal SHA-256')
     assert.strictEqual(hash1, hash2, 'Hash must be deterministic')
   })
 
@@ -665,6 +666,197 @@ async function main() {
     assert.strictEqual(emailData.positioning, 'Indian sourcing and export coordination partner.')
     assert(!emailData.positioning.toLowerCase().includes('manufacturer'))
     assert(!emailData.positioning.toLowerCase().includes('factory owner'))
+  })
+
+  // 35. Legacy email stub /api/quotation?action=send-email returns 403 non-success
+  await runAsyncTest('Test 35: Legacy email stub /api/quotation?action=send-email returns 403 non-success', async () => {
+    const handler = (await import('../api/quotation.js')).default;
+    let statusCode = null;
+    let jsonBody = null;
+    const req = {
+      method: 'POST',
+      query: { action: 'send-email' },
+      body: { quote: createValidBaseQuote() },
+      headers: { host: 'localhost:3000' }
+    };
+    const res = {
+      status(code) { statusCode = code; return this; },
+      json(data) { jsonBody = data; return this; },
+      setHeader() { return this; }
+    };
+    await handler(req, res);
+    assert.strictEqual(statusCode, 403, 'Legacy send-email must return HTTP 403');
+    assert.strictEqual(jsonBody.success, false, 'Legacy send-email must NOT report success: true');
+    assert.strictEqual(jsonBody.code, 'DISPATCH_AUTH_REQUIRED');
+  })
+
+  // 36. Idempotency keys use cryptographically strong UUID format (not Date.now())
+  await runAsyncTest('Test 36: Idempotency keys use cryptographically strong UUID format', async () => {
+    const q = createValidBaseQuote()
+    await sendQuotationToBuyer(q, {
+      mockSimulation: true,
+      actor: 'Sachin Shinde'
+    })
+    const idemp = q.dispatch.idempotencyKey
+    assert(idemp && typeof idemp === 'string', 'Idempotency key must be string')
+    assert(idemp.startsWith('idemp_'), 'Idempotency key must have idemp_ prefix')
+    const uuidPart = idemp.replace('idemp_', '')
+    assert(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuidPart), 'UUID must follow standard RFC 4122 format')
+  })
+
+  // 37. Same logical retry retains identical idempotency key
+  await runAsyncTest('Test 37: Same logical retry retains identical idempotency key', async () => {
+    const q = createValidBaseQuote()
+    await sendQuotationToBuyer(q, {
+      simulateFailure: true,
+      failureReason: 'Temporary network disconnect'
+    })
+    assert.strictEqual(q.dispatch.status, 'SEND_FAILED')
+    const key1 = q.dispatch.idempotencyKey
+    assert(key1, 'First attempt must record idempotencyKey')
+
+    await sendQuotationToBuyer(q, {
+      simulateSuccess: true
+    })
+    assert.strictEqual(q.dispatch.status, 'SENT')
+    const key2 = q.dispatch.idempotencyKey
+    assert.strictEqual(key1, key2, 'Logical retry of same dispatch must retain identical idempotency key')
+  })
+
+  // 38. Different logical dispatches receive distinct idempotency keys
+  await runAsyncTest('Test 38: Different logical dispatches receive distinct idempotency keys', async () => {
+    const q1 = createValidBaseQuote()
+    const q2 = createValidBaseQuote()
+    await sendQuotationToBuyer(q1, { mockSimulation: true })
+    await sendQuotationToBuyer(q2, { mockSimulation: true })
+    assert.notStrictEqual(q1.dispatch.idempotencyKey, q2.dispatch.idempotencyKey, 'Different dispatches must receive distinct keys')
+  })
+
+  // 39. Admin override requires specific checklist item and substantive reason
+  runTest('Test 39: Admin override requires substantive reason >= 5 characters', () => {
+    const q = createValidBaseQuote()
+    assert.throws(() => {
+      setAdminOverride(q, { checkItem: 'mesh', reason: 'bad' })
+    }, /Substantive reason required/)
+  })
+
+  // 40. Admin override for one check does not bypass unrelated checks
+  runTest('Test 40: Admin override for mesh does not bypass moisture or availability', () => {
+    const q = createValidBaseQuote()
+    q.processorConfirmation.specification.mesh.processorConfirmed = null
+    q.processorConfirmation.specification.moisture.processorConfirmed = null
+    q.processorConfirmation.availability.available = false
+
+    setAdminOverride(q, {
+      checkItem: 'mesh',
+      reason: 'Mesh variance acceptable for coarse grind animal feed export',
+      actor: 'Sachin Shinde'
+    })
+
+    const gate = evaluateBuyerReadyGate(q)
+    assert.strictEqual(gate.passed, false, 'Gate must not pass when unrelated items are unconfirmed')
+    assert(gate.issues.some(i => i.toLowerCase().includes('moisture')), 'Moisture must remain an issue')
+    assert(gate.issues.some(i => i.toLowerCase().includes('availability')), 'Availability must remain an issue')
+    assert(!gate.issues.some(i => i.toLowerCase().includes('mesh')), 'Mesh issue must be bypassed')
+  })
+
+  // 41. Mandatory commercial/buyer checks cannot be bypassed by admin override
+  runTest('Test 41: Mandatory commercial/buyer checks cannot be bypassed by admin override', () => {
+    const q = createValidBaseQuote()
+    assert.throws(() => {
+      setAdminOverride(q, {
+        checkItem: 'unitRate',
+        reason: 'Override missing price'
+      })
+    }, /cannot be overridden/i)
+
+    assert.throws(() => {
+      setAdminOverride(q, {
+        checkItem: 'buyerName',
+        reason: 'Override missing buyer'
+      })
+    }, /cannot be overridden/i)
+  })
+
+  // 42. Admin override preserves item-level override history
+  runTest('Test 42: Admin override preserves item-level override history', () => {
+    const q = createValidBaseQuote()
+    setAdminOverride(q, {
+      checkItem: 'mesh',
+      reason: 'Buyer agreed to 60-mesh instead of 80-mesh over WhatsApp',
+      actor: 'Sachin Shinde'
+    })
+    setAdminOverride(q, {
+      checkItem: 'packaging',
+      reason: '50kg woven bags approved in lieu of 25kg multiwall',
+      actor: 'Sachin Shinde'
+    })
+    const history = q.processorConfirmation.overrideHistory
+    assert.strictEqual(history.length, 2, 'History must contain both overrides')
+    assert.strictEqual(history[0].checkItem, 'mesh')
+    assert.strictEqual(history[1].checkItem, 'packaging')
+    assert(history[0].timestamp && history[1].timestamp, 'Timestamps must be recorded')
+  })
+
+  // 43. Webhook endpoint fails closed when secret is unconfigured
+  runTest('Test 43: Webhook endpoint fails closed when secret is required and unconfigured', () => {
+    const q = createValidBaseQuote()
+    q.dispatch.messageId = 'msg-webhook-auth'
+    const origSecret = process.env.CRM_WEBHOOK_SECRET
+    delete process.env.CRM_WEBHOOK_SECRET
+    delete process.env.WEBHOOK_SECRET
+    delete process.env.RESEND_WEBHOOK_SECRET
+
+    assert.throws(() => {
+      processDeliveryWebhook(q, { event: 'email.delivered', data: { messageId: 'msg-webhook-auth' } }, '', { requireSecret: true })
+    }, /No webhook secret configured|failing closed/i)
+
+    if (origSecret) process.env.CRM_WEBHOOK_SECRET = origSecret
+  })
+
+  // 44. Webhook verification rejects invalid signature / secret
+  runTest('Test 44: Webhook verification rejects invalid signature / secret', () => {
+    const q = createValidBaseQuote()
+    q.dispatch.messageId = 'msg-webhook-auth-2'
+    process.env.CRM_WEBHOOK_SECRET = 'super-secret-wh-key-123'
+    try {
+      assert.throws(() => {
+        processDeliveryWebhook(q, { event: 'email.delivered', data: { messageId: 'msg-webhook-auth-2' } }, 'wrong-secret')
+      }, /Invalid webhook signature/i)
+    } finally {
+      delete process.env.CRM_WEBHOOK_SECRET
+    }
+  })
+
+  // 45. Webhook in-process replay protection rejects duplicate event IDs
+  runTest('Test 45: Webhook in-process replay protection rejects duplicate event IDs', () => {
+    const q = createValidBaseQuote()
+    q.dispatch.messageId = 'msg-replay-test'
+    const payload = {
+      id: 'evt_unique_replay_test_001',
+      event: 'email.delivered',
+      data: { messageId: 'msg-replay-test' }
+    }
+    processDeliveryWebhook(q, payload)
+    assert.strictEqual(q.dispatch.deliveryStatus, 'DELIVERED')
+
+    assert.throws(() => {
+      processDeliveryWebhook(q, payload)
+    }, /Duplicate webhook event rejected \(replay protection\)/)
+  })
+
+  // 46. Concurrent dispatch simulation respects idempotency and duplicate lock
+  await runAsyncTest('Test 46: Concurrent dispatch simulation respects idempotency and duplicate lock', async () => {
+    const q = createValidBaseQuote()
+    const p1 = sendQuotationToBuyer(q, { mockSimulation: true })
+    const p2 = sendQuotationToBuyer(q, { mockSimulation: true })
+    const results = await Promise.allSettled([p1, p2])
+    const fulfilled = results.filter(r => r.status === 'fulfilled')
+    const rejected = results.filter(r => r.status === 'rejected')
+    assert(fulfilled.length >= 1, 'At least one dispatch succeeds')
+    if (rejected.length > 0) {
+      assert.strictEqual(rejected[0].reason.code, 'DUPLICATE_SEND_BLOCKED')
+    }
   })
 
   console.log('\n============================================================')

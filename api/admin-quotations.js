@@ -414,10 +414,23 @@ export default async function handler(req, res) {
         if (!quotation) {
           return res.status(400).json({ error: 'quotation object required for webhook processing.' });
         }
+        const envSecret = process.env.CRM_WEBHOOK_SECRET || process.env.WEBHOOK_SECRET || process.env.RESEND_WEBHOOK_SECRET;
+        if (!envSecret) {
+          return res.status(503).json({
+            error: 'Webhook endpoint is unconfigured. Failing closed until RESEND_WEBHOOK_SECRET / CRM_WEBHOOK_SECRET is configured.',
+            code: 'WEBHOOK_UNCONFIGURED'
+          });
+        }
+        const secret = webhookSecret || req.headers['x-webhook-secret'] || req.headers['authorization']?.replace('Bearer ', '');
+        if (!secret || secret !== envSecret) {
+          return res.status(401).json({
+            error: 'Unauthorized: Invalid or missing webhook signature/secret.',
+            code: 'WEBHOOK_UNAUTHORIZED'
+          });
+        }
         const { processDeliveryWebhook } = await import('./_lib/quotationModel.js');
         try {
-          const secret = webhookSecret || req.headers['x-webhook-secret'] || req.headers['authorization']?.replace('Bearer ', '');
-          const updated = processDeliveryWebhook(quotation, eventPayload || req.body, secret);
+          const updated = processDeliveryWebhook(quotation, eventPayload || req.body, secret, { requireSecret: true });
           return res.status(200).json({
             success: true,
             message: 'Webhook processed successfully.',

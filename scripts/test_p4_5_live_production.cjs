@@ -308,7 +308,7 @@ async function runAllLiveTests() {
   await runLiveTest(18, 'P4.5 document hash and duplicate dispatch protection operational', async () => {
     const q = createQuotationFromLead(syntheticLead)
     const hash = computeDocumentHash(q)
-    assert(hash && hash.length === 16)
+    assert(hash && hash.length === 64 && /^[0-9a-f]{64}$/.test(hash), 'Document hash must be 64-character SHA-256 hex string')
   })
 
   console.log('\n============================================================')
