@@ -36,6 +36,66 @@ export default function Importers() {
   // Dynamically derived countries from imported dataset
   const availableCountries = ['All', ...Array.from(new Set(importers.map(i => i.country).filter(Boolean))).sort()]
 
+  // Modal States
+  const [selectedImporter, setSelectedImporter] = useState(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [editFormData, setEditFormData] = useState(null)
+  const [newFormData, setNewFormData] = useState({
+    name: '',
+    companyName: '',
+    country: '',
+    region: 'USA',
+    city: '',
+    products: 'Moringa Powder, Red Onion Powder',
+    businessType: 'Importer & Distributor',
+    contactPerson: '',
+    designation: 'Procurement Manager',
+    email: '',
+    phone: '',
+    whatsapp: '',
+    website: '',
+    verificationStatus: 'VERIFIED',
+    priority: 'HIGH',
+    outreachStatus: 'NEW',
+    moq: '500 kg',
+    estimatedRequirement: '2,000 kg / order',
+    targetPrice: 'USD 4.50 / kg',
+    preferredIncoterm: 'FOB Nhava Sheva',
+    destinationPort: '',
+    notes: ''
+  })
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 12
+
+  const fetchData = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/importers', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+      })
+      if (res.ok) {
+        const json = await res.json()
+        setImporters(json.importers || [])
+      } else {
+        setError('Authentication required to load importer records.')
+      }
+    } catch (err) {
+      setError('Network error loading data. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
   // Filter & Sort logic
   const filtered = importers.filter(item => {
     const q = search.toLowerCase().trim()
