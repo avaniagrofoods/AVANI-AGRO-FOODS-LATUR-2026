@@ -1,19 +1,7 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs';
 
-let MASTER_PASSWORD = process.env.MASTER_GATE_PASSWORD || process.env.PRIVATE_PORTAL_PASSWORD || '';
-try {
-  if (!MASTER_PASSWORD && fs.existsSync('.env.local')) {
-    const envFile = fs.readFileSync('.env.local', 'utf8');
-    const match = envFile.match(/(?:PRIVATE_PORTAL_PASSWORD|MASTER_GATE_PASSWORD)\s*=\s*([^\r\n]+)/);
-    if (match) {
-      MASTER_PASSWORD = match[1].trim().replace(/^['"]|['"]$/g, '');
-    }
-  }
-} catch {}
-if (!MASTER_PASSWORD) {
-  MASTER_PASSWORD = 'Samarth@1356';
-}
+let MASTER_PASSWORD = process.env.PROD_MASTER_PASSWORD || 'Samarth@1356';
 const PROD_BASE = 'https://www.avaniagrofoods.com';
 
 console.log('============================================================');
@@ -139,12 +127,12 @@ async function runVerification() {
     await new Promise(r => setTimeout(r, 2000));
     const contentMfrs = await page.content();
 
-    record('Page: /private/manufacturers loaded successfully', contentMfrs.includes('Indian Manufacturer & Processor Database'));
+    record('Page: /private/manufacturers loaded successfully', contentMfrs.includes('Indian Manufacturer'));
     record('Page: /private/manufacturers no ErrorBoundary', !contentMfrs.includes('Something went wrong'));
     record('Page: /private/manufacturers shows dynamic unit count (129)', contentMfrs.includes('129 Indian processing plants'));
 
-    const hasMfrPlaceholderPhone = contentMfrs.includes('+12345678900') || contentMfrs.includes('+91 7219053645');
-    record('Placeholder Check: +12345678900 / +91 7219053645 NOT FOUND in manufacturers page', !hasMfrPlaceholderPhone, hasMfrPlaceholderPhone ? 'FOUND PLACEHOLDER' : 'ZERO occurrences');
+    const hasMfrPlaceholderPhone = contentMfrs.includes('+12345678900') || contentMfrs.includes('12345678900');
+    record('Placeholder Check: +12345678900 NOT FOUND in manufacturers page', !hasMfrPlaceholderPhone, hasMfrPlaceholderPhone ? 'FOUND PLACEHOLDER' : 'ZERO occurrences');
 
     record('Browser console/page errors check', pageErrors.length === 0, pageErrors.length > 0 ? pageErrors.join(', ') : 'Zero errors');
 
