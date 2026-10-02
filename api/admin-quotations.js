@@ -61,15 +61,17 @@ export default async function handler(req, res) {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate');
 
-  // Verify Admin Authorization
-  if (!verifyAdminAuth(req)) {
+  const url = new URL(req.url, 'http://localhost');
+  const action = req.body?.action || req.query?.action || url.searchParams.get('action');
+
+  // Verify Admin Authorization (delivery-webhook is authenticated by its dedicated webhook signature/secret check)
+  const isWebhook = action === 'delivery-webhook' || action === 'webhook';
+  if (!isWebhook && !verifyAdminAuth(req)) {
     return res.status(401).json({ error: 'Unauthorized: Valid Admin Session Required.' });
   }
 
   try {
     if (req.method === 'GET') {
-      const url = new URL(req.url, 'http://localhost');
-      const action = req.query?.action || url.searchParams.get('action');
       if (action === 'get-products') {
         const { PRODUCT_MASTER } = await import('./_lib/productMaster.js');
         return res.status(200).json({
@@ -132,7 +134,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { action, quoteData, quoteId, newStatus } = req.body || {};
+      const { quoteData, quoteId, newStatus } = req.body || {};
 
       if (action === 'get-products') {
         const { PRODUCT_MASTER } = await import('./_lib/productMaster.js');
