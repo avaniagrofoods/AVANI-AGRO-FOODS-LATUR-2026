@@ -919,11 +919,11 @@ export function evaluateBuyerReadyGate(quotation = {}) {
 
   // 19. Quotation terms valid
   const termsValid = Boolean(
-    quotation.commercialTerms?.paymentTerms &&
-    quotation.commercialTerms?.priceBasis &&
-    quotation.commercialTerms?.deliveryTimeline &&
-    quotation.commercialTerms?.validityDate &&
-    quotation.commercialTerms?.jurisdiction
+    (quotation.commercialTerms?.paymentTerms || quotation.paymentTerms) &&
+    (quotation.commercialTerms?.priceBasis || quotation.priceBasis || quotation.incoterm) &&
+    (quotation.commercialTerms?.deliveryTimeline || quotation.deliveryTimeline || quotation.timeline) &&
+    (quotation.commercialTerms?.validityDate || quotation.validUntil || quotation.validity) &&
+    (quotation.commercialTerms?.jurisdiction || quotation.jurisdiction)
   );
   if (!termsValid) issues.push('Commercial terms (payment, delivery, validity, jurisdiction) are incomplete');
 

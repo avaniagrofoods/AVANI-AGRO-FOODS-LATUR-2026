@@ -185,6 +185,13 @@ export default function AdminQuotations() {
     documentationCharges: 0,
     otherCharges: 0,
     status: 'DRAFT',
+    commercialTerms: {
+      paymentTerms: '50% Advance Payment, Balance 50% Before Dispatch.',
+      priceBasis: INCOTERMS[0],
+      deliveryTimeline: 'Shipment within 60–75 days from the date of advance payment confirmation.',
+      validityDate: '12 Oct 2026',
+      jurisdiction: 'All disputes are subject to the exclusive jurisdiction of competent courts in Latur, Maharashtra, India.'
+    },
     processorVerification: createInitialProcessorVerification(),
     commercialRequirement: {
       productId: 'moringa-leaf-powder',
@@ -751,6 +758,13 @@ export default function AdminQuotations() {
         product: builderForm.items[0]?.name,
         quantity: builderForm.items[0]?.quantity,
         destinationPort: builderForm.destinationPort
+      },
+      commercialTerms: builderForm.commercialTerms || {
+        paymentTerms: builderForm.paymentTerms,
+        priceBasis: builderForm.incoterm,
+        deliveryTimeline: builderForm.deliveryTimeline,
+        validityDate: builderForm.validUntil,
+        jurisdiction: builderForm.jurisdiction
       },
       quotation: {
         items: builderForm.items,
