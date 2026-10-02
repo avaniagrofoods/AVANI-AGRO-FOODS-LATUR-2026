@@ -66,8 +66,10 @@ export default async function handler(req, res) {
 
   // Verify Admin Authorization (delivery-webhook is authenticated by its dedicated webhook signature/secret check)
   const isWebhook = action === 'delivery-webhook' || action === 'webhook';
-  if (!isWebhook && !verifyAdminAuth(req)) {
-    return res.status(401).json({ error: 'Unauthorized: Valid Admin Session Required.' });
+  if (!isWebhook) {
+    if (!verifyAdminAuth(req)) {
+      return res.status(401).json({ error: 'Unauthorized: Valid Admin Session Required.' });
+    }
   }
 
   try {
