@@ -379,6 +379,18 @@ export default function PrivateDashboard() {
   const totalProcessorCheckCount = evaluatedLeads.filter(l => l.qual.qualificationStatus === 'PROCESSOR_CHECK').length
   const totalHighPriorityCount = evaluatedLeads.filter(l => l.qual.priority === 'HIGH').length
 
+  // Derived real metrics for dashboard modules and metrics grid
+  const totalImporters = importers.length
+  const verifiedImporters = importers.filter(i => i.verificationStatus === 'VERIFIED').length
+  const highPriorityImporters = importers.filter(i => i.priority === 'HIGH').length
+
+  const totalManufacturers = manufacturers?.all?.length || 0
+  const maharashtraMfrs = (manufacturers?.all || []).filter(m => m.location?.includes('Maharashtra')).length
+  const verifiedMfrs = (manufacturers?.all || []).filter(m => m.verificationStatus === 'VERIFIED').length
+
+  const totalQuotes = quotations.length
+  const openQuotes = quotations.filter(q => q.status === 'NEW' || q.status === 'REVIEW_REQUIRED' || q.status === 'DRAFT' || q.status === 'SENT').length
+
   return (
     <PasswordGate
       title="Private Business Portal"
