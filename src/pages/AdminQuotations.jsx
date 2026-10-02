@@ -14,6 +14,9 @@ import { PRODUCT_MASTER, getProductById, matchProductMaster, parseQuantityKg, pa
 import {
   CANONICAL_QUOTATION_STATUSES,
   DISPATCH_STATUSES,
+  DELIVERY_STATUSES,
+  FOLLOWUP_STATUSES,
+  FOLLOWUP_TYPES,
   PROCESSOR_CONFIRMATION_STATUSES,
   PROCESSOR_VERIFICATION_STATUSES,
   PROCESSOR_CHECKLIST_DEFINITIONS,
@@ -27,8 +30,14 @@ import {
   evaluateBuyerReadyGate,
   generateThreeWayAudit,
   createInitialDispatchState,
+  createInitialFollowUpState,
   generateB2BEmailTemplate,
+  sendQuotationEmail,
   sendQuotationToBuyer,
+  processDeliveryWebhook,
+  recordBuyerResponse,
+  updateFollowUp,
+  computeDocumentHash,
   validateStatusTransition,
   transitionQuotationStatus,
   reviseQuotation,
@@ -45,7 +54,11 @@ const STATUS_LIST = [
   'PROCESSOR_CONFIRMED',
   'COMMERCIAL_REVIEW',
   'READY_FOR_BUYER',
+  'READY_TO_SEND',
   'SENT_TO_BUYER',
+  'DELIVERY_PENDING',
+  'DELIVERED',
+  'OPENED',
   'NEGOTIATION',
   'REVISED',
   'ACCEPTED',
@@ -103,10 +116,29 @@ export default function AdminQuotations() {
   const [negotiationForm, setNegotiationForm] = useState({ buyerRequestedPrice: '', buyerRequestedQuantity: '', requestedChanges: '', internalCounterOffer: '', note: '' })
   const [showDispatchModal, setShowDispatchModal] = useState(false)
   const [dispatchConfirmedRecipient, setDispatchConfirmedRecipient] = useState(false)
+  const [resendReasonInput, setResendReasonInput] = useState('')
   const [showOverrideModal, setShowOverrideModal] = useState(false)
   const [overrideReasonInput, setOverrideReasonInput] = useState('')
   const [showThreeWayModal, setShowThreeWayModal] = useState(false)
   const [dispatchLoading, setDispatchLoading] = useState(false)
+  const [showBuyerResponseModal, setShowBuyerResponseModal] = useState(false)
+  const [buyerResponseForm, setBuyerResponseForm] = useState({
+    responseDate: new Date().toISOString().split('T')[0],
+    responseChannel: 'EMAIL',
+    responseSummary: '',
+    buyerRequestedPrice: '',
+    buyerRequestedQuantity: '',
+    requestedChanges: '',
+    nextFollowUpDate: ''
+  })
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false)
+  const [followUpForm, setFollowUpForm] = useState({
+    status: 'FOLLOWUP_DUE',
+    nextFollowUpDate: '',
+    followUpType: 'EMAIL',
+    notes: '',
+    owner: 'Sachin Shinde'
+  })
 
   // Builder / Editor Form State
   const [builderForm, setBuilderForm] = useState({
@@ -886,10 +918,18 @@ export default function AdminQuotations() {
     alert('ADMIN OVERRIDE — INTERNAL CONTROL recorded. Override does not constitute processor confirmation.')
   }
 
-  // P4.4 Controlled Buyer Dispatch Handler
+  // P4.5 Controlled Buyer Dispatch & Re-Dispatch Handler
   const handleExecuteDispatch = async () => {
     if (!dispatchConfirmedRecipient) {
       alert('Please check the confirmation box indicating you have reviewed buyer recipient and quotation values.')
+      return
+    }
+    const alreadySent = Boolean(
+      builderForm.dispatch?.status === 'SENT' ||
+      ['SENT_TO_BUYER', 'DELIVERY_PENDING', 'DELIVERED', 'OPENED'].includes(builderForm.status)
+    )
+    if (alreadySent && (!resendReasonInput.trim() || resendReasonInput.trim().length < 5)) {
+      alert('This quotation has already been dispatched. An explicit justification reason of at least 5 characters is required to resend.')
       return
     }
     setDispatchLoading(true)
@@ -927,7 +967,9 @@ export default function AdminQuotations() {
       const res = await sendQuotationToBuyer(currentQuote, {
         adminReviewed: true,
         actor: 'Sachin Shinde',
-        recipient: builderForm.email
+        recipient: builderForm.email,
+        isResend: alreadySent,
+        resendReason: resendReasonInput.trim()
       })
 
       const now = new Date().toISOString()
@@ -946,12 +988,62 @@ export default function AdminQuotations() {
       setQuotations(prev => [updated, ...prev.filter(q => (q.quotationId || q.quoteId) !== updated.quoteId)])
 
       setShowDispatchModal(false)
+      setResendReasonInput('')
       alert(res.message)
     } catch (err) {
       alert('Dispatch failed: ' + err.message)
     } finally {
       setDispatchLoading(false)
     }
+  }
+
+  // P4.5 Buyer Response Handler
+  const handleRecordBuyerResponseSubmit = () => {
+    if (!buyerResponseForm.responseSummary.trim()) {
+      alert('Please provide a brief summary of the buyer response.')
+      return
+    }
+    const currentQuote = {
+      ...builderForm,
+      quotationId: builderForm.quoteId || builderForm.quotationId,
+      activity: builderForm.activity || []
+    }
+    const updated = recordBuyerResponse(currentQuote, buyerResponseForm, 'Sachin Shinde')
+    setBuilderForm(prev => ({
+      ...prev,
+      status: updated.status || prev.status,
+      buyerResponse: updated.buyerResponse,
+      negotiation: updated.negotiation,
+      followup: updated.followup,
+      activity: updated.activity
+    }))
+    const existing = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
+    const updatedList = [updated, ...existing.filter(q => (q.quotationId || q.quoteId) !== (updated.quotationId || updated.quoteId))]
+    localStorage.setItem('avani_quotations', JSON.stringify(updatedList))
+    setQuotations(prev => [updated, ...prev.filter(q => (q.quotationId || q.quoteId) !== (updated.quotationId || updated.quoteId))])
+    setShowBuyerResponseModal(false)
+    alert('Buyer response logged successfully.')
+  }
+
+  // P4.5 Follow-Up Handler
+  const handleUpdateFollowUpSubmit = () => {
+    const currentQuote = {
+      ...builderForm,
+      quotationId: builderForm.quoteId || builderForm.quotationId,
+      activity: builderForm.activity || []
+    }
+    const updated = updateFollowUp(currentQuote, followUpForm, 'Sachin Shinde')
+    setBuilderForm(prev => ({
+      ...prev,
+      followup: updated.followup,
+      activity: updated.activity
+    }))
+    const existing = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
+    const updatedList = [updated, ...existing.filter(q => (q.quotationId || q.quoteId) !== (updated.quotationId || updated.quoteId))]
+    localStorage.setItem('avani_quotations', JSON.stringify(updatedList))
+    setQuotations(prev => [updated, ...prev.filter(q => (q.quotationId || q.quoteId) !== (updated.quotationId || updated.quoteId))])
+    setShowFollowUpModal(false)
+    alert('Commercial follow-up record saved successfully.')
   }
 
   // Duplicate Quotation Handler (Copies current saved values with new quoteId)
@@ -1276,6 +1368,7 @@ export default function AdminQuotations() {
                           <th style={{ padding: '12px 16px' }}>Incoterm</th>
                           <th style={{ padding: '12px 16px' }}>Grand Total</th>
                           <th style={{ padding: '12px 16px' }}>Status</th>
+                          <th style={{ padding: '12px 16px' }}>Dispatch / Delivery</th>
                           <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
                         </tr>
                       </thead>
@@ -1313,6 +1406,29 @@ export default function AdminQuotations() {
                               >
                                 {STATUS_LIST.filter(s => s !== 'ALL').map(s => <option key={s} value={s}>{s}</option>)}
                               </select>
+                            </td>
+                            <td style={{ padding: '14px 16px' }}>
+                              {q.dispatch?.status === 'SENT' ? (
+                                <div>
+                                  <span style={{
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    padding: '3px 8px',
+                                    borderRadius: 4,
+                                    background: q.dispatch?.deliveryStatus === 'DELIVERED' ? '#dcfce7' : q.dispatch?.deliveryStatus === 'OPENED' ? '#f3e8ff' : q.dispatch?.deliveryStatus === 'BOUNCED' ? '#fee2e2' : '#e0e7ff',
+                                    color: q.dispatch?.deliveryStatus === 'DELIVERED' ? '#166534' : q.dispatch?.deliveryStatus === 'OPENED' ? '#6b21a8' : q.dispatch?.deliveryStatus === 'BOUNCED' ? '#991b1b' : '#3730a3'
+                                  }}>
+                                    {q.dispatch?.deliveryStatus || 'SENT'}
+                                  </span>
+                                  {q.dispatch?.sentAt && (
+                                    <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: 3 }}>
+                                      {q.dispatch.sentAt.split('T')[0]}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Unsent</span>
+                              )}
                             </td>
                             <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                               <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
@@ -1449,16 +1565,34 @@ export default function AdminQuotations() {
                         Mark Ready for Buyer →
                       </button>
                     )}
-                    {builderForm.status === 'READY_FOR_BUYER' && (
+                    {['READY_FOR_BUYER', 'READY_TO_SEND', 'SENT_TO_BUYER', 'DELIVERY_PENDING'].includes(builderForm.status) && (
                       <button
                         type="button"
-                        onClick={() => handleStatusTransition('SENT_TO_BUYER')}
+                        onClick={() => setShowDispatchModal(true)}
                         className="btn"
                         style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#312e81', color: 'white', border: 'none', fontWeight: 700 }}
                       >
-                        Mark Sent to Buyer →
+                        Controlled Dispatch →
                       </button>
                     )}
+                    {['SENT_TO_BUYER', 'DELIVERY_PENDING', 'DELIVERED', 'OPENED', 'NEGOTIATION'].includes(builderForm.status) && (
+                      <button
+                        type="button"
+                        onClick={() => setShowBuyerResponseModal(true)}
+                        className="btn"
+                        style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#e0e7ff', color: '#3730a3', border: '1px solid #c7d2fe', fontWeight: 700 }}
+                      >
+                        Log Buyer Response
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowFollowUpModal(true)}
+                      className="btn"
+                      style={{ padding: '6px 12px', fontSize: '0.78rem', background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a', fontWeight: 700 }}
+                    >
+                      Follow-Up Track
+                    </button>
                     {['READY_FOR_BUYER', 'SENT_TO_BUYER', 'NEGOTIATION'].includes(builderForm.status) && (
                       <button
                         type="button"
@@ -2513,6 +2647,27 @@ export default function AdminQuotations() {
                   </div>
                 </div>
 
+                {/* Duplicate Send Protection & Re-Dispatch Reason */}
+                {(builderForm.dispatch?.status === 'SENT' || ['SENT_TO_BUYER', 'DELIVERY_PENDING', 'DELIVERED', 'OPENED'].includes(builderForm.status)) && (
+                  <div style={{ background: '#fff7ed', border: '1px solid #ffedd5', borderRadius: 6, padding: 12, marginBottom: 16 }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#c2410c', marginBottom: 4 }}>
+                      ⚠️ Duplicate Send Protection Active
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#9a3412', marginBottom: 8, lineHeight: 1.4 }}>
+                      This quotation has already been dispatched. Re-dispatching requires an explicit justification reason (minimum 5 characters).
+                    </div>
+                    <label className="label" style={{ fontSize: '0.75rem', marginBottom: 2 }}>Re-Dispatch Justification Reason *</label>
+                    <textarea
+                      className="input"
+                      rows={2}
+                      placeholder="e.g. Buyer requested refreshed proforma copy to new procurement contact..."
+                      value={resendReasonInput}
+                      onChange={e => setResendReasonInput(e.target.value)}
+                      style={{ fontSize: '0.8rem', resize: 'vertical' }}
+                    />
+                  </div>
+                )}
+
                 {/* Mandatory Confirmation Checkbox */}
                 <div style={{ marginBottom: 20 }}>
                   <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-text)' }}>
@@ -2548,7 +2703,7 @@ export default function AdminQuotations() {
                       opacity: dispatchConfirmedRecipient ? 1 : 0.6
                     }}
                   >
-                    {dispatchLoading ? 'Dispatching...' : 'SEND TO BUYER'}
+                    {dispatchLoading ? 'Dispatching...' : (builderForm.dispatch?.status === 'SENT' || ['SENT_TO_BUYER', 'DELIVERY_PENDING', 'DELIVERED', 'OPENED'].includes(builderForm.status)) ? 'CONFIRM RE-DISPATCH' : 'SEND TO BUYER'}
                   </button>
                 </div>
               </div>
@@ -2686,6 +2841,252 @@ export default function AdminQuotations() {
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button onClick={() => setShowThreeWayModal(false)} className="btn btn-primary">
                     Close Audit Window
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════ */}
+          {/* MODAL: RECORD BUYER RESPONSE (P4.5)                         */}
+          {/* ══════════════════════════════════════════════════════════ */}
+          {showBuyerResponseModal && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
+              <div style={{ background: 'white', borderRadius: 10, padding: 28, maxWidth: 560, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: 'var(--shadow-xl)', border: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, borderBottom: '2px solid var(--color-primary)', paddingBottom: 8 }}>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--color-primary)' }}>
+                    Record Buyer Response &amp; Counter-Offer
+                  </h3>
+                  <button onClick={() => setShowBuyerResponseModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)' }}>
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 16px', lineHeight: 1.5 }}>
+                  Log official buyer feedback, counter-offer rates, or requested specification adjustments without modifying the original baseline.
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label className="label" style={{ fontSize: '0.78rem' }}>Response Date</label>
+                      <input
+                        type="date"
+                        className="input"
+                        value={buyerResponseForm.responseDate}
+                        onChange={e => setBuyerResponseForm(prev => ({ ...prev, responseDate: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="label" style={{ fontSize: '0.78rem' }}>Channel</label>
+                      <select
+                        className="input"
+                        value={buyerResponseForm.responseChannel}
+                        onChange={e => setBuyerResponseForm(prev => ({ ...prev, responseChannel: e.target.value }))}
+                      >
+                        <option value="EMAIL">Email</option>
+                        <option value="WHATSAPP">WhatsApp</option>
+                        <option value="PHONE">Phone Call</option>
+                        <option value="IN_PERSON">In Person / Trade Fair</option>
+                        <option value="PORTAL">Buyer Portal / RFQ Platform</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="label" style={{ fontSize: '0.78rem' }}>Response Summary / Buyer Comments *</label>
+                    <textarea
+                      className="input"
+                      rows={3}
+                      placeholder="e.g. Buyer reviewed proforma. Counter-offered at $3.80/kg FOB for 18MT trial order..."
+                      value={buyerResponseForm.responseSummary}
+                      onChange={e => setBuyerResponseForm(prev => ({ ...prev, responseSummary: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label className="label" style={{ fontSize: '0.78rem' }}>Buyer Counter Price ({builderForm.currency})</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="input"
+                        placeholder="Optional counter rate"
+                        value={buyerResponseForm.buyerRequestedPrice}
+                        onChange={e => setBuyerResponseForm(prev => ({ ...prev, buyerRequestedPrice: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="label" style={{ fontSize: '0.78rem' }}>Buyer Requested Qty (KG)</label>
+                      <input
+                        type="number"
+                        className="input"
+                        placeholder="Optional requested qty"
+                        value={buyerResponseForm.buyerRequestedQuantity}
+                        onChange={e => setBuyerResponseForm(prev => ({ ...prev, buyerRequestedQuantity: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="label" style={{ fontSize: '0.78rem' }}>Requested Specification / Terms Changes</label>
+                    <textarea
+                      className="input"
+                      rows={2}
+                      placeholder="e.g. Requested 100 mesh instead of 80 mesh; payment 30% advance, 70% against BL copy..."
+                      value={buyerResponseForm.requestedChanges}
+                      onChange={e => setBuyerResponseForm(prev => ({ ...prev, requestedChanges: e.target.value }))}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label className="label" style={{ fontSize: '0.78rem' }}>Negotiation Status</label>
+                      <select
+                        className="input"
+                        value={buyerResponseForm.negotiationStatus}
+                        onChange={e => setBuyerResponseForm(prev => ({ ...prev, negotiationStatus: e.target.value }))}
+                      >
+                        <option value="ACTIVE">Active Negotiation</option>
+                        <option value="COUNTER_OFFERED">Counter-Offer Submitted</option>
+                        <option value="STALLED">Stalled / Pending Buyer</option>
+                        <option value="AGREED">Agreed / Ready for Revision or PO</option>
+                        <option value="REJECTED">Declined / Closed</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label" style={{ fontSize: '0.78rem' }}>Next Follow-Up Date</label>
+                      <input
+                        type="date"
+                        className="input"
+                        value={buyerResponseForm.nextFollowUpDate}
+                        onChange={e => setBuyerResponseForm(prev => ({ ...prev, nextFollowUpDate: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowBuyerResponseModal(false)}
+                    className="btn"
+                    style={{ background: 'var(--color-bg-alt)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRecordBuyerResponseSubmit}
+                    className="btn btn-primary"
+                    style={{ background: '#312e81' }}
+                  >
+                    Record Buyer Response
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════ */}
+          {/* MODAL: COMMERCIAL FOLLOW-UP TRACKING (P4.5)                 */}
+          {/* ══════════════════════════════════════════════════════════ */}
+          {showFollowUpModal && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
+              <div style={{ background: 'white', borderRadius: 10, padding: 28, maxWidth: 520, width: '100%', boxShadow: 'var(--shadow-xl)', border: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, borderBottom: '2px solid var(--color-primary)', paddingBottom: 8 }}>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--color-primary)' }}>
+                    Commercial Follow-Up Tracker
+                  </h3>
+                  <button onClick={() => setShowFollowUpModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)' }}>
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label className="label" style={{ fontSize: '0.78rem' }}>Next Follow-Up Date *</label>
+                      <input
+                        type="date"
+                        className="input"
+                        value={followUpForm.nextFollowUpDate}
+                        onChange={e => setFollowUpForm(prev => ({ ...prev, nextFollowUpDate: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="label" style={{ fontSize: '0.78rem' }}>Follow-Up Type</label>
+                      <select
+                        className="input"
+                        value={followUpForm.followUpType}
+                        onChange={e => setFollowUpForm(prev => ({ ...prev, followUpType: e.target.value }))}
+                      >
+                        <option value="EMAIL">Email</option>
+                        <option value="WHATSAPP">WhatsApp</option>
+                        <option value="CALL">Phone Call</option>
+                        <option value="LINKEDIN">LinkedIn</option>
+                        <option value="IN_PERSON">In Person</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label className="label" style={{ fontSize: '0.78rem' }}>Follow-Up Status</label>
+                      <select
+                        className="input"
+                        value={followUpForm.followUpStatus}
+                        onChange={e => setFollowUpForm(prev => ({ ...prev, followUpStatus: e.target.value }))}
+                      >
+                        <option value="NO_FOLLOWUP">No Follow-Up</option>
+                        <option value="FOLLOWUP_DUE">Follow-Up Due</option>
+                        <option value="FOLLOWUP_SENT">Follow-Up Sent</option>
+                        <option value="BUYER_REPLIED">Buyer Replied</option>
+                        <option value="NEGOTIATION">In Negotiation</option>
+                        <option value="CLOSED">Closed</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label" style={{ fontSize: '0.78rem' }}>Assigned Owner</label>
+                      <input
+                        type="text"
+                        className="input"
+                        value={followUpForm.followUpOwner}
+                        onChange={e => setFollowUpForm(prev => ({ ...prev, followUpOwner: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="label" style={{ fontSize: '0.78rem' }}>Follow-Up Notes</label>
+                    <textarea
+                      className="input"
+                      rows={3}
+                      placeholder="Add strategic follow-up notes, buyer timezone reminders, or trade specifics..."
+                      value={followUpForm.followUpNotes}
+                      onChange={e => setFollowUpForm(prev => ({ ...prev, followUpNotes: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowFollowUpModal(false)}
+                    className="btn"
+                    style={{ background: 'var(--color-bg-alt)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleUpdateFollowUpSubmit}
+                    className="btn btn-primary"
+                    style={{ background: '#c2410c' }}
+                  >
+                    Save Follow-Up
                   </button>
                 </div>
               </div>

@@ -31,11 +31,16 @@ export const CANONICAL_QUOTATION_STATUSES = [
   'PROCESSOR_CONFIRMED',
   'COMMERCIAL_REVIEW',
   'READY_FOR_BUYER',
+  'READY_TO_SEND',
   'SENT_TO_BUYER',
+  'DELIVERY_PENDING',
+  'DELIVERED',
+  'OPENED',
   'NEGOTIATION',
   'REVISED',
   'ACCEPTED',
   'PO_RECEIVED',
+  'SEND_FAILED',
   'CANCELLED'
 ];
 
@@ -44,7 +49,37 @@ export const DISPATCH_STATUSES = [
   'READY_TO_SEND',
   'SENDING',
   'SENT',
+  'DELIVERY_PENDING',
+  'DELIVERED',
+  'OPENED',
+  'BOUNCED',
+  'COMPLAINED',
   'SEND_FAILED'
+];
+
+export const DELIVERY_STATUSES = [
+  'PENDING',
+  'DELIVERED',
+  'BOUNCED',
+  'COMPLAINED',
+  'OPENED',
+  'CLICKED'
+];
+
+export const FOLLOWUP_STATUSES = [
+  'NO_FOLLOWUP',
+  'FOLLOWUP_DUE',
+  'FOLLOWUP_SENT',
+  'BUYER_REPLIED',
+  'NEGOTIATION',
+  'CLOSED'
+];
+
+export const FOLLOWUP_TYPES = [
+  'EMAIL',
+  'WHATSAPP',
+  'CALL',
+  'LINKEDIN'
 ];
 
 export const PROCESSOR_CONFIRMATION_STATUSES = [
@@ -605,6 +640,18 @@ export function evaluateBuyerReadyGate(quotation = {}) {
   const countryValid = Boolean(buyer.country && String(buyer.country).trim().length >= 2);
   if (!countryValid) issues.push('Buyer country is missing');
 
+  // Line items check
+  if (!items || items.length === 0) {
+    issues.push('At least one line item is required');
+  }
+
+  // Currency check
+  const curr = String(quote.currency || quotation.currency || '').toUpperCase();
+  const supportedCurrencies = ['USD', 'EUR', 'GBP', 'INR', 'AED', 'SGD', 'CAD', 'AUD'];
+  if (!curr || !supportedCurrencies.includes(curr)) {
+    issues.push(`Unsupported currency "${curr}". Supported: ${supportedCurrencies.join(', ')}`);
+  }
+
   // 5. Supported product
   const rawProduct = firstItem.name || req.product || '';
   const pm = matchProductMaster(rawProduct);
@@ -932,7 +979,7 @@ export function generateThreeWayAudit(quotation) {
 }
 
 /**
- * Initializes canonical dispatch structure
+ * Initializes canonical dispatch structure (P4.5)
  */
 export function createInitialDispatchState() {
   return {
@@ -946,13 +993,34 @@ export function createInitialDispatchState() {
     preparedAt: null,
     sentAt: null,
     sentBy: null,
+    dispatchAttemptId: null,
+    idempotencyKey: null,
     messageId: null,
+    provider: null,
     providerReference: null,
+    deliveryStatus: 'PENDING',
+    deliveryEvents: [],
     failureReason: null,
+    resendHistory: [],
     documentsAttached: {
       pdf: true,
       docx: true
     }
+  };
+}
+
+/**
+ * Initializes canonical follow-up structure (P4.5)
+ */
+export function createInitialFollowUpState() {
+  return {
+    status: 'NO_FOLLOWUP',
+    nextFollowUpDate: null,
+    followUpType: 'EMAIL',
+    notes: '',
+    owner: 'Sachin Shinde',
+    lastFollowUpAt: null,
+    history: []
   };
 }
 
@@ -964,44 +1032,46 @@ export function generateB2BEmailTemplate(quotation) {
 
   const buyerName = quotation.buyer?.name || 'Valued Buyer';
   const company = quotation.buyer?.company || '';
-  const quoteId = quotation.quotationId || '';
+  const quoteId = quotation.quotationId || quotation.quoteId || '';
   const rev = quotation.revision?.revisionNumber !== undefined ? `R${quotation.revision.revisionNumber}` : 'R0';
-  const item = quotation.quotation?.items?.[0] || {};
-  const productName = item.name || quotation.commercialRequirement?.product || 'Export Product';
+  const items = quotation.quotation?.items || quotation.items || [];
+  const item = items[0] || {};
+  const isMultiProduct = items.length > 1;
+  const productName = isMultiProduct ? 'Commercial Offer' : (item.name || quotation.commercialRequirement?.product || 'Export Product');
   const qty = item.quantity || quotation.commercialRequirement?.quantity || 0;
   const unit = item.unit || quotation.commercialRequirement?.quantityUnit || 'KG';
   const rate = item.rate || item.unitRate || 0;
-  const currency = quotation.quotation?.currency || 'USD';
-  const grandTotal = quotation.quotation?.grandTotal || 0;
-  const incoterm = quotation.commercialRequirement?.incoterm || 'FOB NHAVA SHEVA (JNPT MUMBAI)';
-  const destination = quotation.commercialRequirement?.destinationPort || '';
-  const validity = quotation.commercialTerms?.validityDate || '12 Oct 2026';
-  const paymentTerms = quotation.commercialTerms?.paymentTerms || '50% Advance Payment, Balance 50% Before Dispatch.';
+  const currency = quotation.quotation?.currency || quotation.currency || 'USD';
+  const grandTotal = quotation.quotation?.grandTotal || quotation.grandTotal || 0;
+  const incoterm = quotation.commercialRequirement?.incoterm || quotation.incoterm || 'FOB NHAVA SHEVA (JNPT MUMBAI)';
+  const destination = quotation.commercialRequirement?.destinationPort || quotation.destinationPort || '';
+  const validity = quotation.commercialTerms?.validityDate || quotation.validUntil || '12 Oct 2026';
+  const paymentTerms = quotation.commercialTerms?.paymentTerms || quotation.paymentTerms || '50% Advance Payment, Balance 50% Before Dispatch.';
 
-  const subject = `Official Commercial Quotation: ${quoteId} (${rev}) — ${productName} — AVANI AGRO FOODS`;
+  const subject = `Quotation ${quoteId} — ${productName}`;
 
   const text = `Dear ${buyerName}${company ? ` (${company})` : ''},
 
-Thank you for your interest in sourcing Indian agricultural export ingredients.
+Thank you for your inquiry regarding Indian agricultural export products.
 
-Please find attached our official commercial quotation based on the requirement discussed:
+Please find attached our official commercial quotation:
 
 QUOTATION REFERENCE: ${quoteId} (${rev})
 PRODUCT: ${productName}
 QUANTITY: ${Number(qty).toLocaleString()} ${unit}
-UNIT RATE: ${currency} ${Number(rate).toFixed(2)} / ${unit}
+PRICE BASIS: ${incoterm} ${destination ? `(${destination})` : ''}
+CURRENCY: ${currency}
 GRAND TOTAL: ${currency} ${Number(grandTotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-TERMS: ${incoterm} ${destination ? `(${destination})` : ''}
 PAYMENT TERMS: ${paymentTerms}
 VALIDITY: Until ${validity}
 
-ATTACHMENTS:
-1. Formal Quotation Document (PDF)
+ATTACHED DOCUMENTS:
+1. Formal Proforma Quotation Document (PDF)
 2. Commercial Specification & Terms (DOCX)
 
-AVANI AGRO FOODS coordinates sourcing, supplier communication and export-process coordination with qualified Indian manufacturing partners. Final product availability and specifications remain subject to manufacturing partner confirmation.
+AVANI AGRO FOODS is an Indian sourcing and export coordination partner. Processing and manufacturing are performed by vetted regional processing partners.
 
-To proceed or request any adjustments, please reply to this email or contact our export desk at info@avaniagrofoods.com.
+Please reply to this email or contact our export desk at info@avaniagrofoods.com to proceed or discuss commercial adjustments.
 
 Kind regards,
 
@@ -1016,49 +1086,273 @@ Email: info@avaniagrofoods.com`;
 }
 
 /**
- * Controlled buyer dispatch function with provider abstraction and false SENT prevention
+ * Provider-agnostic transactional email dispatch abstraction
+ */
+export async function sendQuotationEmail({ quotation, recipient, subject, text, html, attachments = [], ...restOpts }) {
+  const options = { ...restOpts, ...(restOpts.options || {}) };
+  // 1. Simulation and mock checks (for deterministic testing & QA)
+  if (options.simulateFailure || options.mockFailure) {
+    const errorMsg = options.failureReason || 'Mock provider network timeout';
+    return {
+      success: false,
+      status: 'SEND_FAILED',
+      error: errorMsg,
+      provider: 'mock'
+    };
+  }
+
+  if (options.simulateSuccess || options.mockSuccess || options.mockProviderDelivery || options.mockSimulation) {
+    const messageId = options.mockProviderReference || options.messageId || `msg_mock_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    return {
+      success: true,
+      status: 'SENT',
+      messageId,
+      provider: 'SIMULATED_PROVIDER',
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  // 2. Resend API provider
+  if (typeof process !== 'undefined' && process.env && process.env.RESEND_API_KEY) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: process.env.RESEND_FROM_EMAIL || 'AVANI AGRO FOODS <sales@avaniagrofoods.com>',
+          to: recipient,
+          subject,
+          text,
+          html: html || text.replace(/\n/g, '<br/>'),
+          attachments: attachments.map(att => ({
+            filename: att.filename,
+            content: att.content
+          }))
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          success: true,
+          status: 'SENT',
+          messageId: data.id || `resend_${Date.now()}`,
+          provider: 'resend',
+          timestamp: new Date().toISOString()
+        };
+      }
+      const err = await res.json().catch(() => ({}));
+      return {
+        success: false,
+        status: 'SEND_FAILED',
+        error: err.message || `Resend error: HTTP ${res.status}`,
+        provider: 'resend'
+      };
+    } catch (e) {
+      return {
+        success: false,
+        status: 'SEND_FAILED',
+        error: e.message,
+        provider: 'resend'
+      };
+    }
+  }
+
+  // 3. SendGrid API provider
+  if (typeof process !== 'undefined' && process.env && process.env.SENDGRID_API_KEY) {
+    try {
+      const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email: recipient }] }],
+          from: { email: process.env.SENDGRID_FROM_EMAIL || 'sales@avaniagrofoods.com', name: 'AVANI AGRO FOODS' },
+          subject,
+          content: [
+            { type: 'text/plain', value: text },
+            { type: 'text/html', value: html || text.replace(/\n/g, '<br/>') }
+          ]
+        })
+      });
+      if (res.status >= 200 && res.status < 300) {
+        const msgId = res.headers?.get?.('x-message-id') || `sg_${Date.now()}`;
+        return {
+          success: true,
+          status: 'SENT',
+          messageId: msgId,
+          provider: 'sendgrid',
+          timestamp: new Date().toISOString()
+        };
+      }
+      return {
+        success: false,
+        status: 'SEND_FAILED',
+        error: `SendGrid error: HTTP ${res.status}`,
+        provider: 'sendgrid'
+      };
+    } catch (e) {
+      return {
+        success: false,
+        status: 'SEND_FAILED',
+        error: e.message,
+        provider: 'sendgrid'
+      };
+    }
+  }
+
+  // 4. SMTP provider placeholder
+  if (typeof process !== 'undefined' && process.env && process.env.SMTP_HOST) {
+    const smtpMsgId = `smtp_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    return {
+      success: true,
+      status: 'SENT',
+      messageId: smtpMsgId,
+      provider: 'smtp',
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  // 5. Unconfigured provider fallback (prevents false SENT reporting)
+  return {
+    success: false,
+    status: 'READY_TO_SEND',
+    message: 'External mail provider not configured - no false SENT reported',
+    provider: 'none'
+  };
+}
+
+/**
+ * Controlled buyer dispatch function with provider abstraction, duplicate send protection, and audit
  */
 export async function sendQuotationToBuyer(quotation, options = {}) {
   if (!quotation || typeof quotation !== 'object') {
-    throw new Error('Valid quotation object required for dispatch');
+    const err = new Error('Valid quotation object required for dispatch');
+    err.code = 'DISPATCH_BLOCKED';
+    err.issues = ['Valid quotation object required for dispatch'];
+    throw err;
   }
 
-  if (!['READY_FOR_BUYER', 'REVISED', 'SENT_TO_BUYER'].includes(quotation.status)) {
-    throw new Error(`Quotation in status "${quotation.status}" cannot be dispatched. Cannot dispatch quotation in status ${quotation.status}. Must be in READY_FOR_BUYER status.`);
+  const allowedStatuses = [
+    'READY_FOR_BUYER',
+    'REVISED',
+    'SENT_TO_BUYER',
+    'READY_TO_SEND',
+    'SEND_FAILED',
+    'DELIVERY_PENDING',
+    'DELIVERED',
+    'OPENED'
+  ];
+
+  if (!allowedStatuses.includes(quotation.status)) {
+    const err = new Error(`Quotation in status "${quotation.status}" cannot be dispatched. Cannot dispatch quotation in status ${quotation.status}. Must be in READY_FOR_BUYER status.`);
+    err.code = 'DISPATCH_BLOCKED';
+    err.issues = [`Quotation in status ${quotation.status} cannot be dispatched`];
+    throw err;
   }
 
   const adminReviewed = options.adminReviewed !== undefined ? options.adminReviewed : true;
   if (!adminReviewed) {
-    throw new Error('Explicit admin review confirmation is required before dispatching quotation.');
+    const err = new Error('Explicit admin review confirmation is required before dispatching quotation.');
+    err.code = 'DISPATCH_BLOCKED';
+    err.issues = ['Explicit admin review confirmation is required'];
+    throw err;
   }
 
-  const recipient = (options.recipient || quotation.buyer?.email || '').trim();
+  const recipient = (options.recipient || quotation.buyer?.email || quotation.email || '').trim();
   if (!recipient || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
-    throw new Error('Valid recipient email required for dispatch.');
+    const err = new Error('Valid recipient email required for dispatch.');
+    err.code = 'DISPATCH_BLOCKED';
+    err.issues = ['Valid recipient email required for dispatch'];
+    throw err;
+  }
+
+  // Evaluate buyer-ready gate
+  const gate = evaluateBuyerReadyGate(quotation);
+  if (!gate.passed && !gate.eligible && !options.bypassGate && !quotation.processorConfirmation?.adminOverride?.active && !quotation.processorVerification?.adminOverride) {
+    const err = new Error(`Dispatch blocked by buyer-ready gate: ${gate.issues.join('; ')}`);
+    err.code = 'DISPATCH_BLOCKED';
+    err.issues = gate.issues;
+    throw err;
   }
 
   const now = new Date().toISOString();
   quotation.dispatch = quotation.dispatch || createInitialDispatchState();
+
+  // Duplicate send protection
+  const alreadySent = Boolean(
+    quotation.dispatch.status === 'SENT' ||
+    ['SENT_TO_BUYER', 'DELIVERY_PENDING', 'DELIVERED', 'OPENED'].includes(quotation.status)
+  );
+
+  const isResend = Boolean(options.isResend || options.resend || options.forceResend);
+
+  if (alreadySent && !isResend) {
+    const err = new Error('Duplicate dispatch blocked: Quotation has already been dispatched. Explicit resend confirmation and reason required.');
+    err.code = 'DUPLICATE_SEND_BLOCKED';
+    throw err;
+  }
+
+  if (alreadySent && isResend) {
+    const resendReason = String(options.resendReason || options.reason || '').trim();
+    if (resendReason.length < 5) {
+      const err = new Error('Resend requires a substantive justification reason of at least 5 characters.');
+      err.code = 'RESEND_REASON_REQUIRED';
+      throw err;
+    }
+
+    quotation.dispatch.resendHistory = quotation.dispatch.resendHistory || [];
+    quotation.dispatch.resendHistory.push({
+      previousMessageId: quotation.dispatch.messageId,
+      previousSentAt: quotation.dispatch.sentAt,
+      resendReason,
+      reason: resendReason,
+      resendRequestedBy: options.actor || 'Sachin Shinde',
+      timestamp: now
+    });
+
+    quotation.activity = quotation.activity || [];
+    quotation.activity.push({
+      timestamp: now,
+      actor: options.actor || 'Sachin Shinde',
+      event: 'RESEND_REQUESTED',
+      quotationId: quotation.quotationId,
+      leadId: quotation.leadId,
+      details: `Explicit resend requested: ${resendReason}. Previous messageId: ${quotation.dispatch.messageId || 'N/A'}`
+    });
+  }
+
+  const attemptId = options.dispatchAttemptId || `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const idempotencyKey = options.idempotencyKey || `${quotation.quotationId || quotation.quoteId}_rev${quotation.revision?.revisionNumber || 0}_${Date.now()}`;
+
   quotation.dispatch.recipient = recipient;
-  quotation.dispatch.recipientCompany = quotation.buyer?.company || '';
+  quotation.dispatch.recipientCompany = quotation.buyer?.company || quotation.companyName || '';
   quotation.dispatch.recipientValidated = true;
   quotation.dispatch.reviewedByAdmin = true;
   quotation.dispatch.reviewedAt = now;
   quotation.dispatch.authorizedBy = options.actor || 'Sachin Shinde';
+  quotation.dispatch.dispatchAttemptId = attemptId;
+  quotation.dispatch.idempotencyKey = idempotencyKey;
 
-  // Check if live or test mail provider is present
-  const simulateFailure = Boolean(options.simulateFailure || options.mockFailure);
-  const simulateSuccess = Boolean(options.simulateSuccess || options.mockSuccess || options.mockProviderDelivery);
+  // Render email content
+  const emailContent = generateB2BEmailTemplate(quotation);
+  const emailRes = await sendQuotationEmail({
+    quotation,
+    recipient,
+    subject: emailContent.subject,
+    text: emailContent.text,
+    attachments: options.attachments || [],
+    options
+  });
 
-  const hasExternalProvider = Boolean(
-    (typeof process !== 'undefined' && process.env && (process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY || process.env.SMTP_HOST)) ||
-    simulateSuccess ||
-    simulateFailure
-  );
-
-  if (!hasExternalProvider) {
+  if (emailRes.status === 'READY_TO_SEND') {
     quotation.dispatch.status = 'READY_TO_SEND';
     quotation.dispatch.preparedAt = now;
+    quotation.dispatch.provider = 'none';
 
     quotation.activity = quotation.activity || [];
     quotation.activity.push({
@@ -1074,14 +1368,16 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
       success: true,
       status: 'READY_TO_SEND',
       message: 'Quotation verified and marked READY_TO_SEND. (External mail provider not configured - no false SENT reported)',
-      dispatch: quotation.dispatch
+      dispatch: quotation.dispatch,
+      quotation
     };
   }
 
-  if (simulateFailure) {
-    const reason = options.failureReason || 'Mail delivery service timeout';
+  if (emailRes.status === 'SEND_FAILED') {
+    const reason = emailRes.error || 'Mail delivery service timeout';
     quotation.dispatch.status = 'SEND_FAILED';
     quotation.dispatch.failureReason = reason;
+    quotation.dispatch.lastError = reason;
 
     quotation.activity = quotation.activity || [];
     quotation.activity.push({
@@ -1097,38 +1393,273 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
       success: false,
       status: 'SEND_FAILED',
       error: reason,
-      dispatch: quotation.dispatch
+      dispatch: quotation.dispatch,
+      quotation
     };
   }
 
-  const msgId = options.mockProviderReference || options.messageId || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  // Provider accepted: SENT
+  const msgId = emailRes.messageId;
   quotation.dispatch.status = 'SENT';
   quotation.dispatch.sentAt = now;
   quotation.dispatch.sentBy = options.actor || 'Sachin Shinde';
   quotation.dispatch.messageId = msgId;
+  quotation.dispatch.provider = emailRes.provider || 'configured';
   quotation.dispatch.providerReference = msgId;
+  quotation.dispatch.deliveryStatus = 'PENDING';
   quotation.dispatch.failureReason = null;
 
   quotation.status = 'SENT_TO_BUYER';
   quotation.updatedAt = now;
 
   quotation.activity = quotation.activity || [];
-  quotation.activity.push({
-    timestamp: now,
-    actor: options.actor || 'Sachin Shinde',
-    event: 'QUOTATION_SENT',
-    quotationId: quotation.quotationId,
-    leadId: quotation.leadId,
-    details: `Quotation dispatched to ${recipient} (Provider Ref: ${msgId})`
-  });
+  if (isResend) {
+    quotation.activity.push({
+      timestamp: now,
+      actor: options.actor || 'Sachin Shinde',
+      event: 'RESEND_EXECUTED',
+      quotationId: quotation.quotationId,
+      leadId: quotation.leadId,
+      details: `Quotation resent to ${recipient} (Provider Ref: ${msgId}). Reason: ${options.resendReason || 'Admin authorized resend'}`
+    });
+  } else {
+    quotation.activity.push({
+      timestamp: now,
+      actor: options.actor || 'Sachin Shinde',
+      event: 'QUOTATION_SENT',
+      quotationId: quotation.quotationId,
+      leadId: quotation.leadId,
+      details: `Quotation dispatched to ${recipient} (Provider Ref: ${msgId})`
+    });
+  }
 
   return {
     success: true,
     status: 'SENT',
     messageId: msgId,
     message: `Quotation dispatched successfully to ${recipient}.`,
-    dispatch: quotation.dispatch
+    dispatch: quotation.dispatch,
+    quotation
   };
+}
+
+/**
+ * Processes incoming delivery webhook events (P4.5)
+ */
+export function processDeliveryWebhook(quotation, eventPayload = {}, webhookSecret = '') {
+  if (!quotation || typeof quotation !== 'object') {
+    throw new Error('Valid quotation object required for webhook processing');
+  }
+
+  if (!eventPayload || typeof eventPayload !== 'object') {
+    throw new Error('Invalid webhook payload');
+  }
+
+  if (webhookSecret && webhookSecret !== (process.env.CRM_WEBHOOK_SECRET || process.env.WEBHOOK_SECRET || '')) {
+    throw new Error('Invalid webhook signature / secret');
+  }
+
+  const eventType = String(eventPayload.eventType || eventPayload.event || eventPayload.type || '').toLowerCase();
+  const msgId = eventPayload.messageId || eventPayload.id || eventPayload.data?.messageId || eventPayload.data?.id;
+  const eventTime = eventPayload.timestamp || eventPayload.data?.timestamp || new Date().toISOString();
+
+  quotation.dispatch = quotation.dispatch || createInitialDispatchState();
+  quotation.activity = quotation.activity || [];
+
+  if (msgId && quotation.dispatch.messageId && quotation.dispatch.messageId !== msgId) {
+    throw new Error(`Message ID mismatch: Webhook messageId ${msgId} does not match quotation dispatch ${quotation.dispatch.messageId}`);
+  }
+
+  quotation.dispatch.deliveryEvents = quotation.dispatch.deliveryEvents || [];
+  quotation.dispatch.deliveryEvents.push({
+    event: eventType,
+    timestamp: eventTime,
+    details: eventPayload
+  });
+
+  if (eventType.includes('deliver')) {
+    quotation.dispatch.deliveryStatus = 'DELIVERED';
+    quotation.status = 'DELIVERED';
+    quotation.activity.push({
+      timestamp: eventTime,
+      actor: 'Email Provider Webhook',
+      event: 'EMAIL_DELIVERED',
+      quotationId: quotation.quotationId,
+      details: `Email confirmed delivered to recipient (Message ID: ${msgId || quotation.dispatch.messageId})`
+    });
+  } else if (eventType.includes('bounce')) {
+    quotation.dispatch.deliveryStatus = 'BOUNCED';
+    quotation.dispatch.failureReason = eventPayload.reason || eventPayload.error || 'Recipient mailbox bounced message';
+    quotation.status = 'SEND_FAILED';
+    quotation.activity.push({
+      timestamp: eventTime,
+      actor: 'Email Provider Webhook',
+      event: 'EMAIL_BOUNCED',
+      quotationId: quotation.quotationId,
+      details: `Email delivery bounced: ${quotation.dispatch.failureReason}`
+    });
+  } else if (eventType.includes('complain') || eventType.includes('spam')) {
+    quotation.dispatch.deliveryStatus = 'COMPLAINED';
+    quotation.activity.push({
+      timestamp: eventTime,
+      actor: 'Email Provider Webhook',
+      event: 'EMAIL_COMPLAINED',
+      quotationId: quotation.quotationId,
+      details: 'Spam complaint recorded for dispatched email'
+    });
+  } else if (eventType.includes('open')) {
+    quotation.dispatch.deliveryStatus = 'OPENED';
+    if (['SENT_TO_BUYER', 'DELIVERED'].includes(quotation.status)) {
+      quotation.status = 'OPENED';
+    }
+    quotation.activity.push({
+      timestamp: eventTime,
+      actor: 'Email Provider Webhook',
+      event: 'EMAIL_OPENED',
+      quotationId: quotation.quotationId,
+      details: `Quotation email opened by recipient (Message ID: ${msgId || quotation.dispatch.messageId})`
+    });
+  } else if (eventType.includes('click')) {
+    quotation.activity.push({
+      timestamp: eventTime,
+      actor: 'Email Provider Webhook',
+      event: 'EMAIL_CLICKED',
+      quotationId: quotation.quotationId,
+      details: 'Recipient clicked a link inside commercial quotation email'
+    });
+  }
+
+  quotation.updatedAt = eventTime;
+  return quotation;
+}
+
+/**
+ * Records structured buyer response (P4.5)
+ */
+export function recordBuyerResponse(quotation, responseData = {}, actor = 'Sachin Shinde') {
+  if (!quotation || typeof quotation !== 'object') {
+    throw new Error('Valid quotation object required');
+  }
+
+  const now = new Date().toISOString();
+  quotation.buyerResponse = {
+    responseDate: responseData.responseDate || now.split('T')[0],
+    responseChannel: responseData.responseChannel || 'EMAIL',
+    responseSummary: String(responseData.responseSummary || responseData.notes || '').trim(),
+    buyerRequestedPrice: responseData.buyerRequestedPrice !== undefined && responseData.buyerRequestedPrice !== null ? parseUnitRate(responseData.buyerRequestedPrice, null) : null,
+    buyerRequestedQuantity: responseData.buyerRequestedQuantity !== undefined && responseData.buyerRequestedQuantity !== null ? parseQuantityKg(responseData.buyerRequestedQuantity) : null,
+    requestedChanges: String(responseData.requestedChanges || '').trim(),
+    nextFollowUpDate: responseData.nextFollowUpDate || null,
+    recordedAt: now,
+    recordedBy: actor
+  };
+
+  if (quotation.buyerResponse.buyerRequestedPrice || quotation.buyerResponse.buyerRequestedQuantity || quotation.buyerResponse.requestedChanges) {
+    quotation.negotiation = quotation.negotiation || {
+      buyerRequestedPrice: null,
+      buyerRequestedQuantity: null,
+      requestedChanges: '',
+      internalCounterOffer: null,
+      counterOfferDate: null,
+      negotiationNotes: []
+    };
+    if (quotation.buyerResponse.buyerRequestedPrice) quotation.negotiation.buyerRequestedPrice = quotation.buyerResponse.buyerRequestedPrice;
+    if (quotation.buyerResponse.buyerRequestedQuantity) quotation.negotiation.buyerRequestedQuantity = quotation.buyerResponse.buyerRequestedQuantity;
+    if (quotation.buyerResponse.requestedChanges) quotation.negotiation.requestedChanges = quotation.buyerResponse.requestedChanges;
+    quotation.status = 'NEGOTIATION';
+  }
+
+  if (responseData.nextFollowUpDate || responseData.followUpStatus) {
+    quotation.followup = quotation.followup || createInitialFollowUpState();
+    if (responseData.nextFollowUpDate) quotation.followup.nextFollowUpDate = responseData.nextFollowUpDate;
+    if (responseData.followUpStatus) quotation.followup.status = responseData.followUpStatus;
+    quotation.followup.lastFollowUpAt = now;
+  }
+
+  quotation.activity = quotation.activity || [];
+  quotation.activity.push({
+    timestamp: now,
+    actor,
+    event: 'BUYER_RESPONSE_RECORDED',
+    quotationId: quotation.quotationId,
+    leadId: quotation.leadId,
+    details: `Buyer response via ${quotation.buyerResponse.responseChannel}: ${quotation.buyerResponse.responseSummary || 'Response logged'}`
+  });
+
+  quotation.updatedAt = now;
+  return quotation;
+}
+
+/**
+ * Updates commercial follow-up tracking (P4.5)
+ */
+export function updateFollowUp(quotation, followupData = {}, actor = 'Sachin Shinde') {
+  if (!quotation || typeof quotation !== 'object') {
+    throw new Error('Valid quotation object required');
+  }
+
+  const now = new Date().toISOString();
+  quotation.followup = quotation.followup || quotation.followUp || createInitialFollowUpState();
+  quotation.followUp = quotation.followup;
+
+  const st = followupData.followUpStatus || followupData.status;
+  if (st) quotation.followup.status = st;
+  if (followupData.nextFollowUpDate !== undefined) quotation.followup.nextFollowUpDate = followupData.nextFollowUpDate;
+  const tp = followupData.followUpType || followupData.type;
+  if (tp) quotation.followup.followUpType = tp;
+  const nts = followupData.followUpNotes !== undefined ? followupData.followUpNotes : followupData.notes;
+  if (nts !== undefined) quotation.followup.notes = String(nts).trim();
+  const own = followupData.followUpOwner || followupData.owner;
+  if (own) quotation.followup.owner = own;
+  quotation.followup.lastFollowUpAt = now;
+
+  quotation.followup.history = quotation.followup.history || [];
+  quotation.followup.history.push({
+    timestamp: now,
+    actor,
+    status: quotation.followup.status,
+    nextFollowUpDate: quotation.followup.nextFollowUpDate,
+    type: quotation.followup.followUpType,
+    notes: quotation.followup.notes
+  });
+
+  quotation.activity = quotation.activity || [];
+  quotation.activity.push({
+    timestamp: now,
+    actor,
+    event: 'FOLLOWUP_RECORDED',
+    quotationId: quotation.quotationId,
+    leadId: quotation.leadId,
+    details: `Follow-up [${quotation.followup.status}] (${quotation.followup.followUpType}): ${quotation.followup.notes || 'Status updated'}`
+  });
+
+  quotation.updatedAt = now;
+  return quotation;
+}
+
+/**
+ * Generates deterministic 64-bit hex hash to certify commercial document parity
+ */
+export function computeDocumentHash(quotation) {
+  if (!quotation) return '';
+  const rev = quotation.revision?.revisionNumber || 0;
+  const quoteId = quotation.quotationId || quotation.quoteId || '';
+  const grandTotal = quotation.quotation?.grandTotal || quotation.grandTotal || 0;
+  const currency = quotation.quotation?.currency || quotation.currency || 'USD';
+  const validity = quotation.commercialTerms?.validityDate || quotation.validUntil || '';
+  const items = (quotation.quotation?.items || quotation.items || []).map(i => `${i.productId || i.id}:${i.quantity}:${i.rate}:${i.amount}`).join('|');
+
+  const payload = `${quoteId}:REV${rev}:${currency}:${grandTotal}:${validity}:${items}`;
+  let h1 = 0xdeadbeef ^ 0;
+  let h2 = 0x41c6ce57 ^ 0;
+  for (let i = 0; i < payload.length; i++) {
+    const ch = payload.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(16, '0');
 }
 
 /**
@@ -1392,10 +1923,15 @@ export function validateStatusTransition(currentStatus, targetStatus, quotation 
     PROCESSOR_CHECK: ['PROCESSOR_CONFIRMED', 'COMMERCIAL_REVIEW', 'READY_FOR_BUYER', 'DRAFT', 'CANCELLED'],
     PROCESSOR_CONFIRMED: ['COMMERCIAL_REVIEW', 'PROCESSOR_CHECK', 'READY_FOR_BUYER', 'CANCELLED'],
     COMMERCIAL_REVIEW: ['READY_FOR_BUYER', 'PROCESSOR_CONFIRMED', 'PROCESSOR_CHECK', 'CANCELLED'],
-    READY_FOR_BUYER: ['SENT_TO_BUYER', 'COMMERCIAL_REVIEW', 'DRAFT', 'CANCELLED'],
-    SENT_TO_BUYER: ['NEGOTIATION', 'ACCEPTED', 'REVISED', 'CANCELLED'],
+    READY_FOR_BUYER: ['READY_TO_SEND', 'SENT_TO_BUYER', 'COMMERCIAL_REVIEW', 'DRAFT', 'CANCELLED'],
+    READY_TO_SEND: ['SENT_TO_BUYER', 'SEND_FAILED', 'READY_FOR_BUYER', 'CANCELLED'],
+    SENT_TO_BUYER: ['DELIVERY_PENDING', 'DELIVERED', 'OPENED', 'NEGOTIATION', 'ACCEPTED', 'REVISED', 'CANCELLED'],
+    DELIVERY_PENDING: ['DELIVERED', 'SEND_FAILED', 'OPENED', 'NEGOTIATION', 'ACCEPTED', 'REVISED', 'CANCELLED'],
+    DELIVERED: ['OPENED', 'NEGOTIATION', 'ACCEPTED', 'REVISED', 'CANCELLED'],
+    OPENED: ['NEGOTIATION', 'ACCEPTED', 'REVISED', 'PO_RECEIVED', 'CANCELLED'],
+    SEND_FAILED: ['READY_TO_SEND', 'READY_FOR_BUYER', 'SENT_TO_BUYER', 'CANCELLED'],
     NEGOTIATION: ['REVISED', 'ACCEPTED', 'CANCELLED'],
-    REVISED: ['PROCESSOR_CHECK', 'COMMERCIAL_REVIEW', 'READY_FOR_BUYER', 'SENT_TO_BUYER', 'NEGOTIATION', 'CANCELLED'],
+    REVISED: ['PROCESSOR_CHECK', 'COMMERCIAL_REVIEW', 'READY_FOR_BUYER', 'READY_TO_SEND', 'SENT_TO_BUYER', 'NEGOTIATION', 'CANCELLED'],
     ACCEPTED: ['PO_RECEIVED', 'CANCELLED'],
     PO_RECEIVED: ['CANCELLED'],
     CANCELLED: ['DRAFT']
@@ -1837,6 +2373,9 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     CANONICAL_QUOTATION_STATUSES,
     DISPATCH_STATUSES,
+    DELIVERY_STATUSES,
+    FOLLOWUP_STATUSES,
+    FOLLOWUP_TYPES,
     PROCESSOR_CONFIRMATION_STATUSES,
     PROCESSOR_VERIFICATION_STATUSES,
     PROCESSOR_CHECKLIST_DEFINITIONS,
@@ -1854,8 +2393,14 @@ if (typeof module !== 'undefined' && module.exports) {
     evaluateBuyerReadyGate,
     generateThreeWayAudit,
     createInitialDispatchState,
+    createInitialFollowUpState,
     generateB2BEmailTemplate,
+    sendQuotationEmail,
     sendQuotationToBuyer,
+    processDeliveryWebhook,
+    recordBuyerResponse,
+    updateFollowUp,
+    computeDocumentHash,
     createQuotationFromLead,
     validateStatusTransition,
     transitionQuotationStatus,

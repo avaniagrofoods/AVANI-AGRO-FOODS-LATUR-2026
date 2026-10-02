@@ -409,6 +409,74 @@ export default async function handler(req, res) {
         }
       }
 
+      if (action === 'delivery-webhook' || action === 'webhook') {
+        const { quotation, eventPayload, webhookSecret } = req.body || {};
+        if (!quotation) {
+          return res.status(400).json({ error: 'quotation object required for webhook processing.' });
+        }
+        const { processDeliveryWebhook } = await import('./_lib/quotationModel.js');
+        try {
+          const secret = webhookSecret || req.headers['x-webhook-secret'] || req.headers['authorization']?.replace('Bearer ', '');
+          const updated = processDeliveryWebhook(quotation, eventPayload || req.body, secret);
+          return res.status(200).json({
+            success: true,
+            message: 'Webhook processed successfully.',
+            quotation: updated
+          });
+        } catch (wErr) {
+          return res.status(400).json({ error: wErr.message });
+        }
+      }
+
+      if (action === 'record-buyer-response') {
+        const { quotation, responseData, actor } = req.body || {};
+        if (!quotation || !responseData) {
+          return res.status(400).json({ error: 'quotation and responseData required.' });
+        }
+        const { recordBuyerResponse } = await import('./_lib/quotationModel.js');
+        try {
+          const updated = recordBuyerResponse(quotation, responseData, actor || 'Sachin Shinde');
+          return res.status(200).json({
+            success: true,
+            message: 'Buyer response recorded.',
+            quotation: updated
+          });
+        } catch (brErr) {
+          return res.status(400).json({ error: brErr.message });
+        }
+      }
+
+      if (action === 'update-followup') {
+        const { quotation, followupData, actor } = req.body || {};
+        if (!quotation || !followupData) {
+          return res.status(400).json({ error: 'quotation and followupData required.' });
+        }
+        const { updateFollowUp } = await import('./_lib/quotationModel.js');
+        try {
+          const updated = updateFollowUp(quotation, followupData, actor || 'Sachin Shinde');
+          return res.status(200).json({
+            success: true,
+            message: 'Follow-up status updated.',
+            quotation: updated
+          });
+        } catch (fuErr) {
+          return res.status(400).json({ error: fuErr.message });
+        }
+      }
+
+      if (action === 'compute-document-hash') {
+        const { quotation } = req.body || {};
+        if (!quotation) {
+          return res.status(400).json({ error: 'quotation object required.' });
+        }
+        const { computeDocumentHash } = await import('./_lib/quotationModel.js');
+        const hash = computeDocumentHash(quotation);
+        return res.status(200).json({
+          success: true,
+          documentHash: hash
+        });
+      }
+
       if (action === 'update-status') {
         return res.status(200).json({
           success: true,
