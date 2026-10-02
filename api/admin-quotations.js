@@ -237,6 +237,24 @@ export default async function handler(req, res) {
         }
       }
 
+      if (action === 'processor-confirm') {
+        const { quotation, updates, actor } = req.body || {};
+        if (!quotation || !updates) {
+          return res.status(400).json({ error: 'quotation and updates required.' });
+        }
+        const { updateProcessorConfirmation } = await import('./_lib/quotationModel.js');
+        try {
+          const updated = updateProcessorConfirmation(quotation, updates, actor || 'Sachin Shinde');
+          return res.status(200).json({
+            success: true,
+            message: `Processor confirmation updated. Status: ${updated.processorConfirmation.status}`,
+            quotation: updated
+          });
+        } catch (pErr) {
+          return res.status(400).json({ error: pErr.message });
+        }
+      }
+
       if (action === 'processor-check') {
         const { quotation, updates, actor } = req.body || {};
         if (!quotation || !updates) {
@@ -252,6 +270,88 @@ export default async function handler(req, res) {
           });
         } catch (pErr) {
           return res.status(400).json({ error: pErr.message });
+        }
+      }
+
+      if (action === 'buyer-ready-gate') {
+        const { quotation } = req.body || {};
+        if (!quotation) {
+          return res.status(400).json({ error: 'quotation object required for buyer-ready gate evaluation.' });
+        }
+        const { evaluateBuyerReadyGate } = await import('./_lib/quotationModel.js');
+        const gate = evaluateBuyerReadyGate(quotation);
+        return res.status(200).json({
+          success: true,
+          gate
+        });
+      }
+
+      if (action === 'admin-override') {
+        const { quotation, reason, actor, bypassedChecks } = req.body || {};
+        if (!quotation || !reason) {
+          return res.status(400).json({ error: 'quotation and reason required for admin override.' });
+        }
+        const { setAdminOverride } = await import('./_lib/quotationModel.js');
+        try {
+          const updated = setAdminOverride(quotation, reason, actor || 'Sachin Shinde', bypassedChecks || []);
+          return res.status(200).json({
+            success: true,
+            message: 'Admin override recorded successfully.',
+            quotation: updated
+          });
+        } catch (oErr) {
+          return res.status(400).json({ error: oErr.message });
+        }
+      }
+
+      if (action === 'three-way-audit') {
+        const { quotation } = req.body || {};
+        if (!quotation) {
+          return res.status(400).json({ error: 'quotation object required.' });
+        }
+        const { generateThreeWayAudit } = await import('./_lib/quotationModel.js');
+        const audit = generateThreeWayAudit(quotation);
+        return res.status(200).json({
+          success: true,
+          audit
+        });
+      }
+
+      if (action === 'prepare-dispatch') {
+        const { quotation } = req.body || {};
+        if (!quotation) {
+          return res.status(400).json({ error: 'quotation object required.' });
+        }
+        const { generateB2BEmailTemplate, evaluateBuyerReadyGate } = await import('./_lib/quotationModel.js');
+        const gate = evaluateBuyerReadyGate(quotation);
+        const emailTemplate = generateB2BEmailTemplate(quotation);
+        return res.status(200).json({
+          success: true,
+          gate,
+          emailTemplate,
+          recipient: quotation.buyer?.email || '',
+          buyerName: quotation.buyer?.name || '',
+          company: quotation.buyer?.company || ''
+        });
+      }
+
+      if (action === 'send-buyer') {
+        const { quotation, options } = req.body || {};
+        if (!quotation) {
+          return res.status(400).json({ error: 'quotation object required for buyer dispatch.' });
+        }
+        const { sendQuotationToBuyer } = await import('./_lib/quotationModel.js');
+        try {
+          const result = await sendQuotationToBuyer(quotation, options || {});
+          return res.status(200).json({
+            success: result.success,
+            status: result.status,
+            message: result.message,
+            dispatch: result.dispatch,
+            quotation
+          });
+        } catch (sErr) {
+          return res.status(400).json({ error: sErr.message });
         }
       }
 

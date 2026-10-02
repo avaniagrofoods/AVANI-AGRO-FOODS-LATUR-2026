@@ -216,12 +216,12 @@ export function parseQuantityKg(qtyInput, rawText = '') {
  * Parse unit rate cleanly from input (handles "INR 350", "₹350", "350.00", 0, etc.)
  */
 export function parseUnitRate(rateInput, fallback = 350) {
-  if (typeof rateInput === 'number' && !isNaN(rateInput) && rateInput >= 0) {
+  if (typeof rateInput === 'number' && !isNaN(rateInput) && isFinite(rateInput) && rateInput >= 0) {
     return rateInput;
   }
   if (typeof rateInput === 'string' && rateInput.trim() !== '') {
     const clean = parseFloat(rateInput.replace(/,/g, '').replace(/[^0-9.]/g, ''));
-    if (!isNaN(clean) && clean >= 0) return clean;
+    if (!isNaN(clean) && isFinite(clean) && clean >= 0) return clean;
   }
   return fallback;
 }

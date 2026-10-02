@@ -1234,13 +1234,16 @@ export default function PrivateDashboard() {
               {[
                 { id: 'ALL', label: 'All' },
                 { id: 'DRAFT', label: 'Draft' },
-                { id: 'PROCESSOR_CHECK', label: 'Processor Check' },
+                { id: 'PROCESSOR_CHECK', label: 'Awaiting Processor' },
+                { id: 'PROCESSOR_CONFIRMED', label: 'Processor Confirmed' },
+                { id: 'COMMERCIAL_REVIEW', label: 'Commercial Review' },
                 { id: 'READY_FOR_BUYER', label: 'Ready for Buyer' },
-                { id: 'SENT_TO_BUYER', label: 'Sent to Buyer' },
+                { id: 'SENT_TO_BUYER', label: 'Sent' },
                 { id: 'NEGOTIATION', label: 'Negotiation' },
                 { id: 'REVISED', label: 'Revised' },
                 { id: 'ACCEPTED', label: 'Accepted' },
                 { id: 'PO_RECEIVED', label: 'PO Received' },
+                { id: 'SEND_FAILED', label: 'Send Failed' },
                 { id: 'CANCELLED', label: 'Cancelled' }
               ].map(f => {
                 const count = f.id === 'ALL'

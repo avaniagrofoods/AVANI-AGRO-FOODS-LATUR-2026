@@ -13,11 +13,22 @@ import { BUSINESS_INFO, WHATSAPP_NUMBER } from '../data/links'
 import { PRODUCT_MASTER, getProductById, matchProductMaster, parseQuantityKg, parseUnitRate, validateQuotation } from '../data/productMaster'
 import {
   CANONICAL_QUOTATION_STATUSES,
+  DISPATCH_STATUSES,
+  PROCESSOR_CONFIRMATION_STATUSES,
   PROCESSOR_VERIFICATION_STATUSES,
   PROCESSOR_CHECKLIST_DEFINITIONS,
   SOURCING_POSITIONING_NOTICES,
   createInitialProcessorVerification,
   evaluateProcessorVerification,
+  createInitialProcessorConfirmation,
+  evaluateProcessorConfirmation,
+  updateProcessorConfirmation,
+  setAdminOverride,
+  evaluateBuyerReadyGate,
+  generateThreeWayAudit,
+  createInitialDispatchState,
+  generateB2BEmailTemplate,
+  sendQuotationToBuyer,
   validateStatusTransition,
   transitionQuotationStatus,
   reviseQuotation,
@@ -31,12 +42,15 @@ const STATUS_LIST = [
   'ALL',
   'DRAFT',
   'PROCESSOR_CHECK',
+  'PROCESSOR_CONFIRMED',
+  'COMMERCIAL_REVIEW',
   'READY_FOR_BUYER',
   'SENT_TO_BUYER',
   'NEGOTIATION',
   'REVISED',
   'ACCEPTED',
   'PO_RECEIVED',
+  'SEND_FAILED',
   'CANCELLED'
 ]
 
@@ -87,6 +101,12 @@ export default function AdminQuotations() {
   const [poForm, setPoForm] = useState({ poNumber: '', poDate: new Date().toISOString().split('T')[0], poNotes: '' })
   const [showNegotiationModal, setShowNegotiationModal] = useState(false)
   const [negotiationForm, setNegotiationForm] = useState({ buyerRequestedPrice: '', buyerRequestedQuantity: '', requestedChanges: '', internalCounterOffer: '', note: '' })
+  const [showDispatchModal, setShowDispatchModal] = useState(false)
+  const [dispatchConfirmedRecipient, setDispatchConfirmedRecipient] = useState(false)
+  const [showOverrideModal, setShowOverrideModal] = useState(false)
+  const [overrideReasonInput, setOverrideReasonInput] = useState('')
+  const [showThreeWayModal, setShowThreeWayModal] = useState(false)
+  const [dispatchLoading, setDispatchLoading] = useState(false)
 
   // Builder / Editor Form State
   const [builderForm, setBuilderForm] = useState({
@@ -632,8 +652,13 @@ export default function AdminQuotations() {
     })
   }
 
-  // P4.3 Workflow State Machine Transition
+  // P4.4 Workflow State Machine Transition
   const handleStatusTransition = (targetStatus, details = {}) => {
+    if (targetStatus === 'SENT_TO_BUYER' && !details.confirmedDispatch) {
+      setShowDispatchModal(true)
+      return
+    }
+
     const currentQuote = {
       ...builderForm,
       quotationId: builderForm.quoteId || builderForm.quotationId,
@@ -653,6 +678,7 @@ export default function AdminQuotations() {
         items: builderForm.items,
         grandTotal: grandTotal
       },
+      processorConfirmation: builderForm.processorConfirmation,
       processorVerification: builderForm.processorVerification
     }
 
@@ -661,7 +687,8 @@ export default function AdminQuotations() {
       setValidationAlert({
         targetStatus,
         reason: check.reason,
-        checklist: check.checklist
+        checklist: check.checklist,
+        gate: check.gate
       })
       alert(`Cannot transition to ${targetStatus}: ${check.reason}`)
       return
@@ -679,7 +706,9 @@ export default function AdminQuotations() {
           timestamp: now,
           actor: 'Sachin Shinde',
           event: targetStatus === 'PROCESSOR_CHECK' ? 'PROCESSOR_CHECK_STARTED'
-            : targetStatus === 'READY_FOR_BUYER' ? 'QUOTATION_UPDATED'
+            : targetStatus === 'PROCESSOR_CONFIRMED' ? 'PROCESSOR_REQUIREMENT_CONFIRMED'
+            : targetStatus === 'COMMERCIAL_REVIEW' ? 'COMMERCIAL_REVIEW_STARTED'
+            : targetStatus === 'READY_FOR_BUYER' ? 'QUOTATION_READY'
             : targetStatus === 'SENT_TO_BUYER' ? 'QUOTATION_SENT'
             : targetStatus === 'NEGOTIATION' ? 'NEGOTIATION_STARTED'
             : targetStatus === 'ACCEPTED' ? 'QUOTATION_ACCEPTED'
@@ -826,6 +855,103 @@ export default function AdminQuotations() {
     setQuotations(prev => [updated, ...prev.filter(q => (q.quotationId || q.quoteId) !== updated.quoteId)])
     setShowNegotiationModal(false)
     alert('Negotiation terms recorded.')
+  }
+
+  // P4.4 Admin Override Handler
+  const handleOverrideSubmit = () => {
+    if (!overrideReasonInput.trim() || overrideReasonInput.trim().length < 5) {
+      alert('Admin override requires a clear justification reason of at least 5 characters.')
+      return
+    }
+    const currentQuote = {
+      ...builderForm,
+      quotationId: builderForm.quoteId || builderForm.quotationId,
+      processorConfirmation: builderForm.processorConfirmation || createInitialProcessorConfirmation(builderForm.commercialRequirement || {}),
+      processorVerification: builderForm.processorVerification || createInitialProcessorVerification(),
+      activity: builderForm.activity || []
+    }
+    const updated = setAdminOverride(currentQuote, overrideReasonInput.trim(), 'Sachin Shinde')
+    setBuilderForm(prev => ({
+      ...prev,
+      processorConfirmation: updated.processorConfirmation,
+      processorVerification: updated.processorVerification,
+      activity: updated.activity
+    }))
+    const existing = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
+    const updatedList = [updated, ...existing.filter(q => (q.quotationId || q.quoteId) !== updated.quotationId)]
+    localStorage.setItem('avani_quotations', JSON.stringify(updatedList))
+    setQuotations(prev => [updated, ...prev.filter(q => (q.quotationId || q.quoteId) !== updated.quotationId)])
+    setShowOverrideModal(false)
+    setOverrideReasonInput('')
+    alert('ADMIN OVERRIDE — INTERNAL CONTROL recorded. Override does not constitute processor confirmation.')
+  }
+
+  // P4.4 Controlled Buyer Dispatch Handler
+  const handleExecuteDispatch = async () => {
+    if (!dispatchConfirmedRecipient) {
+      alert('Please check the confirmation box indicating you have reviewed buyer recipient and quotation values.')
+      return
+    }
+    setDispatchLoading(true)
+    try {
+      const currentQuote = {
+        ...builderForm,
+        quotationId: builderForm.quoteId || builderForm.quotationId,
+        buyer: {
+          name: builderForm.buyerName,
+          company: builderForm.companyName,
+          email: builderForm.email,
+          country: builderForm.country
+        },
+        commercialRequirement: builderForm.commercialRequirement || {},
+        commercialTerms: {
+          paymentTerms: builderForm.paymentTerms,
+          priceBasis: `${builderForm.incoterm} Shipment terms`,
+          deliveryTimeline: builderForm.deliveryTimeline,
+          validityDate: builderForm.validUntil,
+          packaging: builderForm.packaging,
+          inspection: builderForm.inspectionTerms,
+          jurisdiction: builderForm.jurisdiction
+        },
+        quotation: {
+          items: builderForm.items,
+          currency: builderForm.currency,
+          subtotal: itemsSubtotal,
+          grandTotal: grandTotal
+        },
+        processorConfirmation: builderForm.processorConfirmation,
+        processorVerification: builderForm.processorVerification,
+        activity: builderForm.activity || []
+      }
+
+      const res = await sendQuotationToBuyer(currentQuote, {
+        adminReviewed: true,
+        actor: 'Sachin Shinde',
+        recipient: builderForm.email
+      })
+
+      const now = new Date().toISOString()
+      const updated = {
+        ...builderForm,
+        status: res.status === 'SENT' ? 'SENT_TO_BUYER' : builderForm.status,
+        dispatch: res.dispatch,
+        updatedAt: now,
+        activity: currentQuote.activity
+      }
+
+      setBuilderForm(updated)
+      const existing = JSON.parse(localStorage.getItem('avani_quotations') || '[]')
+      const updatedList = [updated, ...existing.filter(q => (q.quotationId || q.quoteId) !== updated.quoteId)]
+      localStorage.setItem('avani_quotations', JSON.stringify(updatedList))
+      setQuotations(prev => [updated, ...prev.filter(q => (q.quotationId || q.quoteId) !== updated.quoteId)])
+
+      setShowDispatchModal(false)
+      alert(res.message)
+    } catch (err) {
+      alert('Dispatch failed: ' + err.message)
+    } finally {
+      setDispatchLoading(false)
+    }
   }
 
   // Duplicate Quotation Handler (Copies current saved values with new quoteId)
@@ -2329,6 +2455,242 @@ export default function AdminQuotations() {
             </div>
           )}
 
+          {/* ══════════════════════════════════════════════════════════ */}
+          {/* MODAL: CONTROLLED BUYER DISPATCH (P4.4)                     */}
+          {/* ══════════════════════════════════════════════════════════ */}
+          {showDispatchModal && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
+              <div style={{ background: 'white', borderRadius: 10, padding: 28, maxWidth: 560, width: '100%', boxShadow: 'var(--shadow-xl)', border: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '2px solid var(--color-primary)', paddingBottom: 8 }}>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--color-primary)' }}>
+                    Controlled Buyer Dispatch Review
+                  </h3>
+                  <button onClick={() => setShowDispatchModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)' }}>
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 16px', lineHeight: 1.5 }}>
+                  Review recipient and commercial values carefully. Emails are only dispatched upon explicit admin review and authorization.
+                </p>
+
+                {/* Pre-flight Review Checklist */}
+                <div style={{ background: '#f8fafc', padding: 16, borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.85rem', lineHeight: 1.7, marginBottom: 16 }}>
+                  <div><strong>Buyer:</strong> {builderForm.buyerName || 'N/A'}</div>
+                  <div><strong>Company:</strong> {builderForm.companyName || 'N/A'}</div>
+                  <div><strong>Recipient Email:</strong> <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>{builderForm.email || 'N/A'}</span></div>
+                  <div><strong>Quotation ID:</strong> <span style={{ fontFamily: 'monospace', fontWeight: 800 }}>{builderForm.quoteId}</span></div>
+                  <div><strong>Revision:</strong> <span className="badge" style={{ background: '#e0f2fe', color: '#0369a1' }}>R{builderForm.revision?.revisionNumber || 0}</span></div>
+                  <div><strong>Destination &amp; Incoterm:</strong> {builderForm.destinationPort} ({builderForm.incoterm})</div>
+                  <div><strong>Currency:</strong> {builderForm.currency}</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--color-primary)', marginTop: 4 }}>
+                    <strong>Grand Total:</strong> {builderForm.currency} {formatNumber(grandTotal)}
+                  </div>
+                </div>
+
+                {/* Document Verification & Links */}
+                <div style={{ marginBottom: 16, padding: 12, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6 }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#166534', marginBottom: 6 }}>
+                    Verified Buyer-Facing Documents:
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadPdf(builderForm)}
+                      className="btn"
+                      style={{ fontSize: '0.78rem', padding: '6px 12px', background: 'white', border: '1px solid #16a34a', color: '#16a34a', gap: 6 }}
+                    >
+                      <Download size={13} /> Review PDF
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadDocx(builderForm)}
+                      className="btn"
+                      style={{ fontSize: '0.78rem', padding: '6px 12px', background: 'white', border: '1px solid #2563eb', color: '#2563eb', gap: 6 }}
+                    >
+                      <FileText size={13} /> Review DOCX
+                    </button>
+                  </div>
+                </div>
+
+                {/* Mandatory Confirmation Checkbox */}
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-text)' }}>
+                    <input
+                      type="checkbox"
+                      checked={dispatchConfirmedRecipient}
+                      onChange={e => setDispatchConfirmedRecipient(e.target.checked)}
+                      style={{ marginTop: 3, width: 16, height: 16, accentColor: 'var(--color-primary)' }}
+                    />
+                    <span>
+                      <strong>I have reviewed the buyer recipient, specifications, and commercial values.</strong> I authorize transmission of this official proforma quotation.
+                    </span>
+                  </label>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => { setShowDispatchModal(false); setDispatchConfirmedRecipient(false); }}
+                    className="btn"
+                    style={{ background: 'var(--color-bg-alt)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleExecuteDispatch}
+                    disabled={!dispatchConfirmedRecipient || dispatchLoading}
+                    className="btn btn-primary"
+                    style={{
+                      background: dispatchConfirmedRecipient ? 'var(--color-accent)' : '#94a3b8',
+                      cursor: dispatchConfirmedRecipient ? 'pointer' : 'not-allowed',
+                      opacity: dispatchConfirmedRecipient ? 1 : 0.6
+                    }}
+                  >
+                    {dispatchLoading ? 'Dispatching...' : 'SEND TO BUYER'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════ */}
+          {/* MODAL: ADMIN OVERRIDE (P4.4)                               */}
+          {/* ══════════════════════════════════════════════════════════ */}
+          {showOverrideModal && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
+              <div style={{ background: 'white', borderRadius: 10, padding: 28, maxWidth: 520, width: '100%', boxShadow: 'var(--shadow-xl)', border: '2px solid #ea580c' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#c2410c', margin: 0 }}>
+                    ADMIN OVERRIDE — INTERNAL CONTROL
+                  </h3>
+                  <button onClick={() => setShowOverrideModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)' }}>
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div style={{ background: '#fff7ed', border: '1px solid #ffedd5', padding: 12, borderRadius: 6, marginBottom: 16 }}>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#9a3412', fontWeight: 600, lineHeight: 1.5 }}>
+                    ⚠️ Notice: Override does not constitute processor confirmation.
+                  </p>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#c2410c' }}>
+                    This action will be permanently logged in the quotation audit history with timestamp and administrator identification.
+                  </p>
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label className="label">Justification / Reason for Admin Override *</label>
+                  <textarea
+                    className="input"
+                    rows={3}
+                    placeholder="e.g. Partner capacity confirmed verbally via director; written COA copy to follow prior to vessel stuffing..."
+                    value={overrideReasonInput}
+                    onChange={e => setOverrideReasonInput(e.target.value)}
+                    required
+                  />
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-light)', marginTop: 4 }}>
+                    Minimum 5 characters required. Never fabricates partner confirmation.
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => { setShowOverrideModal(false); setOverrideReasonInput(''); }}
+                    className="btn"
+                    style={{ background: 'var(--color-bg-alt)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOverrideSubmit}
+                    className="btn"
+                    style={{ background: '#c2410c', color: 'white', border: 'none' }}
+                  >
+                    Apply Admin Override
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════ */}
+          {/* MODAL: THREE-WAY COMMERCIAL AUDIT (P4.4)                    */}
+          {/* ══════════════════════════════════════════════════════════ */}
+          {showThreeWayModal && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
+              <div style={{ background: 'white', borderRadius: 10, padding: 28, maxWidth: 900, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: 'var(--shadow-xl)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, borderBottom: '2px solid var(--color-primary)', paddingBottom: 10 }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--color-primary)' }}>
+                      Three-Way Commercial Audit
+                    </h3>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginTop: 2 }}>
+                      Buyer Requested vs Processor Confirmed vs Final Quotation Value
+                    </div>
+                  </div>
+                  <button onClick={() => setShowThreeWayModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-light)' }}>
+                    <X size={22} />
+                  </button>
+                </div>
+
+                <div style={{ overflowX: 'auto', marginBottom: 16 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                    <thead>
+                      <tr style={{ background: 'var(--color-bg-alt)', borderBottom: '2px solid var(--color-border)', textAlign: 'left' }}>
+                        <th style={{ padding: '10px 12px' }}>Field</th>
+                        <th style={{ padding: '10px 12px', color: '#1e40af' }}>A. Buyer Requested</th>
+                        <th style={{ padding: '10px 12px', color: '#065f46' }}>B. Processor Confirmed</th>
+                        <th style={{ padding: '10px 12px', color: '#92400e' }}>C. Final Quotation Value</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'center' }}>Audit Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {generateThreeWayAudit({
+                        commercialRequirement: builderForm.commercialRequirement,
+                        processorConfirmation: builderForm.processorConfirmation,
+                        processorVerification: builderForm.processorVerification,
+                        quotation: {
+                          currency: builderForm.currency,
+                          items: builderForm.items,
+                          grandTotal: grandTotal
+                        },
+                        commercialTerms: {
+                          deliveryTimeline: builderForm.deliveryTimeline,
+                          validityDate: builderForm.validUntil
+                        }
+                      }).map((row, rIdx) => (
+                        <tr key={rIdx} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                          <td style={{ padding: '10px 12px', fontWeight: 700 }}>{row.field}</td>
+                          <td style={{ padding: '10px 12px' }}>{String(row.buyerRequested)}</td>
+                          <td style={{ padding: '10px 12px' }}>{String(row.processorConfirmed)}</td>
+                          <td style={{ padding: '10px 12px', fontWeight: 600 }}>{String(row.finalQuotationValue)}</td>
+                          <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                            <span className="badge" style={{
+                              fontSize: '0.7rem',
+                              fontWeight: 800,
+                              background: row.status === 'MATCH' ? '#dcfce7' : row.status === 'OVERRIDDEN' ? '#ffedd5' : '#fef3c7',
+                              color: row.status === 'MATCH' ? '#166534' : row.status === 'OVERRIDDEN' ? '#c2410c' : '#92400e'
+                            }}>
+                              {row.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button onClick={() => setShowThreeWayModal(false)} className="btn btn-primary">
+                    Close Audit Window
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </PasswordGate>
