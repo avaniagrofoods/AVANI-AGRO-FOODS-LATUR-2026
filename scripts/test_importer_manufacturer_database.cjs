@@ -174,9 +174,17 @@ runTest('Test 13: Importers and Manufacturers serverless APIs reject unauthentic
 runTest('Test 14: Authorized API access returns full dataset and success response', () => {
   const impApi = fs.readFileSync(path.resolve('api/importers.js'), 'utf8');
   const mfrApi = fs.readFileSync(path.resolve('api/manufacturers.js'), 'utf8');
-  assert(impApi.includes('importers: IMPORTERS'), 'api/importers.js must return IMPORTERS');
+  // api/importers.js returns a normalized copy — check response shape + auth gates
+  assert(impApi.includes('success: true'), 'api/importers.js must return success: true');
+  assert(impApi.includes('count:'), 'api/importers.js must return count field');
+  // Phase 8: normalized array key (either 'importers: IMPORTERS' or 'importers: normalized')
+  assert(
+    impApi.includes('importers: IMPORTERS') || impApi.includes('importers: normalized'),
+    'api/importers.js must return importers array in response'
+  );
   assert(mfrApi.includes('manufacturers: MANUFACTURERS'), 'api/manufacturers.js must return MANUFACTURERS');
 });
+
 
 // Test 15: Dashboard metrics computation
 runTest('Test 15: Dashboard dynamically derives totalImporters and totalManufacturers without hardcoding', () => {
