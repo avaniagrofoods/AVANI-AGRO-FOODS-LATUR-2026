@@ -53,19 +53,22 @@ runTest('Test 2: Manufacturer dataset loads cleanly with small/medium/large grou
 });
 
 // Test 3: Country count correct
-runTest('Test 3: Country count matches expected authoritative coverage (>= 20 countries)', () => {
+runTest('Test 3: Country count matches expected authoritative coverage (all 21 required countries present)', () => {
   const countries = new Set(IMPORTERS.map(i => i.country).filter(Boolean));
-  assert(countries.size >= 20, `Expected at least 20 countries, got ${countries.size}`);
-  assert(countries.has('USA'), 'Should include USA');
-  assert(countries.has('UK'), 'Should include UK');
-  assert(countries.has('UAE'), 'Should include UAE');
-  assert(countries.has('Germany'), 'Should include Germany');
-  assert(countries.has('Netherlands'), 'Should include Netherlands');
+  assert(countries.size >= 21, `Expected at least 21 countries, got ${countries.size}`);
+  const required = [
+    'USA', 'UK', 'UAE', 'Germany', 'Netherlands', 'Canada', 'Australia',
+    'Saudi Arabia', 'Qatar', 'Oman', 'Kuwait', 'Singapore', 'Malaysia', 'Japan',
+    'South Korea', 'Vietnam', 'Thailand', 'South Africa', 'Kenya', 'Nigeria', 'Brazil'
+  ];
+  required.forEach(c => {
+    assert(countries.has(c), `Missing required country: ${c}`);
+  });
 });
 
 // Test 4: Importer count correct
-runTest('Test 4: Importer record count is positive and matches normalized unique tally (612)', () => {
-  assert.strictEqual(IMPORTERS.length, 612, `Expected 612 unique importers, got ${IMPORTERS.length}`);
+runTest('Test 4: Importer record count matches normalized unique tally (642: 612 baseline + 30 researched)', () => {
+  assert.strictEqual(IMPORTERS.length, 642, `Expected 642 unique importers, got ${IMPORTERS.length}`);
 });
 
 // Test 5: Manufacturer count correct

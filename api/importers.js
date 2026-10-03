@@ -77,11 +77,32 @@ function calcContactability(imp) {
   return { score, level, emailAvailable: e, phoneAvailable: p, websiteAvailable: w, whatsappAvailable: wa };
 }
 
+// ── Country Normalization (Phase 6) ──────────────────────────
+// Ensures canonical country naming across all consumers:
+// KSA / Saudi → Saudi Arabia
+// Korea / Republic of Korea → South Korea
+// UAE / United Arab Emirates → UAE
+// USA / United States → USA
+// UK / United Kingdom → UK
+export function normalizeCountry(raw) {
+  if (!raw || String(raw).trim() === '') return 'Unknown';
+  const s = String(raw).trim();
+  const upper = s.toUpperCase();
+  if (upper === 'KSA' || upper === 'SAUDI' || upper === 'KINGDOM OF SAUDI ARABIA') return 'Saudi Arabia';
+  if (upper === 'KOREA' || upper === 'SOUTH KOREA' || upper === 'REPUBLIC OF KOREA') return 'South Korea';
+  if (upper === 'UAE' || upper === 'UNITED ARAB EMIRATES') return 'UAE';
+  if (upper === 'USA' || upper === 'UNITED STATES' || upper === 'UNITED STATES OF AMERICA') return 'USA';
+  if (upper === 'UK' || upper === 'UNITED KINGDOM') return 'UK';
+  return s;
+}
+
 // ── Record Normalization ──────────────────────────────────────
 function normalizeImporter(imp) {
   const c = calcContactability(imp);
   return {
     ...imp,
+    // Phase 6: canonical country normalization
+    country: normalizeCountry(imp.country),
     // Phase 4: standardize verificationStatus values
     verificationStatus: normalizeVerificationStatus(imp.verificationStatus),
     // Phase 5: contactability fields
