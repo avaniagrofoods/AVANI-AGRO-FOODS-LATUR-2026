@@ -14,6 +14,10 @@ import { WHATSAPP_NUMBER } from '../data/links'
 const PRIORITIES = ['All', 'HIGH', 'MEDIUM', 'LOW']
 const STATUSES = ['All', 'NEW', 'RESEARCHING', 'VERIFIED', 'CONTACTED', 'REPLIED', 'QUALIFIED', 'SAMPLE', 'QUOTATION', 'NEGOTIATION', 'ORDER', 'FOLLOW-UP']
 const VERIFICATIONS = ['All', 'VERIFIED', 'PARTIALLY VERIFIED', 'UNVERIFIED', 'NEEDS REVIEW']
+const COMPANY_VERIFICATIONS = ['All', 'COMPANY_VERIFIED', 'DOMAIN_ASSOCIATED', 'UNVERIFIED']
+const BUSINESS_FITS = ['All', 'RELEVANT', 'POSSIBLY_RELEVANT', 'UNASSESSED']
+const BUYER_TYPE_OPTIONS = ['All', 'IMPORTER_CONFIRMED', 'IMPORTER_UNCONFIRMED', 'DISTRIBUTOR', 'WHOLESALER', 'MANUFACTURER', 'INGREDIENT_BUYER', 'UNKNOWN']
+const OUTREACH_OPTIONS = ['All', 'READY', 'NOT_READY']
 
 export default function Importers() {
   const navigate = useNavigate()
@@ -23,6 +27,9 @@ export default function Importers() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // View Tabs: 'all', 'ready', 'queue', 'unverified', 'missing_dm', 'missing_contact'
+  const [activeTab, setActiveTab] = useState('all')
+
   // Filters & Search
   const [search, setSearch] = useState('')
   const [selectedCountry, setSelectedCountry] = useState('All')
@@ -31,6 +38,10 @@ export default function Importers() {
   const [selectedPriority, setSelectedPriority] = useState('All')
   const [selectedStatus, setSelectedStatus] = useState('All')
   const [selectedVerification, setSelectedVerification] = useState('All')
+  const [selectedCompanyVerification, setSelectedCompanyVerification] = useState('All')
+  const [selectedBusinessFit, setSelectedBusinessFit] = useState('All')
+  const [selectedBuyerType, setSelectedBuyerType] = useState('All')
+  const [selectedOutreachReady, setSelectedOutreachReady] = useState('All')
   const [sortBy, setSortBy] = useState('name') // name, priority, country, date
 
   // Dynamically derived countries from imported dataset
@@ -121,7 +132,22 @@ export default function Importers() {
     const matchStatus = selectedStatus === 'All' || item.outreachStatus === selectedStatus
     const matchVerification = selectedVerification === 'All' || item.verificationStatus === selectedVerification
 
-    return matchSearch && matchCountry && matchRegion && matchProduct && matchPriority && matchStatus && matchVerification
+    // Phase 2: Verification View Tabs & Dimensional Filters
+    const matchTab = activeTab === 'all' ||
+      (activeTab === 'ready' && item.outreachStatus === 'READY') ||
+      (activeTab === 'queue' && item.inVerificationQueue) ||
+      (activeTab === 'unverified' && item.companyVerificationStatus === 'UNVERIFIED') ||
+      (activeTab === 'missing_contact' && !item.emailFormatValid && !item.phoneFormatValid) ||
+      (activeTab === 'missing_dm' && (item.decisionMakerStatus === 'NOT_FOUND' || item.decisionMakerStatus === 'GENERIC_DEPARTMENT'))
+
+    const matchCompVer = selectedCompanyVerification === 'All' || item.companyVerificationStatus === selectedCompanyVerification
+    const matchBizFit = selectedBusinessFit === 'All' || item.businessFitStatus === selectedBusinessFit
+    const matchBuyerType = selectedBuyerType === 'All' || item.buyerType === selectedBuyerType
+    const matchOutreach = selectedOutreachReady === 'All' ||
+      (selectedOutreachReady === 'READY' && item.outreachStatus === 'READY') ||
+      (selectedOutreachReady === 'NOT_READY' && item.outreachStatus !== 'READY')
+
+    return matchTab && matchSearch && matchCountry && matchRegion && matchProduct && matchPriority && matchStatus && matchVerification && matchCompVer && matchBizFit && matchBuyerType && matchOutreach
   })
 
   // Sort
@@ -286,6 +312,49 @@ export default function Importers() {
           {/* Search & Multi-Filter Control Bar */}
           <div className="card" style={{ padding: '20px', background: 'white', marginBottom: 24 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+              {/* Row 0: Quick View Tabs (Phase 2) */}
+              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, borderBottom: '1px solid var(--color-border)' }}>
+                {[
+                  { id: 'all', label: 'All Importers', count: importers.length, icon: '🌍' },
+                  { id: 'ready', label: 'Outreach Ready', count: importers.filter(i => i.outreachStatus === 'READY').length, icon: '⚡' },
+                  { id: 'queue', label: 'Verification Queue', count: importers.filter(i => i.inVerificationQueue).length, icon: '📋' },
+                  { id: 'unverified', label: 'Unverified Records', count: importers.filter(i => i.companyVerificationStatus === 'UNVERIFIED').length, icon: '⚠️' },
+                  { id: 'missing_dm', label: 'Missing Named DM', count: importers.filter(i => i.decisionMakerStatus === 'NOT_FOUND' || i.decisionMakerStatus === 'GENERIC_DEPARTMENT').length, icon: '👤' },
+                  { id: 'missing_contact', label: 'Missing Contact', count: importers.filter(i => !i.emailFormatValid && !i.phoneFormatValid).length, icon: '📇' }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => { setActiveTab(tab.id); setCurrentPage(1); }}
+                    className="btn"
+                    style={{
+                      padding: '6px 14px',
+                      fontSize: '0.8rem',
+                      borderRadius: 20,
+                      fontWeight: 700,
+                      background: activeTab === tab.id ? 'var(--color-primary)' : 'var(--color-bg-alt)',
+                      color: activeTab === tab.id ? 'white' : 'var(--color-text)',
+                      border: activeTab === tab.id ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                      whiteSpace: 'nowrap',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <span>{tab.icon}</span>
+                    <span>{tab.label}</span>
+                    <span style={{
+                      background: activeTab === tab.id ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.06)',
+                      color: activeTab === tab.id ? 'white' : 'var(--color-text-light)',
+                      padding: '1px 6px',
+                      borderRadius: 10,
+                      fontSize: '0.72rem'
+                    }}>
+                      {tab.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
               
               {/* Row 1: Search and Sort */}
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -360,7 +429,7 @@ export default function Importers() {
                 </select>
               </div>
 
-              {/* Row 3: Secondary Filters */}
+              {/* Row 3: Secondary & Dimensional Filters */}
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', borderTop: '1px solid var(--color-border)', paddingTop: 12, fontSize: '0.82rem' }}>
                 <div>
                   <span style={{ color: 'var(--color-text-light)', marginRight: 6 }}>Product:</span>
@@ -387,24 +456,46 @@ export default function Importers() {
                 </div>
 
                 <div>
-                  <span style={{ color: 'var(--color-text-light)', marginRight: 6 }}>Outreach Status:</span>
+                  <span style={{ color: 'var(--color-text-light)', marginRight: 6 }}>Company Ver:</span>
                   <select
-                    value={selectedStatus}
-                    onChange={e => { setSelectedStatus(e.target.value); setCurrentPage(1); }}
+                    value={selectedCompanyVerification}
+                    onChange={e => { setSelectedCompanyVerification(e.target.value); setCurrentPage(1); }}
                     style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid var(--color-border)', background: 'white' }}
                   >
-                    {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                    {COMPANY_VERIFICATIONS.map(cv => <option key={cv} value={cv}>{cv.replace('_', ' ')}</option>)}
                   </select>
                 </div>
 
                 <div>
-                  <span style={{ color: 'var(--color-text-light)', marginRight: 6 }}>Verification:</span>
+                  <span style={{ color: 'var(--color-text-light)', marginRight: 6 }}>Buyer Type:</span>
                   <select
-                    value={selectedVerification}
-                    onChange={e => { setSelectedVerification(e.target.value); setCurrentPage(1); }}
+                    value={selectedBuyerType}
+                    onChange={e => { setSelectedBuyerType(e.target.value); setCurrentPage(1); }}
                     style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid var(--color-border)', background: 'white' }}
                   >
-                    {VERIFICATIONS.map(v => <option key={v} value={v}>{v}</option>)}
+                    {BUYER_TYPE_OPTIONS.map(bt => <option key={bt} value={bt}>{bt.replace('_', ' ')}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <span style={{ color: 'var(--color-text-light)', marginRight: 6 }}>Business Fit:</span>
+                  <select
+                    value={selectedBusinessFit}
+                    onChange={e => { setSelectedBusinessFit(e.target.value); setCurrentPage(1); }}
+                    style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid var(--color-border)', background: 'white' }}
+                  >
+                    {BUSINESS_FITS.map(bf => <option key={bf} value={bf}>{bf.replace('_', ' ')}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <span style={{ color: 'var(--color-text-light)', marginRight: 6 }}>Outreach:</span>
+                  <select
+                    value={selectedOutreachReady}
+                    onChange={e => { setSelectedOutreachReady(e.target.value); setCurrentPage(1); }}
+                    style={{ padding: '4px 8px', borderRadius: 4, border: '1px solid var(--color-border)', background: 'white' }}
+                  >
+                    {OUTREACH_OPTIONS.map(o => <option key={o} value={o}>{o.replace('_', ' ')}</option>)}
                   </select>
                 </div>
 
@@ -451,12 +542,21 @@ export default function Importers() {
                   }}
                 >
                   <div>
-                    {/* Top Row: Country, Priority & Verification Badges */}
+                    {/* Top Row: Location & Outreach Readiness Badge */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                       <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <MapPin size={13} /> {item.location || item.country}
                       </span>
-                      <div style={{ display: 'flex', gap: 4 }}>
+                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        {item.outreachStatus === 'READY' ? (
+                          <span className="badge" style={{ fontSize: '0.68rem', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}>
+                            ⚡ Outreach Ready
+                          </span>
+                        ) : (
+                          <span className="badge" style={{ fontSize: '0.68rem', background: '#f8fafc', color: '#64748b', border: '1px solid #cbd5e1' }}>
+                            🔒 Not Ready
+                          </span>
+                        )}
                         <span className="badge" style={{
                           fontSize: '0.68rem',
                           background: item.priority === 'HIGH' ? '#fef2f2' : '#fffbeb',
@@ -465,10 +565,34 @@ export default function Importers() {
                         }}>
                           {item.priority || 'MEDIUM'}
                         </span>
-                        <span className="badge" style={{ fontSize: '0.68rem', background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
-                          {item.verificationStatus || 'VERIFIED'}
-                        </span>
                       </div>
+                    </div>
+
+                    {/* Verification & Classification Pills */}
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 10 }}>
+                      <span className="badge" style={{
+                        fontSize: '0.66rem',
+                        background: item.companyVerificationStatus === 'COMPANY_VERIFIED' ? '#f0fdf4' : item.companyVerificationStatus === 'DOMAIN_ASSOCIATED' ? '#eff6ff' : '#fffbeb',
+                        color: item.companyVerificationStatus === 'COMPANY_VERIFIED' ? '#166534' : item.companyVerificationStatus === 'DOMAIN_ASSOCIATED' ? '#1d4ed8' : '#b45309',
+                        border: `1px solid ${item.companyVerificationStatus === 'COMPANY_VERIFIED' ? '#bbf7d0' : item.companyVerificationStatus === 'DOMAIN_ASSOCIATED' ? '#bfdbfe' : '#fde68a'}`
+                      }}>
+                        {item.companyVerificationStatus === 'COMPANY_VERIFIED' ? '✓ Company Verified (Registry)' : item.companyVerificationStatus === 'DOMAIN_ASSOCIATED' ? '🌐 Domain Associated' : '⚠️ Unverified'}
+                      </span>
+                      {item.buyerType && (
+                        <span className="badge" style={{ fontSize: '0.66rem', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>
+                          {item.buyerType.replace(/_/g, ' ')}
+                        </span>
+                      )}
+                      {item.businessFitStatus === 'RELEVANT' && (
+                        <span className="badge" style={{ fontSize: '0.66rem', background: '#fdf4ff', color: '#86198f', border: '1px solid #f5d0fe' }}>
+                          Fit: Relevant
+                        </span>
+                      )}
+                      {item.businessFitStatus === 'POSSIBLY_RELEVANT' && (
+                        <span className="badge" style={{ fontSize: '0.66rem', background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a' }}>
+                          Fit: Possibly Relevant
+                        </span>
+                      )}
                     </div>
 
                     {/* Company Name */}
@@ -492,35 +616,81 @@ export default function Importers() {
                     </div>
 
                     {/* Contact Person & Direct Info */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.8rem', color: 'var(--color-text)', marginBottom: 16 }}>
-                      {item.contactPerson && (
-                        <div><strong>Contact:</strong> {item.contactPerson} ({item.designation || item.jobTitle || 'Lead'})</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '0.8rem', color: 'var(--color-text)', marginBottom: 16 }}>
+                      {item.decisionMakerStatus === 'PROCUREMENT_CONFIRMED' || item.decisionMakerStatus === 'NAME_IDENTIFIED' ? (
+                        <div style={{ color: '#166534', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>👤 Named DM:</span>
+                          <span>{item.decisionMakerName} ({item.decisionMakerTitle})</span>
+                        </div>
+                      ) : item.decisionMakerStatus === 'GENERIC_DEPARTMENT' ? (
+                        <div style={{ color: '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>🏢 Department:</span>
+                          <span>{item.contactPerson || 'Procurement Desk'} ({item.designation || 'Generic Desk'})</span>
+                        </div>
+                      ) : (
+                        <div style={{ color: '#475569', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>💼 Role:</span>
+                          <span>{item.contactPerson || 'Buyer'} ({item.designation || 'Lead'})</span>
+                        </div>
                       )}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+
+                      {/* Email Row with Format & Deliverability status */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <Mail size={12} color="var(--color-primary)" />
                         {item.email && item.email !== 'Not Available' ? (
-                          <a href={`mailto:${item.email}`} style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>{item.email}</a>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <a href={`mailto:${item.email}`} style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>{item.email}</a>
+                            <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: 4, background: item.emailFormatValid ? '#f0fdf4' : '#fef2f2', color: item.emailFormatValid ? '#166534' : '#dc2626', border: `1px solid ${item.emailFormatValid ? '#bbf7d0' : '#fecaca'}` }}>
+                              {item.emailFormatValid ? 'Format Valid' : 'Format Invalid'}
+                            </span>
+                            <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: 4, background: '#f8fafc', color: '#64748b', border: '1px solid #cbd5e1' }}>
+                              Deliverability: {item.emailDeliverabilityStatus || 'UNTESTED'}
+                            </span>
+                          </div>
                         ) : (
                           <span style={{ color: 'var(--color-text-light)' }}>Email: Not Available</span>
                         )}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+
+                      {/* Phone Row with Format & Verification status */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <Phone size={12} color="var(--color-primary)" />
                         {item.phone && item.phone !== 'Not Available' ? (
-                          <span>{item.phone}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <span>{item.phone}</span>
+                            <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: 4, background: item.phoneFormatValid ? '#f0fdf4' : '#fef2f2', color: item.phoneFormatValid ? '#166534' : '#dc2626', border: `1px solid ${item.phoneFormatValid ? '#bbf7d0' : '#fecaca'}` }}>
+                              {item.phoneFormatValid ? 'Format Valid' : 'Format Invalid'}
+                            </span>
+                            <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: 4, background: '#f8fafc', color: '#64748b', border: '1px solid #cbd5e1' }}>
+                              Phone: {item.phoneVerificationStatus || 'UNTESTED'}
+                            </span>
+                          </div>
                         ) : (
                           <span style={{ color: 'var(--color-text-light)' }}>Phone: Not Available</span>
                         )}
                       </div>
+
                       {item.website && item.website !== 'Not Available' && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <Globe size={12} color="var(--color-primary)" />
                           <a href={item.website.startsWith('http') ? item.website : `https://${item.website}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>
                             {item.website.replace(/^https?:\/\//, '')}
                           </a>
+                          <span style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: 4, background: item.websiteUrlValid ? '#f0fdf4' : '#fef2f2', color: item.websiteUrlValid ? '#166534' : '#dc2626', border: `1px solid ${item.websiteUrlValid ? '#bbf7d0' : '#fecaca'}` }}>
+                            {item.websiteUrlValid ? 'URL Valid' : 'URL Invalid'}
+                          </span>
                         </div>
                       )}
                     </div>
+
+                    {/* Verification Queue Alert Box (if applicable) */}
+                    {item.inVerificationQueue && (
+                      <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '8px 12px', fontSize: '0.75rem', color: '#92400e', marginBottom: 14 }}>
+                        <div style={{ fontWeight: 800, marginBottom: 2 }}>📋 Verification Queue Item</div>
+                        <div><strong>Missing:</strong> {item.missingVerificationFields?.join(', ') || 'Pending external registry confirmation'}</div>
+                        <div style={{ marginTop: 2 }}><strong>Next Action:</strong> {item.nextVerificationAction}</div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions & Quotation Trigger */}
@@ -641,6 +811,49 @@ export default function Importers() {
                   <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)' }}>DESTINATION PORT</div>
                   <div style={{ fontWeight: 700 }}>{selectedImporter.destinationPort || 'Regional Port'}</div>
                 </div>
+              </div>
+
+              {/* Phase 2: Verification & Outreach Readiness Audit Panel */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 16, marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: 800, margin: 0, color: 'var(--color-primary)' }}>
+                    🛡️ Verification &amp; Outreach Audit
+                  </h4>
+                  {selectedImporter.outreachStatus === 'READY' ? (
+                    <span className="badge" style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}>
+                      ⚡ Outreach Ready
+                    </span>
+                  ) : (
+                    <span className="badge" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+                      🔒 Outreach Not Ready
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, fontSize: '0.8rem', marginBottom: 12 }}>
+                  <div><strong>Company Verification:</strong> {selectedImporter.companyVerificationStatus || 'UNVERIFIED'}</div>
+                  <div><strong>Domain Status:</strong> {selectedImporter.domainVerificationStatus || 'UNTESTED'}</div>
+                  <div><strong>Email Deliverability:</strong> {selectedImporter.emailDeliverabilityStatus || 'UNTESTED'} ({selectedImporter.emailFormatValid ? 'Format Valid' : 'Format Invalid'})</div>
+                  <div><strong>Phone Verification:</strong> {selectedImporter.phoneVerificationStatus || 'UNTESTED'} ({selectedImporter.phoneFormatValid ? 'Format Valid' : 'Format Invalid'})</div>
+                  <div><strong>Business Fit:</strong> {selectedImporter.businessFitStatus || 'UNASSESSED'}</div>
+                  <div><strong>Buyer Type:</strong> {selectedImporter.buyerType || 'UNKNOWN'}</div>
+                  <div><strong>Decision Maker:</strong> {selectedImporter.decisionMakerStatus || 'NOT_FOUND'}</div>
+                  <div><strong>Last Verified:</strong> {selectedImporter.lastVerifiedAt ? new Date(selectedImporter.lastVerifiedAt).toISOString().split('T')[0] : 'None (Evidence Pending)'}</div>
+                </div>
+
+                {selectedImporter.inVerificationQueue && (
+                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '10px 12px', fontSize: '0.78rem', color: '#92400e', marginTop: 10 }}>
+                    <div style={{ fontWeight: 800, marginBottom: 4 }}>📋 Verification Queue Requirements:</div>
+                    <div><strong>Missing Items:</strong> {selectedImporter.missingVerificationFields?.join('; ') || 'Registry audit pending'}</div>
+                    <div style={{ marginTop: 4 }}><strong>Next Action:</strong> {selectedImporter.nextVerificationAction}</div>
+                  </div>
+                )}
+
+                {selectedImporter.outreachBlockers && selectedImporter.outreachBlockers.length > 0 && (
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '8px 12px', fontSize: '0.75rem', color: '#991b1b', marginTop: 10 }}>
+                    <strong>Outreach Blockers:</strong> {selectedImporter.outreachBlockers.join(' • ')}
+                  </div>
+                )}
               </div>
 
               <div style={{ marginBottom: 24 }}>

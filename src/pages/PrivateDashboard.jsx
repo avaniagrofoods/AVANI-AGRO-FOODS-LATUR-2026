@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import SEO from '../components/SEO'
 import PasswordGate from '../components/PasswordGate'
@@ -22,6 +22,7 @@ import {
   createQuotationFromLead,
   CANONICAL_QUOTATION_STATUSES
 } from '../data/quotationModel'
+import { getVerificationDashboardMetrics } from '../data/importerVerificationModel'
 
 export default function PrivateDashboard() {
   const navigate = useNavigate()
@@ -391,6 +392,11 @@ export default function PrivateDashboard() {
   const totalQuotes = quotations.length
   const openQuotes = quotations.filter(q => q.status === 'NEW' || q.status === 'REVIEW_REQUIRED' || q.status === 'DRAFT' || q.status === 'SENT').length
 
+  // Phase 2: B2B Buyer Verification & Outreach Readiness Deterministic Metrics
+  const verMetrics = useMemo(() => {
+    return getVerificationDashboardMetrics(importers)
+  }, [importers])
+
   return (
     <PasswordGate
       title="Private Business Portal"
@@ -522,6 +528,113 @@ export default function PrivateDashboard() {
               </div>
             </div>
 
+          </div>
+
+          {/* Phase 2: B2B Buyer Verification & Outreach Readiness Metrics Grid */}
+          <div className="card" style={{ padding: '24px 28px', background: 'white', marginBottom: 36, border: '1px solid var(--color-border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20, borderBottom: '1px solid var(--color-border)', paddingBottom: 14 }}>
+              <div>
+                <span className="badge" style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', marginBottom: 6 }}>
+                  🛡️ Phase 2 Hardened Verification Layer
+                </span>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 900, margin: 0, color: 'var(--color-text)' }}>
+                  B2B Buyer Verification &amp; Outreach Readiness
+                </h2>
+              </div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-light)' }}>
+                  Target Countries: <strong>{verMetrics.requiredCountriesCoverage}</strong>
+                </span>
+                <Link to="/private/importers?tab=ready" className="btn" style={{ fontSize: '0.78rem', padding: '6px 14px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }}>
+                  Outreach Ready ({verMetrics.outreachReady})
+                </Link>
+                <Link to="/private/importers?tab=queue" className="btn" style={{ fontSize: '0.78rem', padding: '6px 14px', background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }}>
+                  Verification Queue ({verMetrics.verificationQueueCount})
+                </Link>
+              </div>
+            </div>
+
+            {/* Explicit Outreach Readiness Policy Banner */}
+            <div style={{ padding: '12px 16px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 20, fontSize: '0.82rem', color: '#334155', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: '1.1rem' }}>ℹ️</span>
+              <div>
+                <strong>Operational Policy:</strong> OUTREACH_READY means the record has passed all configured verification and eligibility rules. Format validation alone does not qualify a contact. Real-world SMTP deliverability and dial tests are pending for Phase 2.3.
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14 }}>
+              <div style={{ background: 'var(--color-bg-alt)', padding: '14px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase' }}>Total Records</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--color-text)', marginTop: 4 }}>{verMetrics.totalRecords}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>642 Baseline</div>
+              </div>
+
+              <div style={{ background: 'var(--color-bg-alt)', padding: '14px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase' }}>Required Countries</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#16a34a', marginTop: 4 }}>{verMetrics.requiredCountriesCoverage}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>{verMetrics.distinctCountriesCount} Total Countries</div>
+              </div>
+
+              <div style={{ background: 'var(--color-bg-alt)', padding: '14px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase' }}>Company Verified</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#166534', marginTop: 4 }}>{verMetrics.companyVerified}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>Official Registry Evidence</div>
+              </div>
+
+              <div style={{ background: 'var(--color-bg-alt)', padding: '14px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase' }}>Domain Associated</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0284c7', marginTop: 4 }}>{verMetrics.domainAssociated}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>Web Entity Associated</div>
+              </div>
+
+              <div style={{ background: 'var(--color-bg-alt)', padding: '14px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase' }}>Company Unverified</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#d97706', marginTop: 4 }}>{verMetrics.companyUnverified}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>In Verification Queue</div>
+              </div>
+
+              <div style={{ background: 'var(--color-bg-alt)', padding: '14px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase' }}>Business Fit Relevant</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#86198f', marginTop: 4 }}>{verMetrics.businessFitRelevant}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>Specific Moringa/Onion</div>
+              </div>
+
+              <div style={{ background: 'var(--color-bg-alt)', padding: '14px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase' }}>Website URL Valid</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#2563eb', marginTop: 4 }}>{verMetrics.websiteUrlValid}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>Syntactically Valid URLs</div>
+              </div>
+
+              <div style={{ background: 'var(--color-bg-alt)', padding: '14px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase' }}>Email Format Valid</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0891b2', marginTop: 4 }}>{verMetrics.emailFormatValid}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>Deliverability Untested</div>
+              </div>
+
+              <div style={{ background: 'var(--color-bg-alt)', padding: '14px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase' }}>Phone Format Valid</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#059669', marginTop: 4 }}>{verMetrics.phoneFormatValid}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>Dialing Untested</div>
+              </div>
+
+              <div style={{ background: 'var(--color-bg-alt)', padding: '14px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--color-text-light)', textTransform: 'uppercase' }}>Named DM Identified</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#4f46e5', marginTop: 4 }}>{verMetrics.decisionMakerIdentified}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-text-light)' }}>{verMetrics.decisionMakerGenericDept} Dept Desks</div>
+              </div>
+
+              <div style={{ background: '#f8fafc', padding: '14px', borderRadius: 8, border: '1px solid #cbd5e1' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Outreach Ready</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#475569', marginTop: 4 }}>{verMetrics.outreachReady}</div>
+                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Operational Gate Enforced</div>
+              </div>
+
+              <div style={{ background: '#fffbeb', padding: '14px', borderRadius: 8, border: '1px solid #fde68a' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#b45309', textTransform: 'uppercase' }}>Outreach Pending</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#b45309', marginTop: 4 }}>{verMetrics.outreachNotReady}</div>
+                <div style={{ fontSize: '0.72rem', color: '#92400e' }}>In Verification Pipeline</div>
+              </div>
+            </div>
           </div>
 
           {/* Core Modules Grid */}
