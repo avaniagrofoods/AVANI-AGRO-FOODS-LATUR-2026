@@ -10,7 +10,8 @@ const scripts = [
   'scripts/test_phase_3g_all.cjs',
   'scripts/test_phase_3h_preflight.cjs',
   'scripts/test_p2_verification_readiness.cjs',
-  'scripts/test_phase_3i_sequences.cjs'
+  'scripts/test_phase_3i_sequences.cjs',
+  'scripts/test_phase_3j_remediation.cjs'
 ];
 
 let failed = false;

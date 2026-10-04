@@ -1,7 +1,7 @@
 // ============================================================
 // AVANI AGRO FOODS — Email Workflow State Machine & Scheduler
 // api/_lib/sequenceStateMachine.js
-// Phase 3I: Deterministic Reply / No-Reply State Machine
+// Phase 3J: Deterministic Reply / No-Reply State Machine & Persistent Sync
 //
 // Rules & Timing:
 // - FOLLOWUP_DELAY_HOURS = 72
@@ -12,11 +12,20 @@
 //     next_action = 'HUMAN_REVIEW'
 // - No-reply advances through SEQ-01 -> SEQ-02 -> SEQ-03 -> SEQ-04 -> SEQ-05 -> COMPLETED
 // - EMAIL 5 is polite close / thank-you, after which sequence_status = COMPLETED (No EMAIL 6)
-// - Idempotency key: campaign_id + recipient_id + sequence_id
+// - Idempotency key: campaign_id + recipient_id + sequence_id + step
 // - Global outreach stop: fail-closed safety gate
 // ============================================================
 
 import { EMAIL_SEQUENCES, renderSequenceEmail } from './emailSequences.js';
+import {
+  reserveSequenceStep,
+  commitSequenceStep,
+  saveRecipientSequenceState,
+  getRecipientSequenceState,
+  recordReplyReceived,
+  releaseReservation,
+  generateStepIdempotencyKey
+} from './sequencePersistence.js';
 
 export const FOLLOWUP_DELAY_HOURS = 72;
 
@@ -39,7 +48,8 @@ export const SEQUENCE_STATUSES = {
   STOPPED_DUPLICATE: 'STOPPED_DUPLICATE',
   STOPPED_INVALID: 'STOPPED_INVALID',
   STOPPED_GLOBAL_STOP: 'STOPPED_GLOBAL_STOP',
-  STOPPED_UNAUTHORIZED: 'STOPPED_UNAUTHORIZED'
+  STOPPED_UNAUTHORIZED: 'STOPPED_UNAUTHORIZED',
+  MANUAL_REVIEW_REQUIRED: 'MANUAL_REVIEW_REQUIRED'
 };
 
 export const LEAD_STATUSES = {
@@ -50,7 +60,8 @@ export const LEAD_STATUSES = {
   UNSUBSCRIBED: 'UNSUBSCRIBED',
   BOUNCED: 'BOUNCED',
   COMPLETED_NO_REPLY: 'COMPLETED_NO_REPLY',
-  SUPPRESSED: 'SUPPRESSED'
+  SUPPRESSED: 'SUPPRESSED',
+  MANUAL_REVIEW: 'MANUAL_REVIEW'
 };
 
 export const NEXT_ACTIONS = {
@@ -64,19 +75,20 @@ export const NEXT_ACTIONS = {
 /**
  * Generate unique idempotency key
  */
-export function generateIdempotencyKey(campaignId, recipientId, sequenceId) {
+export function generateIdempotencyKey(campaignId, recipientId, sequenceId, stepNumber) {
   if (!campaignId || !recipientId || !sequenceId) {
     throw new Error('campaignId, recipientId, and sequenceId are required for idempotency');
   }
-  return `${campaignId}:${recipientId}:${sequenceId}`;
+  return generateStepIdempotencyKey(campaignId, recipientId, sequenceId, stepNumber);
 }
 
 /**
  * Initialize a recipient state for a sequence campaign
  */
 export function createRecipientState(recipient) {
+  const recipientId = recipient.id || recipient.recipientId || recipient.email;
   return {
-    recipientId: recipient.id || recipient.recipientId || recipient.email,
+    recipientId,
     email: recipient.email,
     companyName: recipient.companyName || recipient.name,
     contactName: recipient.contactPerson || recipient.contactName || 'Procurement Executive',
@@ -97,7 +109,7 @@ export function createRecipientState(recipient) {
 }
 
 /**
- * Dispatch next sequence step for a recipient
+ * Dispatch next sequence step for a recipient (in-memory & durable)
  */
 export function dispatchSequenceStep(state, campaignId, options = {}) {
   const {
@@ -105,10 +117,12 @@ export function dispatchSequenceStep(state, campaignId, options = {}) {
     globalOutreachStop = true,
     outreachAuthorized = false,
     isTestMode = false,
-    dispatchedStorage = new Set()
+    dispatchedStorage = new Set(),
+    useDurableStorage = false,
+    workerId = 'worker-1'
   } = options;
 
-  // 1. Safety Gate: Global Outreach Stop & Authorization
+  // 1. Safety Gate: Global Outreach Stop & Authorization (FAIL CLOSED)
   if (!isTestMode) {
     if (globalOutreachStop) {
       state.sequenceStatus = SEQUENCE_STATUSES.STOPPED_GLOBAL_STOP;
@@ -132,19 +146,20 @@ export function dispatchSequenceStep(state, campaignId, options = {}) {
     }
   }
 
-  // 2. Stop conditions check
-  if (state.replyDetected) {
+  // 2. Stop conditions check: Reply overrides scheduled timer permanently (PART C, PART H)
+  if (state.replyDetected || state.followups_cancelled || state.sequenceStatus === SEQUENCE_STATUSES.REPLIED) {
     state.sequenceStatus = SEQUENCE_STATUSES.STOPPED_REPLY_RECEIVED;
     state.followupStatus = SEQUENCE_STATUSES.STOPPED_REPLY_RECEIVED;
     state.nextAction = NEXT_ACTIONS.HUMAN_REVIEW;
-    return { success: false, blocked: true, reason: 'Reply already detected from recipient' };
+    state.nextFollowUpDueAt = null;
+    return { success: false, blocked: true, reason: 'Reply already detected from recipient. All follow-ups cancelled.' };
   }
 
   if (state.sequenceStatus === SEQUENCE_STATUSES.COMPLETED) {
     return { success: false, blocked: true, reason: 'Sequence already completed (SEQ-05 finished)' };
   }
 
-  // Determine which sequence step to send
+  // Determine which sequence step to send (Hard cap at 5: NO SEQ-06)
   const nextStepNum = state.currentStep + 1;
   if (nextStepNum > 5) {
     state.sequenceStatus = SEQUENCE_STATUSES.COMPLETED;
@@ -153,23 +168,40 @@ export function dispatchSequenceStep(state, campaignId, options = {}) {
   }
 
   const sequenceId = `SEQ-0${nextStepNum}`;
-  const idempotencyKey = generateIdempotencyKey(campaignId, state.recipientId, sequenceId);
+  const idempotencyKey = generateIdempotencyKey(campaignId, state.recipientId, sequenceId, nextStepNum);
 
-  // 3. Idempotency Check
-  if (state.dispatchedKeys.has(idempotencyKey) || dispatchedStorage.has(idempotencyKey)) {
+  // 3. Concurrency Protection & Durable Reservation (PART E, PART F)
+  if (useDurableStorage) {
+    const reservation = reserveSequenceStep(campaignId, state.recipientId, sequenceId, nextStepNum, workerId);
+    if (!reservation.reserved) {
+      if (reservation.alreadySent) {
+        state.sequenceStatus = SEQUENCE_STATUSES.STOPPED_DUPLICATE;
+        return { success: false, duplicate: true, reason: 'ALREADY_SENT', idempotencyKey };
+      }
+      if (reservation.alreadyReserved) {
+        return { success: false, reserved: false, reason: 'ALREADY_RESERVED', workerId: reservation.workerId, idempotencyKey };
+      }
+      return { success: false, blocked: true, reason: reservation.reason };
+    }
+  }
+
+  // 3b. In-memory Idempotency Check
+  if (state.dispatchedKeys && (state.dispatchedKeys.has(idempotencyKey) || dispatchedStorage.has(idempotencyKey))) {
     state.sequenceStatus = SEQUENCE_STATUSES.STOPPED_DUPLICATE;
     state.history.push({
       event: 'DISPATCH_SKIPPED_DUPLICATE',
       idempotencyKey,
       timestamp: now.toISOString()
     });
+    if (useDurableStorage) releaseReservation(idempotencyKey);
     return { success: false, duplicate: true, reason: 'Duplicate dispatch prevented by idempotency key' };
   }
 
-  // 4. Check 72-hour delay if not step 1
+  // 4. Check 72-hour delay if not step 1 (PART G)
   if (state.currentStep > 0 && state.lastSentAt) {
     const hoursSinceLast = (now.getTime() - new Date(state.lastSentAt).getTime()) / (1000 * 60 * 60);
     if (hoursSinceLast < FOLLOWUP_DELAY_HOURS) {
+      if (useDurableStorage) releaseReservation(idempotencyKey);
       return {
         success: false,
         timingBlocked: true,
@@ -179,7 +211,7 @@ export function dispatchSequenceStep(state, campaignId, options = {}) {
     }
   }
 
-  // 5. Render payload
+  // 5. Render payload with strictly verified "Export Trade Co-Ordinator" positioning
   const rendered = renderSequenceEmail(sequenceId, {
     contact_name: state.contactName,
     company_name: state.companyName,
@@ -187,7 +219,9 @@ export function dispatchSequenceStep(state, campaignId, options = {}) {
   });
 
   // 6. Update State
-  state.dispatchedKeys.add(idempotencyKey);
+  if (state.dispatchedKeys) {
+    state.dispatchedKeys.add(idempotencyKey);
+  }
   dispatchedStorage.add(idempotencyKey);
   state.currentSequenceId = sequenceId;
   state.currentStep = nextStepNum;
@@ -223,6 +257,16 @@ export function dispatchSequenceStep(state, campaignId, options = {}) {
     idempotencyKey,
     timestamp: now.toISOString()
   });
+
+  // 7. Commit to Durable Storage if enabled
+  if (useDurableStorage) {
+    commitSequenceStep(campaignId, state.recipientId, sequenceId, nextStepNum, {
+      email: state.email,
+      companyName: state.companyName,
+      contactName: state.contactName,
+      providerMessageId: options.providerMessageId || null
+    });
+  }
 
   return {
     success: true,
@@ -260,6 +304,7 @@ export function handleIncomingReply(state, replyEvent = {}) {
     createdAt: now
   };
 
+  state.operatorTasks = state.operatorTasks || [];
   state.operatorTasks.push(task);
 
   state.history.push({
@@ -268,6 +313,18 @@ export function handleIncomingReply(state, replyEvent = {}) {
     timestamp: now,
     actionTaken: 'ALL_AUTOMATED_FOLLOWUPS_CANCELLED'
   });
+
+  // Sync to durable persistent store if campaignId available
+  const campaignId = replyEvent.campaignId || state.campaignId;
+  if (campaignId && state.recipientId) {
+    recordReplyReceived(campaignId, state.recipientId, {
+      from: replyEvent.from || state.email,
+      subject: replyEvent.subject || '',
+      inReplyTo: replyEvent.inReplyTo || '',
+      messageId: replyEvent.messageId || '',
+      timestamp: now
+    });
+  }
 
   return {
     success: true,

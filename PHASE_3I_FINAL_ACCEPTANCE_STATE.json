@@ -1,0 +1,130 @@
+{
+  "report": "PHASE_3I_FINAL_ACCEPTANCE_STATE",
+  "generated_at": "2026-10-04T18:04:00+05:30",
+  "supersedes_decision": "PHASE_3I_ACCEPTED_WITH_EVIDENCE_GAPS",
+  "final_decision": "PHASE_3I_ACCEPTED",
+
+  "decision_domains": {
+    "technical_email_infrastructure": "ACCEPTED",
+    "controlled_gmail_delivery": "ACCEPTED",
+    "authentication": "ACCEPTED",
+    "inbox_placement": "ACCEPTED",
+    "production_buyer_outreach": "LOCKED"
+  },
+
+  "controlled_test": {
+    "campaign_id": "PHASE3I-DELIVERABILITY-TEST-001",
+    "sender": "AVANI AGRO FOODS <sales@avaniagrofoods.com>",
+    "sender_address": "sales@avaniagrofoods.com",
+    "reply_to": "sales@avaniagrofoods.com",
+    "recipient": "avaniagrofoods1356@gmail.com",
+    "recipient_classification": "OWNER_CONTROLLED_TEST_MAILBOX",
+    "subject": "AVANI AGRO FOODS — Phase 3I Email Delivery Test",
+    "resend_created_at_utc": "2026-10-04T06:44:26.594Z",
+    "script_timestamp_utc": "2026-10-04T06:44:31.101Z",
+    "resend_message_id": "01a105a8-1ed9-7aa3-801d-0cb2cd2d8486",
+    "ses_message_id": "<010601a105a82196-a25cdd2c-a854-4b30-9992-8898d644a89e-000000@ap-northeast-1.amazonses.com>"
+  },
+
+  "resend_delivery_evidence": {
+    "evidence_type": "PROVIDER_API",
+    "http_status": 200,
+    "submitted": "PASS",
+    "accepted": "PASS",
+    "last_event": "delivered",
+    "delivered": "PASS",
+    "bounced": false,
+    "complained": false
+  },
+
+  "gmail_evidence": {
+    "evidence_type": "OWNER_OBSERVED",
+    "gmail_receipt": "PASS",
+    "inbox_placement": "PASS",
+    "inbox_placement_source": "Owner Gmail Inbox screenshot",
+    "authentication_source": "Gmail > Show original > Authentication-Results header of received message",
+    "spf_message_authentication": "PASS",
+    "dkim_message_authentication": "PASS",
+    "dmarc_message_authentication": "PASS",
+    "inferred_from_dns": false,
+    "agent_directly_viewed_artifact": false,
+    "raw_header_archived_in_repo": false,
+    "recommendation": "Optionally archive Show-original output under evidence/ for permanent audit trail"
+  },
+
+  "dns_layer_consistency": {
+    "spf": "PASS",
+    "dkim_resend_selector": "PASS",
+    "dmarc": "PASS (p=none)"
+  },
+
+  "controlled_email_acceptance": {
+    "CONTROLLED_EMAIL_SUBMISSION": "PASS",
+    "CONTROLLED_EMAIL_DELIVERY": "PASS",
+    "GMAIL_RECEIPT": "PASS",
+    "GMAIL_INBOX_PLACEMENT": "PASS",
+    "SPF": "PASS",
+    "DKIM": "PASS",
+    "DMARC": "PASS",
+    "CONTROLLED_EMAIL_TEST": "FULLY_VERIFIED"
+  },
+
+  "safety_state": {
+    "verified_at": "2026-10-04T18:02:55+05:30",
+    "OUTREACH_AUTHORIZED": 0,
+    "PILOT_AUTHORIZED": 0,
+    "GLOBAL_OUTREACH_STOP": 1,
+    "EXTERNAL_BUYERS_CONTACTED": 0,
+    "EXTERNAL_BUYER_EMAILS_SENT": 0,
+    "CONTROLLED_TEST_EMAILS_SENT": 1,
+    "CONTROLLED_TEST_COUNTED_AS_OUTREACH": false,
+    "SMTP_PROBES": 0,
+    "MX_PROBES": 0,
+    "HUMAN_AUTHORIZATION_REQUIRED": true
+  },
+
+  "dataset_freeze": {
+    "importersData_js_sha256": "02AFC4E0F621B4326A1CBD67BFC31266A14DFA77F1B0F9767315BB971860F595",
+    "snapshot_642_sha256": "86100BDA94BE63A51EDDC6EE2B2458133F607D50CD5F7D66C25193F3C9137F9E",
+    "match": true
+  },
+
+  "git": {
+    "head": "d93884e",
+    "production_code_uncommitted_changes": 0,
+    "untracked_report_files": [
+      "PHASE_3I_POST_DEPLOYMENT_FORENSIC_REPORT.md",
+      "PHASE_3I_POST_DEPLOYMENT_FORENSIC_STATE.json",
+      "PHASE_3I_FINAL_ACCEPTANCE_REPORT.md",
+      "PHASE_3I_FINAL_ACCEPTANCE_STATE.json"
+    ]
+  },
+
+  "security": {
+    "real_secrets_in_tracked_files": 0,
+    "env_files_tracked_by_git": false,
+    "scan_findings_total": 11,
+    "scan_findings_breakdown": {
+      "untracked_env_file": 1,
+      "scratch_files": 3,
+      "detection_pattern_strings": 2,
+      "negative_test_placeholders": 5
+    },
+    "correction_note": "Forensic report's '10 test/scratch' breakdown was imprecise; all 11 individually inspected at closure — none are real secrets in tracked files."
+  },
+
+  "open_prerequisites_before_outreach_authorization": [
+    "Inbound reply webhook/parser not deployed — handleIncomingReply() must be fed by real inbound replies (or human monitoring of sales@avaniagrofoods.com) before 72h follow-ups run",
+    "Persistent sequence/idempotency state store not yet implemented — current state machine is in-memory"
+  ],
+
+  "actions_not_taken": [
+    "outreach not enabled",
+    "pilot not enabled",
+    "global stop not disabled",
+    "no additional test sent",
+    "no importer or manufacturer contacted",
+    "no buyer or manufacturer records modified",
+    "no authorization gates weakened"
+  ]
+}

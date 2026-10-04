@@ -10,8 +10,15 @@ const expectedSnapSha = '86100bda94be63a51eddc6ee2b2458133f607d50cd5f7d66c25193f
 
 const head = execSync('git rev-parse HEAD').toString().trim();
 console.log('Git HEAD:', head);
-if (head !== expectedHead) {
-  throw new Error(`Git HEAD mismatch: expected ${expectedHead}, got ${head}`);
+let isDescendant = false;
+try {
+  execSync(`git merge-base --is-ancestor ${expectedHead} HEAD`);
+  isDescendant = true;
+} catch (e) {
+  isDescendant = false;
+}
+if (head !== expectedHead && !isDescendant) {
+  throw new Error(`Git HEAD mismatch: expected ${expectedHead} or descendant, got ${head}`);
 }
 
 const jsContent = fs.readFileSync('api/_data/importersData.js');

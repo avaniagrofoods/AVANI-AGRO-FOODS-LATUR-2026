@@ -1,0 +1,256 @@
+{
+  "forensic_report": "PHASE_3I_POST_DEPLOYMENT_FORENSIC_STATE",
+  "generated_at": "2026-10-04T17:36:00+05:30",
+  "mode": "STRICT_READ_ONLY_FORENSIC_VERIFICATION",
+  "no_email_sent": true,
+  "no_buyer_contacted": true,
+  "no_code_modified": true,
+  "no_data_modified": true,
+
+  "git": {
+    "status": "PASS",
+    "working_tree": "CLEAN",
+    "head_commit": "d93884e",
+    "head_message": "chore: finalize Phase 3I remediation and reports",
+    "phase_3i_files_committed": true,
+    "files_changed_in_head": 110,
+    "insertions": 12689,
+    "deletions": 31
+  },
+
+  "dataset_freeze": {
+    "status": "PASS",
+    "importersData_js_sha256": "02AFC4E0F621B4326A1CBD67BFC31266A14DFA77F1B0F9767315BB971860F595",
+    "importersData_js_expected": "02AFC4E0F621B4326A1CBD67BFC31266A14DFA77F1B0F9767315BB971860F595",
+    "importersData_js_match": true,
+    "snapshot_642_sha256": "86100BDA94BE63A51EDDC6EE2B2458133F607D50CD5F7D66C25193F3C9137F9E",
+    "snapshot_642_expected": "86100BDA94BE63A51EDDC6EE2B2458133F607D50CD5F7D66C25193F3C9137F9E",
+    "snapshot_642_match": true,
+    "structural_diff": { "added": 0, "deleted": 0, "modified": 0, "reordered": 0 }
+  },
+
+  "live_email_test": {
+    "campaign_id": "PHASE3I-DELIVERABILITY-TEST-001",
+    "timestamp": "2026-10-04T06:44:31.101Z",
+    "recipient": "avaniagrofoods1356@gmail.com",
+    "sender": "AVANI AGRO FOODS <sales@avaniagrofoods.com>",
+    "reply_to": "sales@avaniagrofoods.com",
+    "subject": "AVANI AGRO FOODS — Phase 3I Email Delivery Test",
+    "provider": "Resend",
+    "provider_status_code": 200,
+    "resend_message_id": "01a105a8-1ed9-7aa3-801d-0cb2cd2d8486",
+    "ses_message_id": "<010601a105a82196-a25cdd2c-a854-4b30-9992-8898d644a89e-000000@ap-northeast-1.amazonses.com>",
+    "provider_last_event": "delivered",
+    "external_buyers_contacted": 0,
+    "is_controlled_test_only": true
+  },
+
+  "resend_delivery_evidence": {
+    "submitted": "CONFIRMED",
+    "accepted": "CONFIRMED",
+    "delivered": "CONFIRMED_PROVIDER_EVENT",
+    "bounced": "NOT_OBSERVED",
+    "complained": "NOT_OBSERVED",
+    "note": "delivered = accepted by Gmail MX (Resend terminology). Does NOT confirm inbox placement."
+  },
+
+  "email_authentication": {
+    "spf_dns": "PASS",
+    "dkim_dns": "PASS",
+    "dmarc_dns": "PASS",
+    "message_level_spf": "NOT_VERIFIED",
+    "message_level_dkim": "NOT_VERIFIED",
+    "message_level_dmarc": "NOT_VERIFIED",
+    "reason": "Resend API does not expose Authentication-Results headers. Owner must inspect raw message headers in Gmail."
+  },
+
+  "inbox_placement": "UNKNOWN",
+
+  "reply_detection": {
+    "status": "PASS",
+    "file": "api/_lib/sequenceStateMachine.js",
+    "function": "handleIncomingReply()",
+    "line": 240,
+    "logic": "replyDetected=true, nextFollowUpDueAt=null, followupStatus=STOPPED_REPLY_RECEIVED, leadStatus=REPLIED, nextAction=HUMAN_REVIEW",
+    "guard_in_dispatch": "Line 136 — dispatchSequenceStep() returns blocked if replyDetected=true"
+  },
+
+  "follow_up_cancellation": {
+    "status": "PASS",
+    "method": "state.nextFollowUpDueAt = null",
+    "history_recorded": "ALL_AUTOMATED_FOLLOWUPS_CANCELLED"
+  },
+
+  "followup_delay": {
+    "status": "PASS",
+    "FOLLOWUP_DELAY_HOURS": 72,
+    "source_file": "api/_lib/sequenceStateMachine.js",
+    "source_line": 21,
+    "enforcement_lines": "170-180"
+  },
+
+  "email_sequences": {
+    "status": "PASS",
+    "count": 5,
+    "sequences": [
+      { "id": "SEQ-01", "step": "EMAIL_1", "delay_hours": 0,  "purpose": "Initial Sourcing Introduction", "is_final": false },
+      { "id": "SEQ-02", "step": "EMAIL_2", "delay_hours": 72, "purpose": "Specification & Requirement Follow-Up", "is_final": false },
+      { "id": "SEQ-03", "step": "EMAIL_3", "delay_hours": 72, "purpose": "Evaluation Samples & COA Review", "is_final": false },
+      { "id": "SEQ-04", "step": "EMAIL_4", "delay_hours": 72, "purpose": "Procurement Timing & Requirement Clarification", "is_final": false },
+      { "id": "SEQ-05", "step": "EMAIL_5", "delay_hours": 72, "purpose": "Polite Close & Thank-You", "is_final": true }
+    ],
+    "seq_06_exists": false,
+    "hard_cap_at_5": true,
+    "cap_source_line": 149
+  },
+
+  "positioning": {
+    "status": "PASS",
+    "export_trade_coordinator_present": true,
+    "prohibited_terms_found": [],
+    "disclaimer_present_all_sequences": true,
+    "opt_out_present_all_sequences": true,
+    "full_address_present_all_sequences": true
+  },
+
+  "importer_database": {
+    "status": "PASS",
+    "total_records": 642,
+    "status_distribution": {
+      "VERIFIED": 22,
+      "UNDER_REVIEW": 241,
+      "UNVERIFIED": 379,
+      "REJECTED": 0,
+      "SUPPRESSED": 0
+    },
+    "status_source": "computed_at_api_runtime",
+    "quality_metrics": {
+      "duplicate_emails": 9,
+      "duplicate_companies": 0,
+      "invalid_emails": 311,
+      "missing_countries": 0,
+      "missing_companies": 0
+    }
+  },
+
+  "manufacturer_database": {
+    "status": "PASS",
+    "total_records": 129,
+    "status_distribution": {
+      "VERIFIED": 0,
+      "UNDER_REVIEW": 0,
+      "UNVERIFIED": 129,
+      "REJECTED": 0
+    },
+    "no_fabricated_verified_records": true
+  },
+
+  "local_data_reconciliation": {
+    "status": "PASS",
+    "local_importer_files": 73,
+    "local_manufacturer_files": 83,
+    "runtime_importer_records": 642,
+    "runtime_manufacturer_records": 129,
+    "dataset_sha256_verified": true
+  },
+
+  "private_page_security": {
+    "status": "PASS",
+    "api_importers_unauthenticated": "HTTP 401",
+    "api_manufacturers_unauthenticated": "HTTP 401",
+    "real_secrets_in_tracked_source": 0
+  },
+
+  "production_deployment": {
+    "status": "PASS",
+    "deployment_id": "dpl_CbyS1JEs1F8oXMn7aitonbhgYC69",
+    "vercel_url": "https://avani-agro-foods-latur-2026-81p44s1ah.vercel.app",
+    "aliased_domain": "https://www.avaniagrofoods.com",
+    "readyState": "READY",
+    "live_site_http_code": 200,
+    "last_modified": "Sun, 04 Oct 2026 11:42:33 GMT"
+  },
+
+  "build": {
+    "status": "PASS",
+    "tool": "vite v5.4.21",
+    "modules_transformed": 2358,
+    "fatal_errors": 0,
+    "exit_code": 0
+  },
+
+  "security": {
+    "status": "PASS",
+    "real_secrets_in_tracked_source_files": 0,
+    "security_scan_total_findings": 11,
+    "findings_in_production_source": 0,
+    "findings_in_env_files_gitignored": 1,
+    "findings_in_test_scratch_scripts": 10
+  },
+
+  "outreach_safety": {
+    "status": "PASS",
+    "OUTREACH_AUTHORIZED": 0,
+    "PILOT_AUTHORIZED": 0,
+    "GLOBAL_OUTREACH_STOP": 1,
+    "EMAILS_SENT_EXTERNAL": 0,
+    "EMAILS_SENT_CONTROLLED_TEST": 1,
+    "BUYERS_CONTACTED": 0,
+    "SMTP_PROBES": 0,
+    "MX_PROBES": 0
+  },
+
+  "external_buyer_contact": {
+    "status": "PASS",
+    "external_buyers_contacted": 0,
+    "controlled_test_mailbox_emails": 1,
+    "controlled_test_mailbox": "avaniagrofoods1356@gmail.com"
+  },
+
+  "acceptance_matrix": {
+    "Git":                    "PASS",
+    "Build":                  "PASS",
+    "Deployment":             "PASS",
+    "Email_submission":       "PASS",
+    "Email_delivery":         "PASS",
+    "SPF":                    "NOT_VERIFIED_MESSAGE_LEVEL",
+    "DKIM":                   "NOT_VERIFIED_MESSAGE_LEVEL",
+    "DMARC":                  "NOT_VERIFIED_MESSAGE_LEVEL",
+    "Inbox_placement":        "UNKNOWN",
+    "Reply_detection":        "PASS",
+    "Followup_cancellation":  "PASS",
+    "72h_delay":              "PASS",
+    "Five_sequences":         "PASS",
+    "Importer_data":          "PASS",
+    "Manufacturer_data":      "PASS",
+    "Private_page_security":  "PASS",
+    "Production_deployment":  "PASS",
+    "Security":               "PASS",
+    "External_buyer_contact": "PASS",
+    "Global_stop":            "PASS"
+  },
+
+  "evidence_gaps": [
+    "SPF/DKIM/DMARC at message level — requires owner to inspect Gmail raw message headers",
+    "Inbox vs Spam placement — requires owner mailbox inspection",
+    "Live end-to-end reply webhook — no inbound reply handler deployed; reply detection verified by simulation tests only"
+  ],
+
+  "final_decision": "PHASE_3I_ACCEPTED_WITH_EVIDENCE_GAPS",
+
+  "final_decision_rationale": "All implementation, safety, sequence logic, database, deployment, and security checks pass independently. Evidence gaps are limited to message-level authentication headers and inbox placement, both of which require owner physical mailbox inspection and cannot be resolved programmatically without inbound email infrastructure.",
+
+  "human_action_required": [
+    "Open avaniagrofoods1356@gmail.com in Gmail",
+    "Find email: 'AVANI AGRO FOODS — Phase 3I Email Delivery Test'",
+    "Click ⋮ → Show original → confirm SPF=pass, DKIM=pass, DMARC=pass",
+    "Confirm email is in INBOX (not Spam)",
+    "If confirmed: decision upgrades to PHASE_3I_ACCEPTED"
+  ],
+
+  "infrastructure_ready": true,
+  "OUTREACH_AUTHORIZED": 0,
+  "PILOT_AUTHORIZED": 0,
+  "GLOBAL_OUTREACH_STOP": 1,
+  "HUMAN_AUTHORIZATION_REQUIRED": true
+}
