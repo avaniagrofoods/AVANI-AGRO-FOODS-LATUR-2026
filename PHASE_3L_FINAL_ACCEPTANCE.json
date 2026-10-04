@@ -1,0 +1,100 @@
+{
+  "phase": "3L",
+  "report_title": "PHASE_3L_FINAL_ACCEPTANCE",
+  "generated_at": "2026-10-04T23:40:00+05:30",
+  "status": "READY_FOR_FINAL_ACCEPTANCE",
+
+  "git": {
+    "branch": "main",
+    "latest_commit": "84866f8 docs(phase-3k): update verification report and final state with security audit",
+    "working_tree": "CLEAN"
+  },
+
+  "vercel_production": {
+    "status": "READY",
+    "deployment_id": "dpl_zp22y0n6i",
+    "url": "https://avani-agro-foods-latur-2026-zp22y0n6i.vercel.app",
+    "aliased_domain": "https://www.avaniagrofoods.com",
+    "homepage_get": "HTTP_200"
+  },
+
+  "vercel_preview": {
+    "status": "READY",
+    "deployment_id": "dpl_3Y2DDYyJkEwggHDk3wNGDa93nbtB",
+    "url": "https://avani-agro-foods-latur-2026-ct92kmqu3.vercel.app",
+    "sso_protection": "ACTIVE"
+  },
+
+  "environment_variables": {
+    "RESEND_WEBHOOK_SECRET_production": "PRESENT",
+    "RESEND_WEBHOOK_SECRET_preview": "PRESENT",
+    "RESEND_WEBHOOK_SECRET1": "ABSENT",
+    "TEST_PREVIEW_VAR": "ABSENT",
+    "RESEND_API_KEY_production": "PRESENT",
+    "RESEND_API_KEY_preview": "PRESENT",
+    "RESEND_FROM_EMAIL_production": "PRESENT",
+    "RESEND_FROM_EMAIL_preview": "PRESENT"
+  },
+
+  "webhook_production": {
+    "GET": "HTTP_405 PASS",
+    "unsigned_POST": "HTTP_401 PASS",
+    "invalid_signature_POST": "HTTP_401 PASS",
+    "valid_synthetic_event": "HTTP_200 PASS (via local test C1 in test_phase_3k_webhook.cjs)"
+  },
+
+  "webhook_preview": {
+    "GET": "HTTP_302 (Vercel SSO Protected — EXPECTED)",
+    "unsigned_POST": "HTTP_401 PASS",
+    "invalid_signature_POST": "HTTP_401 PASS",
+    "sso": "ACTIVE — API routes behind authentication gateway for Preview"
+  },
+
+  "tests": {
+    "targeted_webhook": "18/18 PASS",
+    "full_suite": "152/152 PASS (from last run, inputs unchanged)",
+    "security_scan": "PASS — zero secrets in tracked code"
+  },
+
+  "dataset_integrity": {
+    "importersData_js": "PASS",
+    "snapshot_642_json": "PASS",
+    "manufacturersData_js": "PASS"
+  },
+
+  "safety_gates": {
+    "OUTREACH_AUTHORIZED": 0,
+    "PILOT_AUTHORIZED": 0,
+    "GLOBAL_OUTREACH_STOP": 1,
+    "EXTERNAL_BUYERS_CONTACTED": 0,
+    "EXTERNAL_BUYER_EMAILS_SENT": 0,
+    "SMTP_PROBES": 0,
+    "MX_PROBES": 0,
+    "result": "PASS"
+  },
+
+  "build_warnings": [
+    { "source": "npm", "warning": "deprecated packages (rimraf@2, glob@7, uuid@8, etc.)", "category": "INFORMATIONAL", "action": "NONE" },
+    { "source": "npm", "warning": "16 audit vulnerabilities (1 low, 7 moderate, 8 high)", "category": "INFORMATIONAL", "action": "DEFERRED — fix --force not permitted, separate task" },
+    { "source": "npm", "warning": "esbuild/puppeteer install-script not in allowScripts", "category": "INFORMATIONAL", "action": "NONE" },
+    { "source": "vite", "warning": "quotationModel chunk 1.74 MB > 500 kB limit", "category": "PERFORMANCE", "action": "DEFERRED — code-split in future phase" },
+    { "source": "vite", "warning": "fs/path modules externalized for browser", "category": "INFORMATIONAL", "action": "NONE" },
+    { "source": "vercel", "warning": "middleware.js deprecated edge runtime", "category": "DEPRECATION", "action": "DEFERRED — runtime still operational" }
+  ],
+
+  "secret_handling": {
+    "new_secret_exposure_in_source_reports_git": "ZERO",
+    "previous_secret_incident": "TREATED_AS_COMPROMISED",
+    "provider_rotation_status": "BLOCKED_EXTERNAL_PROVIDER — Resend Dashboard rotation required by owner"
+  },
+
+  "remaining_blockers": [
+    {
+      "id": "BLOCKER-1",
+      "type": "EXTERNAL_PROVIDER",
+      "description": "Resend Dashboard webhook signing secret rotation. The previous secret appeared in a session command. Owner must rotate the signing secret in Resend Dashboard (https://resend.com/webhooks) and update RESEND_WEBHOOK_SECRET directly via Vercel Dashboard (https://vercel.com) for both Production and Preview — to prevent any credential exposure in future CLI transcripts.",
+      "required_action": "Owner manual action in Resend Dashboard + Vercel Dashboard (URL above)",
+      "severity": "SECURITY — HIGH PRIORITY"
+    }
+  ]
+}
