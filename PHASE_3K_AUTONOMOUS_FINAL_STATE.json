@@ -1,21 +1,24 @@
 {
   "phase": "3K",
   "report_title": "PHASE_3K_AUTONOMOUS_FINAL_STATE",
-  "generated_at": "2026-10-04T22:45:00+05:30",
-  "operating_mode": "AUTONOMOUS_SECRET_ROTATION_AND_VERIFICATION_MODE",
-  "status": "SECRET_ROTATED_AND_VERIFIED",
+  "generated_at": "2026-10-04T23:12:00+05:30",
+  "operating_mode": "AUTONOMOUS_SECURITY_AUDIT_AND_ROTATION_MODE",
+  "status": "SECRET_ROTATION_BLOCKED_EXTERNAL_PROVIDER",
 
   "status_summary": {
     "technical_infrastructure": "READY",
     "webhook_endpoint": "OPERATIONAL_AND_VERIFIED",
-    "resend_webhook_secret_status": "ROTATED_AND_ACTIVE_IN_PRODUCTION",
-    "live_hmac_signature_test": "VERIFIED_HTTP_200",
-    "fail_closed_security": "VERIFIED_HTTP_401",
-    "method_restriction": "VERIFIED_HTTP_405",
+    "previous_webhook_secret_incident": "TREATED_AS_COMPROMISED",
+    "provider_side_resend_rotation": "BLOCKED_ON_EXTERNAL_PROVIDER",
+    "resend_auth_limitation": "Resend dashboard management of signing secrets requires owner web interface action; Resend API key is encrypted in Vercel and unextractable via CLI",
+    "canonical_env_var": "RESEND_WEBHOOK_SECRET",
+    "stale_env_var_resend_webhook_secret1": "ABSENT",
+    "temporary_var_test_preview_var": "ABSENT",
+    "current_secret_exposure_in_source_or_reports": "ZERO",
     "production_buyer_outreach": "NOT_AUTHORIZED",
     "safety_lock": "ACTIVE",
     "test_suite_status": "152_PASSED_0_FAILED",
-    "vercel_build_errors": "NONE (0 errors, 4 non-blocking warnings)"
+    "vercel_build_errors": "NONE"
   },
 
   "safety_gates": {
@@ -33,9 +36,8 @@
     "endpoint_url": "https://www.avaniagrofoods.com/api/email-reply-webhook",
     "http_method": "POST",
     "canonical_env_var": "RESEND_WEBHOOK_SECRET",
-    "canonical_env_var_status": "CONFIGURED_AND_ENCRYPTED_IN_VERCEL_PRODUCTION",
-    "incorrect_env_var": "RESEND_WEBHOOK_SECRET1",
-    "incorrect_env_var_status": "PURGED_FROM_PRODUCTION_AND_PREVIEW",
+    "incorrect_env_var": "RESEND_WEBHOOK_SECRET1 (ABSENT)",
+    "temporary_env_var": "TEST_PREVIEW_VAR (ABSENT)",
     "authentication_methods": [
       "SVIX_HMAC_SHA256 (svix-id, svix-timestamp, svix-signature)",
       "DIRECT_SHARED_SECRET (x-webhook-secret / Bearer)"
@@ -46,24 +48,27 @@
       "email.received",
       "email.bounced"
     ],
-    "optional_monitoring_events": [
-      "email.delivered",
-      "email.complained"
-    ],
     "live_endpoint_verification": {
-      "GET": "HTTP_405_METHOD_NOT_ALLOWED (PASS)",
-      "POST_UNSIGNED": "HTTP_401_UNAUTHORIZED (PASS)",
-      "POST_INVALID_SIGNATURE": "HTTP_401_UNAUTHORIZED (PASS)",
-      "POST_VALID_HMAC_ROTATED_SECRET": "HTTP_200_OK_ACCEPTED (PASS)"
+      "production": {
+        "GET": "HTTP_405_METHOD_NOT_ALLOWED (PASS)",
+        "POST_UNSIGNED": "HTTP_401_UNAUTHORIZED (PASS)",
+        "POST_INVALID_SIGNATURE": "HTTP_401_UNAUTHORIZED (PASS)"
+      },
+      "preview": {
+        "GET": "HTTP_302_VERCEL_SSO_PROTECTED (PASS)",
+        "POST_UNSIGNED": "HTTP_401_UNAUTHORIZED (PASS)",
+        "POST_INVALID_SIGNATURE": "HTTP_401_UNAUTHORIZED (PASS)"
+      }
     }
   },
 
   "vercel_environment_audit": {
-    "RESEND_WEBHOOK_SECRET": "PRESENT (Encrypted, Production)",
-    "RESEND_WEBHOOK_SECRET1": "REMOVED (Purged via Vercel CLI)",
+    "RESEND_WEBHOOK_SECRET_PRODUCTION": "PRESENT (Encrypted)",
+    "RESEND_WEBHOOK_SECRET_PREVIEW": "BLOCKED_ON_BRANCH_REQUIREMENT (Vercel CLI non-interactive mode requires remote git branch; only main exists in repo)",
+    "RESEND_WEBHOOK_SECRET1": "ABSENT",
+    "TEST_PREVIEW_VAR": "ABSENT",
     "RESEND_API_KEY": "PRESENT (Encrypted, Production + Preview)",
-    "RESEND_FROM_EMAIL": "PRESENT (Encrypted, Production + Preview, sales@avaniagrofoods.com)",
-    "secrets_exposed_in_code_or_logs": false
+    "current_secret_exposure_in_source_reports_git": "ZERO"
   },
 
   "dataset_freeze": {
@@ -74,24 +79,28 @@
     "manufacturersData_js_sha256": "6F760D437E3C3C213E0571167B33B66B1DF87503E13DE12514BE552F4AED691C"
   },
 
-  "production_deployment": {
-    "deployment_id": "dpl_E814omnv2yj9BAxpRownSz3seKiL",
-    "production_url": "https://avani-agro-foods-latur-2026-jji6c8a02.vercel.app",
-    "aliased_domain": "https://www.avaniagrofoods.com",
-    "deployment_status": "READY",
-    "build_tool": "Vite v5.4.21",
-    "modules_transformed": 2358,
-    "build_duration_seconds": 16.29,
-    "build_status": "SUCCESS_ZERO_ERRORS",
-    "git_commit": "2ac71cb"
+  "deployments": {
+    "production": {
+      "deployment_id": "dpl_E814omnv2yj9BAxpRownSz3seKiL",
+      "url": "https://avani-agro-foods-latur-2026-jji6c8a02.vercel.app",
+      "aliased_domain": "https://www.avaniagrofoods.com",
+      "status": "READY"
+    },
+    "preview": {
+      "deployment_id": "dpl_3Y2DDYyJkEwggHDk3wNGDa93nbtB",
+      "url": "https://avani-agro-foods-latur-2026-ct92kmqu3.vercel.app",
+      "status": "READY"
+    }
   },
 
   "test_results": {
-    "suites_executed": 12,
-    "total_assertions": 152,
-    "passed": 152,
-    "failed": 0,
-    "pass_rate": "100%",
-    "phase_3k_suite": "scripts/test_phase_3k_webhook.cjs (18 passed, 0 failed)"
+    "targeted_webhook_tests": "18_PASSED_0_FAILED",
+    "full_test_suite": "152_PASSED_0_FAILED",
+    "security_scan": "PASS_ZERO_SECRETS_IN_TRACKED_CODE"
+  },
+
+  "remaining_external_action": {
+    "action": "RESEND_DASHBOARD_ROTATION",
+    "instructions": "In Resend Dashboard (https://resend.com/webhooks), rotate the signing secret for endpoint https://www.avaniagrofoods.com/api/email-reply-webhook. Then paste the new secret into Vercel Project Settings > Environment Variables for RESEND_WEBHOOK_SECRET (Production + Preview) directly to prevent exposure in chat transcripts."
   }
 }
