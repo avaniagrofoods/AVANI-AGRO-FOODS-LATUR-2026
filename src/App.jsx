@@ -5,6 +5,7 @@ import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import WhatsAppBubble from './components/WhatsAppBubble'
 import { Loader2 } from 'lucide-react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 
 // Eagerly loaded primary public pages
 import Home from './pages/Home'
@@ -137,6 +138,7 @@ export default function App() {
         </main>
         <Footer />
         <WhatsAppBubble />
+        <SpeedInsights />
       </LanguageProvider>
     </Router>
   )
