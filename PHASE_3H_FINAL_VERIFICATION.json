@@ -1,0 +1,54 @@
+{
+  "phase": "3H_FINAL_VERIFICATION",
+  "timestamp": "2026-10-03T20:14:00+05:30",
+  "git_head": "99c672a9a84070586fc5f0f813fc018a208d75d2",
+  "dataset_hashes": {
+    "importersData.js": "02AFC4E0F621B4326A1CBD67BFC31266A14DFA77F1B0F9767315BB971860F595",
+    "snapshot-642.json": "86100BDA94BE63A51EDDC6EE2B2458133F607D50CD5F7D66C25193F3C9137F9E"
+  },
+  "baseline_diff": {
+    "added": 0,
+    "deleted": 0,
+    "modified": 0,
+    "reordered": 0
+  },
+  "authoritative_dns": {
+    "primary_nameserver": "ns1.vercel-dns.com",
+    "secondary_nameserver": "ns2.vercel-dns.com",
+    "spf_record_count": 2,
+    "spf_result": "FAIL",
+    "spf_resend_authorized": "FAIL",
+    "dkim_result": "PASS",
+    "dmarc_result": "PASS",
+    "mx_result": "PASS"
+  },
+  "production_credentials": {
+    "RESEND_API_KEY": "BLANK",
+    "RESEND_WEBHOOK_SECRET": "BLANK",
+    "RESEND_FROM_EMAIL": "BLANK",
+    "status": "CREDENTIAL_REQUIRED"
+  },
+  "sender_identity": "PASS",
+  "security_scan": "PASS",
+  "regression_results": {
+    "phase_3f": "PASS",
+    "phase_3g": "PASS",
+    "phase_3h_preflight": "PASS"
+  },
+  "pilot_authorization_state": {
+    "OUTREACH_AUTHORIZED": 0,
+    "PILOT_AUTHORIZED": 0,
+    "GLOBAL_OUTREACH_STOP": 1
+  },
+  "communications_counters": {
+    "emails_sent": 0,
+    "phone_calls": 0,
+    "whatsapp_messages": 0,
+    "sms_sent": 0,
+    "smtp_probes": 0,
+    "mx_deliverability_probes": 0,
+    "read_only_dns_lookups": 6
+  },
+  "infrastructure_ready": false,
+  "final_gate": "BLOCKED"
+}

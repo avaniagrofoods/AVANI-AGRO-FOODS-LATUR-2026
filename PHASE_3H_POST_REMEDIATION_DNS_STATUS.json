@@ -1,0 +1,64 @@
+{
+  "phase": "PHASE_3H_POST_REMEDIATION_VERIFICATION",
+  "audit_timestamp": "2026-10-03T20:35:00+05:30",
+  "domain": "avaniagrofoods.com",
+  "authoritative_nameservers": [
+    "ns1.vercel-dns.com",
+    "ns2.vercel-dns.com"
+  ],
+  "authoritative_dns_verification": {
+    "spf": {
+      "status": "FAIL",
+      "gate_status": "BLOCKED",
+      "published_records": [
+        "v=spf1 include:_spf.mail.hostinger.com ~all",
+        "v=spf1 include:zoho.in ~all"
+      ],
+      "record_count": 2,
+      "single_record": false,
+      "rfc7208_compliant": false,
+      "resend_authorized": false,
+      "zoho_authorized": true,
+      "hostinger_authorized": true,
+      "post_remediation_assessment": "REMEDIATION_NOT_DETECTED: Domain still publishes two separate SPF TXT records on both ns1.vercel-dns.com and ns2.vercel-dns.com. RFC 7208 Section 3.2 prohibits multiple SPF records, resulting in PermError on strict receiver MTAs. include:resend.com is not present in either record.",
+      "required_action": "Administrator must delete both existing SPF records in Vercel DNS Console and publish exactly one consolidated record: 'v=spf1 include:zoho.in include:_spf.mail.hostinger.com include:resend.com ~all'"
+    },
+    "dkim": {
+      "status": "PASS",
+      "gate_status": "PASS",
+      "selector": "resend",
+      "host": "resend._domainkey.avaniagrofoods.com",
+      "record_type": "TXT",
+      "public_key_present": true,
+      "secondary_selector": "zmail._domainkey.avaniagrofoods.com (Zoho - FOUND)",
+      "post_remediation_assessment": "DKIM selector resend published and syntactically valid on both authoritative nameservers."
+    },
+    "dmarc": {
+      "status": "PASS",
+      "gate_status": "PASS",
+      "host": "_dmarc.avaniagrofoods.com",
+      "raw_record": "v=DMARC1; p=none",
+      "policy": "none",
+      "pct": 100,
+      "alignment": {
+        "adkim": "r",
+        "aspf": "r"
+      },
+      "post_remediation_assessment": "DMARC policy v=DMARC1; p=none verified intact."
+    },
+    "mx": {
+      "status": "PASS",
+      "gate_status": "PASS",
+      "records": [
+        { "exchange": "mx1.hostinger.com", "preference": 5 },
+        { "exchange": "mx.zoho.in", "preference": 10 },
+        { "exchange": "mx2.hostinger.com", "preference": 10 },
+        { "exchange": "mx2.zoho.in", "preference": 20 },
+        { "exchange": "mx3.zoho.in", "preference": 50 }
+      ],
+      "inbound_operational_safety": "PRESERVED",
+      "mx_probes": 0
+    }
+  },
+  "overall_dns_gate": "BLOCKED"
+}

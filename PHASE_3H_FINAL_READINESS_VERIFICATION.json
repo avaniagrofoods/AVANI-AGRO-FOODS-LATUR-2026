@@ -1,0 +1,80 @@
+{
+  "phase": "PHASE_3H_FINAL_READINESS_VERIFICATION",
+  "verification_timestamp": "2026-10-03T21:15:00+05:30",
+  "domain": "avaniagrofoods.com",
+  "dns_authority": "ns1.vercel-dns.com / ns2.vercel-dns.com",
+  "dns_verification": {
+    "spf": {
+      "status": "PASS",
+      "published_record": "v=spf1 include:zoho.in include:_spf.mail.hostinger.com include:resend.com ~all",
+      "record_count": 1,
+      "single_record": true,
+      "rfc7208_compliant": true,
+      "resend_authorized": true,
+      "zoho_authorized": true,
+      "hostinger_authorized": true,
+      "mechanism": "~all"
+    },
+    "dkim": {
+      "status": "PASS",
+      "selector": "resend",
+      "host": "resend._domainkey.avaniagrofoods.com",
+      "public_key_present": true,
+      "zoho_selector_preserved": true
+    },
+    "dmarc": {
+      "status": "PASS",
+      "host": "_dmarc.avaniagrofoods.com",
+      "policy": "none",
+      "record": "v=DMARC1; p=none"
+    },
+    "mx": {
+      "status": "PASS",
+      "records_count": 5,
+      "inbound_receiving_preserved": true,
+      "smtp_probes": 0
+    }
+  },
+  "provider_configuration": {
+    "provider": "Resend",
+    "status": "PASS",
+    "resend_api_key": "PRESENT",
+    "resend_webhook_secret": "PRESENT",
+    "resend_from_email": "PRESENT",
+    "sender_identity": "AVANI AGRO FOODS <sales@avaniagrofoods.com>",
+    "secrets_redacted": true
+  },
+  "security_audit": {
+    "security_scan": "PASS",
+    "committed_source_secrets": 0,
+    "exposed_production_credentials": 0,
+    "fail_closed_active": true,
+    "authorization_barrier_intact": true
+  },
+  "regression_suite": {
+    "phase_3f": "PASS",
+    "phase_3g": "PASS",
+    "phase_3h_preflight": "PASS"
+  },
+  "dataset_freeze": {
+    "git_head": "99c672a9a84070586fc5f0f813fc018a208d75d2",
+    "importersData_js_sha256": "02AFC4E0F621B4326A1CBD67BFC31266A14DFA77F1B0F9767315BB971860F595",
+    "snapshot_642_json_sha256": "86100BDA94BE63A51EDDC6EE2B2458133F607D50CD5F7D66C25193F3C9137F9E",
+    "structural_diff": { "added": 0, "deleted": 0, "modified": 0, "reordered": 0 },
+    "dataset_mutations": 0
+  },
+  "safety_counters": {
+    "emails_sent": 0,
+    "buyers_contacted": 0,
+    "smtp_probes": 0,
+    "mx_probes": 0,
+    "OUTREACH_AUTHORIZED": 0,
+    "PILOT_AUTHORIZED": 0,
+    "GLOBAL_OUTREACH_STOP": 1
+  },
+  "decision": {
+    "INFRASTRUCTURE_READY": true,
+    "FINAL_GATE": "READY_FOR_HUMAN_AUTHORIZATION",
+    "HUMAN_AUTHORIZATION_REQUIRED": true
+  }
+}

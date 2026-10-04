@@ -1,0 +1,62 @@
+{
+  "phase": "PHASE_3H_FINAL_READINESS",
+  "audit_timestamp": "2026-10-03T21:15:00+05:30",
+  "domain": "avaniagrofoods.com",
+  "authoritative_nameservers": [
+    "ns1.vercel-dns.com",
+    "ns2.vercel-dns.com"
+  ],
+  "authoritative_dns_verification": {
+    "spf": {
+      "status": "PASS",
+      "gate_status": "PASS",
+      "published_record": "v=spf1 include:zoho.in include:_spf.mail.hostinger.com include:resend.com ~all",
+      "record_count": 1,
+      "single_record": true,
+      "rfc7208_compliant": true,
+      "resend_authorized": true,
+      "zoho_authorized": true,
+      "hostinger_authorized": true,
+      "mechanism": "~all",
+      "evidence": "Authoritative nameservers ns1.vercel-dns.com and ns2.vercel-dns.com publish exactly one consolidated SPF TXT record containing Zoho, Hostinger, and Resend includes."
+    },
+    "dkim": {
+      "status": "PASS",
+      "gate_status": "PASS",
+      "selector": "resend",
+      "host": "resend._domainkey.avaniagrofoods.com",
+      "record_type": "TXT",
+      "public_key_present": true,
+      "secondary_selector": "zmail._domainkey.avaniagrofoods.com (Zoho - FOUND)",
+      "evidence": "Valid 2048/1024-bit RSA public key published for resend selector; Zoho DKIM selector preserved."
+    },
+    "dmarc": {
+      "status": "PASS",
+      "gate_status": "PASS",
+      "host": "_dmarc.avaniagrofoods.com",
+      "raw_record": "v=DMARC1; p=none",
+      "policy": "none",
+      "pct": 100,
+      "alignment": {
+        "adkim": "r",
+        "aspf": "r"
+      },
+      "evidence": "Valid DMARC TXT record with monitoring policy (p=none) published on authoritative nameservers."
+    },
+    "mx": {
+      "status": "PASS",
+      "gate_status": "PASS",
+      "records": [
+        { "exchange": "mx1.hostinger.com", "preference": 5 },
+        { "exchange": "mx.zoho.in", "preference": 10 },
+        { "exchange": "mx2.hostinger.com", "preference": 10 },
+        { "exchange": "mx2.zoho.in", "preference": 20 },
+        { "exchange": "mx3.zoho.in", "preference": 50 }
+      ],
+      "inbound_operational_safety": "PRESERVED",
+      "smtp_probes": 0,
+      "evidence": "All 5 inbound MX records intact; inbound email receiving unaffected."
+    }
+  },
+  "overall_dns_gate": "PASS"
+}

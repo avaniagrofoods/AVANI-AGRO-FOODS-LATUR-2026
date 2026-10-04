@@ -30,7 +30,7 @@ const STATES = [
 ]
 
 const PRIORITIES = ['All', 'HIGH', 'MEDIUM', 'LOW']
-const VERIFICATIONS = ['All', 'VERIFIED', 'PARTIALLY VERIFIED', 'UNVERIFIED']
+const VERIFICATIONS = ['All', 'UNVERIFIED', 'UNDER_REVIEW', 'VERIFIED']
 
 export default function Manufacturers() {
   const [searchParams] = useSearchParams()
@@ -457,8 +457,13 @@ export default function Manufacturers() {
                         <span className="badge" style={{ fontSize: '0.68rem', background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', textTransform: 'capitalize' }}>
                           {item.scale || 'Partner'}
                         </span>
-                        <span className="badge" style={{ fontSize: '0.68rem', background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
-                          {item.verificationStatus || 'VERIFIED'}
+                        <span className="badge" style={{
+                          fontSize: '0.68rem',
+                          background: item.verificationStatus === 'VERIFIED' ? '#f0fdf4' : item.verificationStatus === 'UNDER_REVIEW' ? '#eff6ff' : '#fffbeb',
+                          color: item.verificationStatus === 'VERIFIED' ? '#166534' : item.verificationStatus === 'UNDER_REVIEW' ? '#1d4ed8' : '#b45309',
+                          border: `1px solid ${item.verificationStatus === 'VERIFIED' ? '#bbf7d0' : item.verificationStatus === 'UNDER_REVIEW' ? '#bfdbfe' : '#fde68a'}`
+                        }}>
+                          {item.verificationStatus === 'VERIFIED' ? '✓ Verified' : item.verificationStatus === 'UNDER_REVIEW' ? '⏳ Under Review' : '⚠️ Unverified'}
                         </span>
                       </div>
                     </div>

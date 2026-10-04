@@ -12,13 +12,13 @@ export const COMPANY_DETAILS = {
   email: 'sales@avaniagrofoods.com',
   website: 'https://www.avaniagrofoods.com',
   address: {
-    line1: 'Old Barshi Road, Kulswamininagar',
-    line2: '5 No Chauk, Next to Sai School',
+    line1: 'Old Barshi Road, 5 No Chauk',
+    line2: 'KulswaminiNagar, Next to Sai School',
     city: 'Latur',
     state: 'Maharashtra',
     pin: '413512',
     country: 'India',
-    full: 'Old Barshi Road, Kulswamininagar, 5 No Chauk, Next to Sai School, Latur – 413512, Maharashtra, India'
+    full: 'Old Barshi Road, 5 No Chauk, KulswaminiNagar, Next to Sai School, Latur-413512, Maharashtra, India'
   },
   registration: {
     udyam: 'UDYAM-MH-19-0000000',

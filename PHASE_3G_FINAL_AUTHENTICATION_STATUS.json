@@ -1,0 +1,89 @@
+{
+  "phase": "3G_REMEDIATION",
+  "audit_date": "2026-10-03",
+  "domain": "avaniagrofoods.com",
+  "live_dns_verification_conducted": true,
+  "probe_safety": {
+    "smtp_probes": 0,
+    "mx_probes": 0,
+    "live_send_tests": 0,
+    "method": "Safe read-only PowerShell Resolve-DnsName"
+  },
+  "live_dns_findings": {
+    "spf": {
+      "status": "FAIL",
+      "records_found": [
+        "v=spf1 include:_spf.mail.hostinger.com ~all",
+        "v=spf1 include:zoho.in ~all"
+      ],
+      "record_count": 2,
+      "rfc7208_compliant": false,
+      "resend_include_present": false,
+      "failure_reason": "Domain publishes two distinct SPF TXT records causing RFC 7208 PermError; neither record authorizes include:resend.com"
+    },
+    "dkim": {
+      "status": "PASS",
+      "verified_selectors": {
+        "resend": {
+          "host": "resend._domainkey.avaniagrofoods.com",
+          "record_type": "TXT",
+          "status": "FOUND",
+          "public_key_present": true
+        },
+        "zmail": {
+          "host": "zmail._domainkey.avaniagrofoods.com",
+          "record_type": "TXT",
+          "status": "FOUND",
+          "public_key_present": true
+        }
+      }
+    },
+    "dmarc": {
+      "status": "PASS",
+      "host": "_dmarc.avaniagrofoods.com",
+      "record_type": "TXT",
+      "raw_record": "v=DMARC1; p=none",
+      "policy": "none",
+      "alignment_mode": "MONITORING",
+      "recommendation": "Upgrade from p=none to p=quarantine with rua reporting before high-volume campaigns"
+    },
+    "mx": {
+      "status": "PASS",
+      "exchangers": [
+        "mx.zoho.in (pref 10)",
+        "mx2.zoho.in (pref 20)",
+        "mx3.zoho.in (pref 50)",
+        "mx1.hostinger.com (pref 5)",
+        "mx2.hostinger.com (pref 10)"
+      ],
+      "inbound_reception_ready": true
+    }
+  },
+  "manual_dns_remediation_checklist": [
+    {
+      "step": 1,
+      "action": "DELETE_DUPLICATE_SPF_RECORDS",
+      "records_to_remove": [
+        "v=spf1 include:_spf.mail.hostinger.com ~all",
+        "v=spf1 include:zoho.in ~all"
+      ]
+    },
+    {
+      "step": 2,
+      "action": "ADD_CONSOLIDATED_SPF_RECORD",
+      "record_type": "TXT",
+      "host": "@",
+      "required_value": "v=spf1 include:zoho.in include:_spf.mail.hostinger.com include:resend.com ~all",
+      "purpose": "Consolidate authorization for Zoho, Hostinger, and Resend into a single RFC 7208 compliant record"
+    },
+    {
+      "step": 3,
+      "action": "UPGRADE_DMARC_POLICY",
+      "record_type": "TXT",
+      "host": "_dmarc",
+      "required_value": "v=DMARC1; p=quarantine; pct=100; rua=mailto:dmarc-reports@avaniagrofoods.com; adkim=r; aspf=r",
+      "purpose": "Enforce anti-spoofing policy and enable aggregate forensic XML reporting"
+    }
+  ],
+  "overall_authentication_status": "ACTION_REQUIRED"
+}

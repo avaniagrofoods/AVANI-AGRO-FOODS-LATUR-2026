@@ -1,0 +1,16 @@
+{
+  "infrastructure_blockers": 0,
+  "infrastructure_ready": true,
+  "dataset_mutations": 0,
+  "tracked_modifications": 0,
+  "real_secrets": 0,
+  "emails_sent": 0,
+  "buyers_contacted": 0,
+  "smtp_probes": 0,
+  "mx_probes": 0,
+  "outreach_authorized": 0,
+  "pilot_authorized": 0,
+  "global_outreach_stop": 1,
+  "human_authorization_required": true,
+  "final_state": "READY_FOR_HUMAN_AUTHORIZATION"
+}

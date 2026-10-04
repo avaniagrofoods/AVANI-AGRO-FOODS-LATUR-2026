@@ -1,0 +1,99 @@
+{
+  "timestamp": "2026-10-04T10:15:00+05:30",
+  "git_head": "99c672a9a84070586fc5f0f813fc018a208d75d2",
+  "infrastructure_blockers": 0,
+  "infrastructure_ready": true,
+  "dataset_mutations": 0,
+  "tracked_modifications": 0,
+  "real_secrets": 0,
+  "emails_sent": 0,
+  "buyers_contacted": 0,
+  "smtp_probes": 0,
+  "mx_probes": 0,
+  "outreach_authorized": 0,
+  "pilot_authorized": 0,
+  "global_outreach_stop": 1,
+  "human_authorization_required": true,
+  "final_state": "READY_FOR_HUMAN_AUTHORIZATION",
+  "dataset_hashes": {
+    "importersData_js": "02AFC4E0F621B4326A1CBD67BFC31266A14DFA77F1B0F9767315BB971860F595",
+    "importersData_snapshot_642_json": "86100BDA94BE63A51EDDC6EE2B2458133F607D50CD5F7D66C25193F3C9137F9E",
+    "structural_diff": {
+      "added": 0,
+      "deleted": 0,
+      "modified": 0,
+      "reordered": 0
+    }
+  },
+  "dns_current_state": {
+    "authoritative_nameservers": [
+      "ns1.vercel-dns.com",
+      "ns2.vercel-dns.com"
+    ],
+    "spf": {
+      "record_count": 1,
+      "value": "v=spf1 include:zoho.in include:_spf.mail.hostinger.com include:resend.com ~all",
+      "resend_included": true,
+      "zoho_included": true,
+      "hostinger_included": true,
+      "single_record_compliant": true,
+      "status": "PASS"
+    },
+    "dkim": {
+      "selector": "resend",
+      "host": "resend._domainkey.avaniagrofoods.com",
+      "public_key_present": true,
+      "secondary_selector_preserved": "zmail._domainkey.avaniagrofoods.com",
+      "status": "PASS"
+    },
+    "dmarc": {
+      "host": "_dmarc.avaniagrofoods.com",
+      "policy": "none",
+      "raw_record": "v=DMARC1; p=none",
+      "status": "PASS"
+    },
+    "mx": {
+      "records_count": 5,
+      "exchangers": [
+        "mx1.hostinger.com",
+        "mx.zoho.in",
+        "mx2.hostinger.com",
+        "mx2.zoho.in",
+        "mx3.zoho.in"
+      ],
+      "inbound_receiving_preserved": true,
+      "status": "PASS"
+    }
+  },
+  "resend_configuration_presence": {
+    "RESEND_API_KEY": "PRESENT",
+    "RESEND_WEBHOOK_SECRET": "PRESENT",
+    "RESEND_FROM_EMAIL": "PRESENT",
+    "sender_identity": "AVANI AGRO FOODS <sales@avaniagrofoods.com>",
+    "secrets_redacted": true,
+    "status": "PASS"
+  },
+  "security_summary": {
+    "total_scanner_detections": 11,
+    "confirmed_real_secrets": 0,
+    "breakdown": {
+      "ENV_REFERENCE": 1,
+      "TEST_FIXTURE": 8,
+      "FALSE_POSITIVE": 2,
+      "REAL_SECRET": 0
+    },
+    "status": "PASS"
+  },
+  "regression_results": {
+    "phase_3f_integrity": "PASS",
+    "phase_3f_suppression": "PASS",
+    "phase_3f_duplicates": "PASS",
+    "phase_3f_template_mapping": "PASS",
+    "phase_3f_dry_run": "PASS",
+    "phase_3f_authorization_gate": "PASS",
+    "phase_3g_all": "PASS",
+    "phase_3g_final": "PASS",
+    "phase_3h_preflight": "PASS",
+    "all_passed": true
+  }
+}

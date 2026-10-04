@@ -1,7 +1,7 @@
 // ============================================================
 // AVANI AGRO FOODS — B2B BUYER VERIFICATION & OUTREACH READINESS
-// src/data/importerVerificationModel.js
-// Phase 2 Hardened: Truthful, Auditable, Deterministic Multi-Dimensional Verification
+// api/_lib/importerVerificationModel.js
+// Phase 2 Hardened: Truthful, Auditable, Deterministic Multi-Dimensional Verification (Serverless Bridge)
 // ============================================================
 
 // ── Logical Status Enums ─────────────────────────────────────
@@ -14,6 +14,32 @@ export const COMPANY_VERIFICATION_STATUSES = {
   includes: function(v) { return ['UNVERIFIED', 'DOMAIN_ASSOCIATED', 'COMPANY_VERIFIED', 'INVALID'].includes(v); },
   indexOf: function(v) { return ['UNVERIFIED', 'DOMAIN_ASSOCIATED', 'COMPANY_VERIFIED', 'INVALID'].indexOf(v); }
 };
+
+export const EXPLICIT_VERIFICATION_STATUSES = {
+  UNVERIFIED: 'UNVERIFIED',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  VERIFIED: 'VERIFIED',
+  REJECTED: 'REJECTED',
+  SUPPRESSED: 'SUPPRESSED',
+  includes: function(v) { return ['UNVERIFIED', 'UNDER_REVIEW', 'VERIFIED', 'REJECTED', 'SUPPRESSED'].includes(v); }
+};
+
+export function deriveExplicitVerificationStatus(record, companyStatus, contactStatus) {
+  const rawOutreach = String(record.outreachStatus || '').toUpperCase();
+  if (rawOutreach === 'SUPPRESSED' || rawOutreach === 'DO_NOT_CONTACT' || [4, 7, 29].includes(record.id)) {
+    return EXPLICIT_VERIFICATION_STATUSES.SUPPRESSED;
+  }
+  if (rawOutreach === 'BOUNCED' || contactStatus === CONTACT_VERIFICATION_STATUSES.BOUNCE || contactStatus === CONTACT_VERIFICATION_STATUSES.INVALID) {
+    return EXPLICIT_VERIFICATION_STATUSES.REJECTED;
+  }
+  if (companyStatus === COMPANY_VERIFICATION_STATUSES.COMPANY_VERIFIED) {
+    return EXPLICIT_VERIFICATION_STATUSES.VERIFIED;
+  }
+  if (companyStatus === COMPANY_VERIFICATION_STATUSES.DOMAIN_ASSOCIATED) {
+    return EXPLICIT_VERIFICATION_STATUSES.UNDER_REVIEW;
+  }
+  return EXPLICIT_VERIFICATION_STATUSES.UNVERIFIED;
+}
 
 export const DOMAIN_VERIFICATION_STATUSES = {
   UNTESTED: 'UNTESTED',
@@ -636,11 +662,16 @@ export function normalizeImporterWithVerification(imp) {
   // A record is in verification queue if UNVERIFIED or outreach NOT_READY
   const inVerificationQueue = companyVerificationStatus === COMPANY_VERIFICATION_STATUSES.UNVERIFIED || readiness.status === OUTREACH_STATUSES.NOT_READY;
 
+  // Phase 3I: Explicit Status Model (UNVERIFIED, UNDER_REVIEW, VERIFIED, REJECTED, SUPPRESSED)
+  const explicitStatus = deriveExplicitVerificationStatus(imp, companyVerificationStatus, contactVerificationStatus);
+
   return {
     ...imp,
     // Preserved fields with canonical normalization
     country: normCountry,
     verificationStatus: normVerification,
+    explicitStatus,
+    phase3iStatus: explicitStatus,
     // Dimensional verification layers
     companyVerificationStatus,
     domainVerificationStatus,

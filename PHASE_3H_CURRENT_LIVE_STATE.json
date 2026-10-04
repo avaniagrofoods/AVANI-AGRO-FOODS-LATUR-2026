@@ -1,0 +1,72 @@
+{
+  "timestamp": "2026-10-03T21:45:00+05:30",
+  "git_head": "99c672a9a84070586fc5f0f813fc018a208d75d2",
+  "dataset_hashes": {
+    "importersData_js": "02AFC4E0F621B4326A1CBD67BFC31266A14DFA77F1B0F9767315BB971860F595",
+    "importersData_snapshot_642_json": "86100BDA94BE63A51EDDC6EE2B2458133F607D50CD5F7D66C25193F3C9137F9E",
+    "structural_diff": {
+      "added": 0,
+      "deleted": 0,
+      "modified": 0,
+      "reordered": 0
+    }
+  },
+  "authoritative_nameservers": [
+    "ns1.vercel-dns.com",
+    "ns2.vercel-dns.com"
+  ],
+  "spf": {
+    "record_count": 1,
+    "value": "v=spf1 include:zoho.in include:_spf.mail.hostinger.com include:resend.com ~all",
+    "resend_authorized": true,
+    "zoho_authorized": true,
+    "hostinger_authorized": true,
+    "status": "PASS"
+  },
+  "dkim": {
+    "resend": {
+      "selector": "resend",
+      "host": "resend._domainkey.avaniagrofoods.com",
+      "status": "PASS",
+      "public_key_present": true
+    },
+    "zoho": {
+      "selector": "zmail",
+      "host": "zmail._domainkey.avaniagrofoods.com",
+      "status": "PASS",
+      "preserved": true
+    }
+  },
+  "dmarc": {
+    "host": "_dmarc.avaniagrofoods.com",
+    "policy": "none",
+    "raw_record": "v=DMARC1; p=none",
+    "status": "PASS"
+  },
+  "mx": {
+    "records": [
+      { "exchange": "mx1.hostinger.com", "preference": 5 },
+      { "exchange": "mx.zoho.in", "preference": 10 },
+      { "exchange": "mx2.hostinger.com", "preference": 10 },
+      { "exchange": "mx2.zoho.in", "preference": 20 },
+      { "exchange": "mx3.zoho.in", "preference": 50 }
+    ],
+    "status": "PASS"
+  },
+  "resend": {
+    "production_api_key_present": true,
+    "production_webhook_secret_present": true,
+    "production_from_email_present": true,
+    "sender_identity": "AVANI AGRO FOODS <sales@avaniagrofoods.com>",
+    "status": "PASS"
+  },
+  "security_scan_status": "PASS",
+  "emails_sent": 0,
+  "smtp_probes": 0,
+  "mx_probes": 0,
+  "outreach_authorized": 0,
+  "pilot_authorized": 0,
+  "global_outreach_stop": 1,
+  "infrastructure_ready": true,
+  "final_gate": "READY_FOR_HUMAN_AUTHORIZATION"
+}

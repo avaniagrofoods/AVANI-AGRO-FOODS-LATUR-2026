@@ -1,0 +1,78 @@
+{
+  "phase": "3H_PREPARATION",
+  "audit_timestamp": "2026-10-03T19:50:00+05:30",
+  "dry_run_summary": {
+    "records_evaluated": 5,
+    "validation_passed": 5,
+    "suppression_cleared": 5,
+    "duplicates_detected": 0,
+    "templates_assigned": 5,
+    "authorization_state": "BLOCKED",
+    "transmissions_attempted": 0,
+    "transmissions_blocked": 5,
+    "emails_sent": 0,
+    "external_probes_conducted": 0
+  },
+  "results_by_record": [
+    {
+      "id": 3,
+      "company": "Aduna Superfoods",
+      "email": "info@aduna.com",
+      "template": "T02",
+      "validation": "PASS",
+      "suppression": "CLEAR",
+      "duplicate": "CLEAR",
+      "authorization": "BLOCKED",
+      "transmission": "BLOCKED",
+      "reason": "PILOT_AUTHORIZED = 0 & GLOBAL_OUTREACH_STOP = 1"
+    },
+    {
+      "id": 15,
+      "company": "All Good Agriculture",
+      "email": "hello@allgoodmoringa.com",
+      "template": "T02",
+      "validation": "PASS",
+      "suppression": "CLEAR",
+      "duplicate": "CLEAR",
+      "authorization": "BLOCKED",
+      "transmission": "BLOCKED",
+      "reason": "PILOT_AUTHORIZED = 0 & GLOBAL_OUTREACH_STOP = 1"
+    },
+    {
+      "id": 1,
+      "company": "Schiff Foods Products Co.",
+      "email": "sales@schifffood.com",
+      "template": "T03",
+      "validation": "PASS",
+      "suppression": "CLEAR",
+      "duplicate": "CLEAR",
+      "authorization": "BLOCKED",
+      "transmission": "BLOCKED",
+      "reason": "PILOT_AUTHORIZED = 0 & GLOBAL_OUTREACH_STOP = 1"
+    },
+    {
+      "id": 32,
+      "company": "Walker Foods Inc",
+      "email": "info@walkerfoods.net",
+      "template": "T03",
+      "validation": "PASS",
+      "suppression": "CLEAR",
+      "duplicate": "CLEAR",
+      "authorization": "BLOCKED",
+      "transmission": "BLOCKED",
+      "reason": "PILOT_AUTHORIZED = 0 & GLOBAL_OUTREACH_STOP = 1"
+    },
+    {
+      "id": 19,
+      "company": "Roland Foods LLC",
+      "email": "hello@rolandfoods.com",
+      "template": "T05",
+      "validation": "PASS",
+      "suppression": "CLEAR",
+      "duplicate": "CLEAR",
+      "authorization": "BLOCKED",
+      "transmission": "BLOCKED",
+      "reason": "PILOT_AUTHORIZED = 0 & GLOBAL_OUTREACH_STOP = 1"
+    }
+  ]
+}

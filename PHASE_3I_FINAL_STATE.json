@@ -1,0 +1,24 @@
+{
+  "phase": "3I",
+  "status": "COMPLETED",
+  "infrastructure_ready": true,
+  "outreach_authorized": 0,
+  "pilot_authorized": 0,
+  "global_outreach_stop": 1,
+  "emails_sent_live": 1,
+  "test_mode": true,
+  "live_delivery_verified": true,
+  "owned_test_mailbox": "avaniagrofoods1356@gmail.com",
+  "repository_state": "FROZEN",
+  "verification_model": "FIXED",
+  "deployments": {
+    "vercel_production": true,
+    "last_deploy": "2026-10-04",
+    "domain_aliased": true,
+    "primary_domain": "www.avaniagrofoods.com"
+  },
+  "security": {
+    "secrets_exposed": false,
+    "api_keys_redacted": true
+  }
+}

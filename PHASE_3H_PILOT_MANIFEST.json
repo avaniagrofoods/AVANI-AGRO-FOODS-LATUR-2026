@@ -1,0 +1,68 @@
+{
+  "phase": "3H_PREPARATION",
+  "audit_timestamp": "2026-10-03T19:50:00+05:30",
+  "pilot_authorization_state": "PILOT_NOT_AUTHORIZED",
+  "locks": {
+    "OUTREACH_AUTHORIZED": 0,
+    "PILOT_AUTHORIZED": 0,
+    "GLOBAL_OUTREACH_STOP": 1
+  },
+  "candidate_count": 5,
+  "candidates": [
+    {
+      "id": 3,
+      "company_name": "Aduna Superfoods",
+      "canonical_email": "info@aduna.com",
+      "contact_person": "Procurement / Commercial Team",
+      "segment": "Segment A (Botanical / Superfood Brand)",
+      "assigned_template": "T02",
+      "suppression_check": "CLEAR",
+      "duplicate_check": "CLEAR",
+      "status": "PILOT_CANDIDATE_LOCKED"
+    },
+    {
+      "id": 15,
+      "company_name": "All Good Agriculture",
+      "canonical_email": "hello@allgoodmoringa.com",
+      "contact_person": "Sourcing Team",
+      "segment": "Segment A (Botanical / Superfood Brand)",
+      "assigned_template": "T02",
+      "suppression_check": "CLEAR",
+      "duplicate_check": "CLEAR",
+      "status": "PILOT_CANDIDATE_LOCKED"
+    },
+    {
+      "id": 1,
+      "company_name": "Schiff Foods Products Co.",
+      "canonical_email": "sales@schifffood.com",
+      "contact_person": "Industrial Sourcing Team",
+      "segment": "Segment B (Spice Miller / Seasoning Mfr)",
+      "assigned_template": "T03",
+      "suppression_check": "CLEAR",
+      "duplicate_check": "CLEAR",
+      "status": "PILOT_CANDIDATE_LOCKED"
+    },
+    {
+      "id": 32,
+      "company_name": "Walker Foods Inc",
+      "canonical_email": "info@walkerfoods.net",
+      "contact_person": "Procurement Director",
+      "segment": "Segment B (Spice Miller / Seasoning Mfr)",
+      "assigned_template": "T03",
+      "suppression_check": "CLEAR",
+      "duplicate_check": "CLEAR",
+      "status": "PILOT_CANDIDATE_LOCKED"
+    },
+    {
+      "id": 19,
+      "company_name": "Roland Foods LLC",
+      "canonical_email": "hello@rolandfoods.com",
+      "contact_person": "Import Procurement Dept",
+      "segment": "Segment C (Specialty Food Importer / Dual)",
+      "assigned_template": "T05",
+      "suppression_check": "CLEAR",
+      "duplicate_check": "CLEAR",
+      "status": "PILOT_CANDIDATE_LOCKED"
+    }
+  ]
+}

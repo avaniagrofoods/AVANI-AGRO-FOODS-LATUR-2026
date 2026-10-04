@@ -1,0 +1,28 @@
+{
+  "phase": "3H_PREPARATION",
+  "audit_timestamp": "2026-10-03T19:50:00+05:30",
+  "suppression_system_status": "ACTIVE",
+  "dataset_decoupled": true,
+  "permanently_suppressed_record_ids": [4, 7, 29],
+  "reasons": {
+    "4": "Consumer brand channel with unverified B2B trade desk",
+    "7": "MAJID SPICE MILL LLC Branch duplicate / missing distinct channel",
+    "29": "Ambiguous multi-brand distributor without verified procurement contact"
+  },
+  "permanently_blocked_channels": [
+    "pr@arabicalondon.com",
+    "ilovehotsauce@heatonist.com",
+    "adminwg@mail.mayfirst.org",
+    "team@latofonts.com",
+    "italvitalherb@gmail.com"
+  ],
+  "lifecycle_rules": {
+    "unsubscribe_event": "IMMEDIATE_PERMANENT_SUPPRESSION (0s latency)",
+    "complaint_event": "IMMEDIATE_PERMANENT_SUPPRESSION",
+    "hard_bounce_event": "IMMEDIATE_PERMANENT_SUPPRESSION",
+    "soft_bounce_event": "MAX_2_RETRIES_24H_BACKOFF_THEN_PERMANENT_SUPPRESSION",
+    "duplicate_prevention": "RECIPIENT_AND_DOMAIN_COLLISION_BLOCK",
+    "re_entry_prevention": "CONTACTED_RECORDS_LOCKED_IN_CRM_STATE"
+  },
+  "status": "PASS"
+}

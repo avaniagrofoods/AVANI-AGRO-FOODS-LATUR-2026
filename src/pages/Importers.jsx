@@ -13,7 +13,7 @@ import { WHATSAPP_NUMBER } from '../data/links'
 
 const PRIORITIES = ['All', 'HIGH', 'MEDIUM', 'LOW']
 const STATUSES = ['All', 'NEW', 'RESEARCHING', 'VERIFIED', 'CONTACTED', 'REPLIED', 'QUALIFIED', 'SAMPLE', 'QUOTATION', 'NEGOTIATION', 'ORDER', 'FOLLOW-UP']
-const VERIFICATIONS = ['All', 'VERIFIED', 'PARTIALLY VERIFIED', 'UNVERIFIED', 'NEEDS REVIEW']
+const VERIFICATIONS = ['All', 'VERIFIED', 'UNDER_REVIEW', 'UNVERIFIED', 'SUPPRESSED', 'REJECTED']
 const COMPANY_VERIFICATIONS = ['All', 'COMPANY_VERIFIED', 'DOMAIN_ASSOCIATED', 'UNVERIFIED']
 const BUSINESS_FITS = ['All', 'RELEVANT', 'POSSIBLY_RELEVANT', 'UNASSESSED']
 const BUYER_TYPE_OPTIONS = ['All', 'IMPORTER_CONFIRMED', 'IMPORTER_UNCONFIRMED', 'DISTRIBUTOR', 'WHOLESALER', 'MANUFACTURER', 'INGREDIENT_BUYER', 'UNKNOWN']
@@ -129,8 +129,8 @@ export default function Importers() {
       (selectedProduct === 'Red Onion' && (item.products?.toLowerCase().includes('onion') || item.redOnionInterest === 'High'))
 
     const matchPriority = selectedPriority === 'All' || item.priority === selectedPriority
-    const matchStatus = selectedStatus === 'All' || item.outreachStatus === selectedStatus
-    const matchVerification = selectedVerification === 'All' || item.verificationStatus === selectedVerification
+    const itemExpStatus = item.explicitStatus || item.phase3iStatus || item.verificationStatus
+    const matchVerification = selectedVerification === 'All' || itemExpStatus === selectedVerification || item.verificationStatus === selectedVerification
 
     // Phase 2: Verification View Tabs & Dimensional Filters
     const matchTab = activeTab === 'all' ||
@@ -572,11 +572,23 @@ export default function Importers() {
                     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 10 }}>
                       <span className="badge" style={{
                         fontSize: '0.66rem',
-                        background: item.companyVerificationStatus === 'COMPANY_VERIFIED' ? '#f0fdf4' : item.companyVerificationStatus === 'DOMAIN_ASSOCIATED' ? '#eff6ff' : '#fffbeb',
-                        color: item.companyVerificationStatus === 'COMPANY_VERIFIED' ? '#166534' : item.companyVerificationStatus === 'DOMAIN_ASSOCIATED' ? '#1d4ed8' : '#b45309',
-                        border: `1px solid ${item.companyVerificationStatus === 'COMPANY_VERIFIED' ? '#bbf7d0' : item.companyVerificationStatus === 'DOMAIN_ASSOCIATED' ? '#bfdbfe' : '#fde68a'}`
+                        background: (item.explicitStatus === 'VERIFIED' || item.companyVerificationStatus === 'COMPANY_VERIFIED') ? '#f0fdf4' :
+                                    (item.explicitStatus === 'UNDER_REVIEW' || item.companyVerificationStatus === 'DOMAIN_ASSOCIATED') ? '#eff6ff' :
+                                    (item.explicitStatus === 'SUPPRESSED') ? '#f1f5f9' :
+                                    (item.explicitStatus === 'REJECTED') ? '#fef2f2' : '#fffbeb',
+                        color: (item.explicitStatus === 'VERIFIED' || item.companyVerificationStatus === 'COMPANY_VERIFIED') ? '#166534' :
+                               (item.explicitStatus === 'UNDER_REVIEW' || item.companyVerificationStatus === 'DOMAIN_ASSOCIATED') ? '#1d4ed8' :
+                               (item.explicitStatus === 'SUPPRESSED') ? '#475569' :
+                               (item.explicitStatus === 'REJECTED') ? '#dc2626' : '#b45309',
+                        border: `1px solid ${(item.explicitStatus === 'VERIFIED' || item.companyVerificationStatus === 'COMPANY_VERIFIED') ? '#bbf7d0' :
+                                            (item.explicitStatus === 'UNDER_REVIEW' || item.companyVerificationStatus === 'DOMAIN_ASSOCIATED') ? '#bfdbfe' :
+                                            (item.explicitStatus === 'SUPPRESSED') ? '#cbd5e1' :
+                                            (item.explicitStatus === 'REJECTED') ? '#fecaca' : '#fde68a'}`
                       }}>
-                        {item.companyVerificationStatus === 'COMPANY_VERIFIED' ? '✓ Company Verified (Registry)' : item.companyVerificationStatus === 'DOMAIN_ASSOCIATED' ? '🌐 Domain Associated' : '⚠️ Unverified'}
+                        {(item.explicitStatus === 'VERIFIED' || item.companyVerificationStatus === 'COMPANY_VERIFIED') ? '✓ Verified (Registry)' :
+                         (item.explicitStatus === 'UNDER_REVIEW' || item.companyVerificationStatus === 'DOMAIN_ASSOCIATED') ? '⏳ Under Review' :
+                         (item.explicitStatus === 'SUPPRESSED') ? '🚫 Suppressed' :
+                         (item.explicitStatus === 'REJECTED') ? '❌ Rejected' : '⚠️ Unverified'}
                       </span>
                       {item.buyerType && (
                         <span className="badge" style={{ fontSize: '0.66rem', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>
@@ -683,14 +695,35 @@ export default function Importers() {
                       )}
                     </div>
 
-                    {/* Verification Queue Alert Box (if applicable) */}
-                    {item.inVerificationQueue && (
-                      <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '8px 12px', fontSize: '0.75rem', color: '#92400e', marginBottom: 14 }}>
-                        <div style={{ fontWeight: 800, marginBottom: 2 }}>📋 Verification Queue Item</div>
-                        <div><strong>Missing:</strong> {item.missingVerificationFields?.join(', ') || 'Pending external registry confirmation'}</div>
-                        <div style={{ marginTop: 2 }}><strong>Next Action:</strong> {item.nextVerificationAction}</div>
+                    {/* Explicit Status & Verification Context Box */}
+                    {item.explicitStatus === 'UNDER_REVIEW' ? (
+                      <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '8px 12px', fontSize: '0.75rem', color: '#1e40af', marginBottom: 14 }}>
+                        <div style={{ fontWeight: 800, marginBottom: 2 }}>⏳ Under Review — Verification Queue</div>
+                        <div><strong>Missing:</strong> {item.missingVerificationFields?.join(', ') || 'Pending official commercial registry filing'}</div>
+                        <div style={{ marginTop: 2 }}><strong>Next Action:</strong> {item.nextVerificationAction || 'Registry verification'}</div>
                       </div>
-                    )}
+                    ) : item.explicitStatus === 'VERIFIED' ? (
+                      <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, padding: '8px 12px', fontSize: '0.75rem', color: '#166534', marginBottom: 14 }}>
+                        <div style={{ fontWeight: 800, marginBottom: 2 }}>✓ Verified Commercial Entity</div>
+                        <div><strong>Registry Source:</strong> {item.verificationSource || 'Official Chamber of Commerce / Registry'}</div>
+                      </div>
+                    ) : item.explicitStatus === 'SUPPRESSED' ? (
+                      <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 6, padding: '8px 12px', fontSize: '0.75rem', color: '#475569', marginBottom: 14 }}>
+                        <div style={{ fontWeight: 800, marginBottom: 2 }}>🚫 Suppressed Record</div>
+                        <div>Do not contact — permanently suppressed per compliance rules.</div>
+                      </div>
+                    ) : item.explicitStatus === 'REJECTED' ? (
+                      <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '8px 12px', fontSize: '0.75rem', color: '#991b1b', marginBottom: 14 }}>
+                        <div style={{ fontWeight: 800, marginBottom: 2 }}>❌ Rejected Record</div>
+                        <div>Contact invalid or bounced — barred from outreach.</div>
+                      </div>
+                    ) : item.inVerificationQueue ? (
+                      <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '8px 12px', fontSize: '0.75rem', color: '#92400e', marginBottom: 14 }}>
+                        <div style={{ fontWeight: 800, marginBottom: 2 }}>⚠️ Unverified Record</div>
+                        <div><strong>Status:</strong> Unverified. No documented commercial registry evidence.</div>
+                        <div style={{ marginTop: 2 }}><strong>Next Action:</strong> {item.nextVerificationAction || 'Manual research required'}</div>
+                      </div>
+                    ) : null}
                   </div>
 
                   {/* Actions & Quotation Trigger */}
@@ -831,6 +864,7 @@ export default function Importers() {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, fontSize: '0.8rem', marginBottom: 12 }}>
+                  <div><strong>Explicit Status:</strong> {selectedImporter.explicitStatus || selectedImporter.phase3iStatus || 'UNVERIFIED'}</div>
                   <div><strong>Company Verification:</strong> {selectedImporter.companyVerificationStatus || 'UNVERIFIED'}</div>
                   <div><strong>Domain Status:</strong> {selectedImporter.domainVerificationStatus || 'UNTESTED'}</div>
                   <div><strong>Email Deliverability:</strong> {selectedImporter.emailDeliverabilityStatus || 'UNTESTED'} ({selectedImporter.emailFormatValid ? 'Format Valid' : 'Format Invalid'})</div>
@@ -841,11 +875,21 @@ export default function Importers() {
                   <div><strong>Last Verified:</strong> {selectedImporter.lastVerifiedAt ? new Date(selectedImporter.lastVerifiedAt).toISOString().split('T')[0] : 'None (Evidence Pending)'}</div>
                 </div>
 
-                {selectedImporter.inVerificationQueue && (
-                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '10px 12px', fontSize: '0.78rem', color: '#92400e', marginTop: 10 }}>
-                    <div style={{ fontWeight: 800, marginBottom: 4 }}>📋 Verification Queue Requirements:</div>
+                {selectedImporter.explicitStatus === 'UNDER_REVIEW' ? (
+                  <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '10px 12px', fontSize: '0.78rem', color: '#1e40af', marginTop: 10 }}>
+                    <div style={{ fontWeight: 800, marginBottom: 4 }}>⏳ Under Review — Verification Queue Requirements:</div>
                     <div><strong>Missing Items:</strong> {selectedImporter.missingVerificationFields?.join('; ') || 'Registry audit pending'}</div>
-                    <div style={{ marginTop: 4 }}><strong>Next Action:</strong> {selectedImporter.nextVerificationAction}</div>
+                    <div style={{ marginTop: 4 }}><strong>Next Required Step:</strong> {selectedImporter.nextVerificationAction || 'Official commercial registry verification'}</div>
+                  </div>
+                ) : selectedImporter.explicitStatus === 'VERIFIED' ? (
+                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, padding: '10px 12px', fontSize: '0.78rem', color: '#166534', marginTop: 10 }}>
+                    <div style={{ fontWeight: 800, marginBottom: 4 }}>✓ Verified Commercial Entity:</div>
+                    <div><strong>Evidence Source:</strong> {selectedImporter.verificationSource || 'Official Commercial Chamber of Commerce / Registry'}</div>
+                  </div>
+                ) : (
+                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '10px 12px', fontSize: '0.78rem', color: '#92400e', marginTop: 10 }}>
+                    <div style={{ fontWeight: 800, marginBottom: 4 }}>⚠️ Unverified Entity:</div>
+                    <div>Record is maintained as UNVERIFIED pending external commercial registry documentation.</div>
                   </div>
                 )}
 

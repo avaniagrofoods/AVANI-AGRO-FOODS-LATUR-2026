@@ -1,0 +1,58 @@
+{
+  "phase": "3H_RE_VERIFICATION",
+  "verification_timestamp": "2026-10-03T20:12:50+05:30",
+  "domain": "avaniagrofoods.com",
+  "dns_authority": "ns1.vercel-dns.com",
+  "secondary_dns_authority": "ns2.vercel-dns.com",
+  "queries_performed": {
+    "read_only_dns_lookups": 6,
+    "smtp_deliverability_probes": 0,
+    "mx_deliverability_probes": 0,
+    "emails_sent": 0
+  },
+  "spf_verification": {
+    "status": "FAIL",
+    "gate_status": "BLOCKED",
+    "published_spf_records": [
+      "v=spf1 include:_spf.mail.hostinger.com ~all",
+      "v=spf1 include:zoho.in ~all"
+    ],
+    "spf_record_count": 2,
+    "single_record_criterion": "FAIL",
+    "zoho_authorized": true,
+    "hostinger_authorized": true,
+    "resend_authorized": false,
+    "rfc7208_compliant": false,
+    "failure_reason": "Multiple SPF records published (PermError condition); include:resend.com is missing",
+    "required_remediation": "Consolidate into exactly one published TXT record: 'v=spf1 include:zoho.in include:_spf.mail.hostinger.com include:resend.com ~all'"
+  },
+  "dkim_verification": {
+    "status": "PASS",
+    "selector": "resend",
+    "host": "resend._domainkey.avaniagrofoods.com",
+    "record_type": "TXT",
+    "public_key_present": true,
+    "public_key_preview": "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgOHqKbjrYdZXRYYYStW+ukg4OZJJUfp0pAAG+DN6Wm3lTaAFYSGF8K0hRDleHCbxfyAkeJwlVMhVgZJR/MNfuUGeDuE3CuFQf4+Thqg+pbXL83GGkzyx9QIopEsSyG7T5XGYk398EIxJ2QS1a/4VU5E31jOIibq2TVGuSNEPkWQIDAQAB",
+    "zoho_selector_preserved": true
+  },
+  "dmarc_verification": {
+    "status": "PASS",
+    "host": "_dmarc.avaniagrofoods.com",
+    "raw_record": "v=DMARC1; p=none",
+    "policy": "none",
+    "alignment": "RELAXED",
+    "syntax_valid": true
+  },
+  "mx_verification": {
+    "status": "PASS",
+    "records": [
+      { "exchange": "mx1.hostinger.com", "preference": 5 },
+      { "exchange": "mx.zoho.in", "preference": 10 },
+      { "exchange": "mx2.hostinger.com", "preference": 10 },
+      { "exchange": "mx2.zoho.in", "preference": 20 },
+      { "exchange": "mx3.zoho.in", "preference": 50 }
+    ],
+    "inbound_receiving_intact": true
+  },
+  "dns_gate_result": "BLOCKED"
+}

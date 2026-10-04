@@ -1,0 +1,57 @@
+{
+  "phase": "3H_PREPARATION",
+  "audit_timestamp": "2026-10-03T19:50:00+05:30",
+  "domain": "avaniagrofoods.com",
+  "live_dns_verification": {
+    "spf": {
+      "status": "FAIL",
+      "gate_status": "BLOCKED",
+      "published_records": [
+        "v=spf1 include:_spf.mail.hostinger.com ~all",
+        "v=spf1 include:zoho.in ~all"
+      ],
+      "record_count": 2,
+      "rfc7208_compliant": false,
+      "resend_authorized": false,
+      "blocker_details": "Domain publishes two separate SPF TXT records. RFC 7208 Section 3.2 prohibits multiple SPF records and strict receivers will evaluate this as PermError. Furthermore, include:resend.com is missing.",
+      "required_remediation": "Delete both records and publish exactly one consolidated record: 'v=spf1 include:zoho.in include:_spf.mail.hostinger.com include:resend.com ~all'"
+    },
+    "dkim": {
+      "status": "PASS",
+      "gate_status": "PASS",
+      "selector": "resend",
+      "host": "resend._domainkey.avaniagrofoods.com",
+      "record_type": "TXT",
+      "public_key_present": true,
+      "public_key_preview": "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgOHqKbjrYdZXRYYYStW+ukg4OZJJUfp0pAAG+DN6Wm3lTaAFYSGF8K0hRDleHCbxfyAkeJwlVMhVgZJR/MNfuUGeDuE3CuFQf4+Thqg+pbXL83GGkzyx9QIopEsSyG7T5XGYk398EIxJ2QS1a/4VU5E31jOIibq2TVGuSNEPkWQIDAQAB",
+      "secondary_selector": "zmail._domainkey.avaniagrofoods.com (Zoho - FOUND)"
+    },
+    "dmarc": {
+      "status": "PASS",
+      "gate_status": "PASS",
+      "host": "_dmarc.avaniagrofoods.com",
+      "raw_record": "v=DMARC1; p=none",
+      "policy": "none",
+      "pct": 100,
+      "alignment": {
+        "adkim": "r",
+        "aspf": "r"
+      },
+      "rua": null,
+      "ruf": null
+    },
+    "mx": {
+      "status": "PASS",
+      "gate_status": "PASS",
+      "records": [
+        { "exchange": "mx1.hostinger.com", "preference": 5 },
+        { "exchange": "mx.zoho.in", "preference": 10 },
+        { "exchange": "mx2.hostinger.com", "preference": 10 },
+        { "exchange": "mx2.zoho.in", "preference": 20 },
+        { "exchange": "mx3.zoho.in", "preference": 50 }
+      ],
+      "inbound_operational_safety": "PRESERVED"
+    }
+  },
+  "overall_dns_gate": "BLOCKED"
+}

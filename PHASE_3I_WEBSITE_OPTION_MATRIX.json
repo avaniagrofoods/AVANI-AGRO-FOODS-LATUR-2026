@@ -1,0 +1,26 @@
+{
+  "pages_tested": ["/private/importers", "/private/manufacturers"],
+  "features": {
+    "search": {
+      "status": "PASS",
+      "details": "Search bar correctly filters by company name and country"
+    },
+    "filter": {
+      "status": "PASS",
+      "details": "Filter drawers successfully map to the EXPLICIT_VERIFICATION_STATUSES (Verified, Under Review, Unverified, Suppressed, Rejected). The 'Verification Queue' badge has been successfully removed from unverified records."
+    },
+    "sort": {
+      "status": "PASS",
+      "details": "Table headers sort properly without crashing."
+    },
+    "pagination": {
+      "status": "PASS",
+      "details": "Pagination retains correct page offsets when filters are applied."
+    },
+    "security": {
+      "status": "PASS",
+      "details": "No sensitive email or verification tokens are exposed to the unauthenticated frontend bundle."
+    }
+  },
+  "overall_status": "READY"
+}

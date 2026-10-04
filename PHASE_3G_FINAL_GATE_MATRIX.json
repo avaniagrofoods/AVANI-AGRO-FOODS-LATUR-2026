@@ -1,0 +1,60 @@
+{
+  "phase": "3G_REMEDIATION",
+  "audit_date": "2026-10-03",
+  "project": "AVANI AGRO FOODS",
+  "gate_evaluations": {
+    "G3.1_SENDER_IDENTITY": {
+      "status": "PASS",
+      "findings": "Verified From: sales@avaniagrofoods.com, name: AVANI AGRO FOODS, physical address in Latur, 0 forbidden manufacturing claims."
+    },
+    "G3.2_DOMAIN_AUTHENTICATION": {
+      "status": "ACTION_REQUIRED",
+      "spf": "FAIL (Dual records published: Hostinger & Zoho; RFC 7208 PermError; resend.com missing)",
+      "dkim": "PASS (resend._domainkey found with valid RSA public key; zmail found)",
+      "dmarc": "PASS (v=DMARC1; p=none found)",
+      "mx": "PASS (Zoho & Hostinger MX records verified)"
+    },
+    "G3.3_EMAIL_PROVIDER": {
+      "status": "CONFIGURATION_REQUIRED",
+      "findings": "EmailJS configured for inbound forms; Resend configured locally, blank in production (.env.production.local, .env.vercel); resend npm package not in dependencies; fail-closed webhook logic verified."
+    },
+    "G3.4_DELIVERABILITY_ARCHITECTURE": {
+      "status": "PASS",
+      "findings": "Hard bounce permanent suppression, soft bounce retry limit (max 2, 24h backoff), instant complaint suppression, dual-channel unsubscribe, max 10/day rate-limiting, immutable JSON logging."
+    },
+    "G3.5_COMPLIANCE": {
+      "status": "IMPLEMENTATION_REVIEWED",
+      "findings": "Physical address, opt-out mechanisms, and non-deceptive subject lines verified across templates T01-T07. Legal counsel review noted."
+    }
+  },
+  "overall_phase_3g_status": "CONDITIONAL_PASS",
+  "security_scan": {
+    "secret_exposure": "PASS",
+    "unredacted_secrets_in_source": 0
+  },
+  "operational_controls": {
+    "OUTREACH_AUTHORIZED": 0,
+    "PILOT_AUTHORIZED": 0,
+    "GLOBAL_OUTREACH_STOP": 1,
+    "EMAILS_SENT": 0,
+    "PHONE_CALLS": 0,
+    "SMS_SENT": 0,
+    "WHATSAPP_MESSAGES_SENT": 0,
+    "SMTP_PROBES": 0,
+    "MX_PROBES": 0,
+    "LIVE_DELIVERABILITY_TESTS": 0,
+    "DATASET_MUTATIONS": 0,
+    "DEPLOYMENT_CHANGES": 0
+  },
+  "cryptographic_baseline": {
+    "git_head": "99c672a9a84070586fc5f0f813fc018a208d75d2",
+    "importers_data_sha256": "02AFC4E0F621B4326A1CBD67BFC31266A14DFA77F1B0F9767315BB971860F595",
+    "snapshot_642_sha256": "86100BDA94BE63A51EDDC6EE2B2458133F607D50CD5F7D66C25193F3C9137F9E",
+    "baseline_diff": {
+      "added": 0,
+      "deleted": 0,
+      "modified": 0,
+      "reordered": 0
+    }
+  }
+}

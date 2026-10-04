@@ -1,0 +1,58 @@
+{
+  "campaign_id": "PHASE3I-DELIVERABILITY-TEST-001",
+  "timestamp": "2026-10-04T06:44:31.101Z",
+  "recipient": "avaniagrofoods1356@gmail.com",
+  "sender": "AVANI AGRO FOODS <sales@avaniagrofoods.com>",
+  "reply_to": "sales@avaniagrofoods.com",
+  "subject": "AVANI AGRO FOODS — Phase 3I Email Delivery Test",
+  "provider": "Resend",
+  "provider_status_code": 200,
+  "provider_message_id": "01a105a8-1ed9-7aa3-801d-0cb2cd2d8486",
+  "delivery_details": {
+    "object": "email",
+    "id": "01a105a8-1ed9-7aa3-801d-0cb2cd2d8486",
+    "to": [
+      "avaniagrofoods1356@gmail.com"
+    ],
+    "from": "AVANI AGRO FOODS <sales@avaniagrofoods.com>",
+    "created_at": "2026-10-04 06:44:26.594000+00",
+    "subject": "AVANI AGRO FOODS — Phase 3I Email Delivery Test",
+    "bcc": null,
+    "cc": null,
+    "reply_to": [
+      "sales@avaniagrofoods.com"
+    ],
+    "last_event": "delivered",
+    "scheduled_at": null,
+    "message_id": "<010601a105a82196-a25cdd2c-a854-4b30-9992-8898d644a89e-000000@ap-northeast-1.amazonses.com>",
+    "html": null
+  },
+  "authentication_headers": {
+    "status": "REVIEW_REQUIRED",
+    "spf_dns_record": "PASS (DNS: include:resend.com present, single SPF record)",
+    "dkim_dns_record": "PASS (DNS: resend._domainkey published)",
+    "dmarc_dns_record": "PASS (DNS: p=none)",
+    "message_level_authentication_results": "NOT_TESTED - Resend API does not return Authentication-Results; owner must open the message in Gmail > Show original and confirm SPF/DKIM/DMARC = PASS"
+  },
+  "audit": {
+    "external_buyers_contacted": 0,
+    "unsolicited_commercial_send": 0,
+    "authorized_mailbox_only": true,
+    "test_mode": true
+  },
+  "provider_last_event": "delivered",
+  "provider_ses_message_id": "<010601a105a82196-a25cdd2c-a854-4b30-9992-8898d644a89e-000000@ap-northeast-1.amazonses.com>",
+  "delivery_assessment": {
+    "provider_accepted": true,
+    "provider_last_event_delivered": true,
+    "meaning": "delivered = accepted by recipient mail server (Gmail MX)",
+    "inbox_vs_spam_placement": "NOT_TESTED - requires owner mailbox inspection"
+  },
+  "reply_test": {
+    "live_reply_from_owned_mailbox": "NOT_TESTED - requires owner to reply manually from avaniagrofoods1356@gmail.com; no inbound reply webhook/parser is deployed",
+    "simulated_reply_test": "PASS (scripts/test_phase_3i_sequences.cjs test 3)"
+  },
+  "webhook_event_recorded": "NOT_TESTED - delivery status obtained by API polling, not webhook",
+  "database_record": "Report file only; no persistent campaign DB exists in this architecture",
+  "emails_sent_total_this_phase": 1
+}

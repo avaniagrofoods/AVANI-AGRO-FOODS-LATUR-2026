@@ -1,0 +1,35 @@
+{
+  "phase": "3H_PREPARATION",
+  "audit_timestamp": "2026-10-03T19:50:00+05:30",
+  "identity": {
+    "from_header": "AVANI AGRO FOODS <sales@avaniagrofoods.com>",
+    "reply_to": "sales@avaniagrofoods.com",
+    "display_name": "AVANI AGRO FOODS",
+    "contact_name": "Sachin Shinde",
+    "physical_address": {
+      "address_line1": "Old Barshi Road, KulswaminiNagar, 5 No Chauk, Next to Sai School",
+      "city": "Latur",
+      "postal_code": "413512",
+      "state": "Maharashtra",
+      "country": "India"
+    },
+    "phone": "+91 7219053645",
+    "website": "https://www.avaniagrofoods.com",
+    "approved_positioning": "Indian sourcing and export coordination partner"
+  },
+  "prohibited_claims_audit": {
+    "manufacturer_claimed": false,
+    "factory_claimed": false,
+    "farmer_claimed": false,
+    "producer_claimed": false,
+    "certified_manufacturer_claimed": false,
+    "large_exporter_claimed": false,
+    "guaranteed_supplier_claimed": false,
+    "unsupported_certifications_claimed": false,
+    "fabricated_capacity_claimed": false,
+    "fabricated_history_claimed": false,
+    "medical_claims_made": false,
+    "findings": "All templates T01-T07 and identity definitions are 100% compliant with approved positioning"
+  },
+  "status": "PASS"
+}
