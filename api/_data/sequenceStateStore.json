@@ -1,63 +1,16 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-04T13:29:14.598Z",
-  "sequences": {
-    "PHASE3J-CONTROLLED-TEST:owner-test-001": {
-      "campaign_id": "PHASE3J-CONTROLLED-TEST",
-      "recipient_id": "OWNER-TEST-001",
-      "sequence_id": "SEQ-01",
-      "current_step": 1,
-      "status": "REPLIED",
-      "sent_steps": [
-        "EMAIL_1"
-      ],
-      "next_step": "NONE",
-      "next_due_at": null,
-      "last_sent_at": "2026-10-04T13:29:14.594Z",
-      "reply_detected": true,
-      "reply_detected_at": "2026-10-04T13:29:14.598Z",
-      "followups_cancelled": true,
-      "last_provider_message_id": "controlled-resend-id-001",
-      "recipient_email": "avaniagrofoods1356@gmail.com",
-      "company_name": "",
-      "contact_name": "",
-      "created_at": "2026-10-04T13:29:14.594Z",
-      "updated_at": "2026-10-04T13:29:14.598Z",
-      "reply_details": {
-        "from": "Owner Test <avaniagrofoods1356@gmail.com>",
-        "subject": "Re: Test inquiry",
-        "inReplyTo": "controlled-resend-id-001",
-        "messageId": ""
+  "lastUpdated": "2026-10-04T14:51:58.804Z",
+  "sequences": {},
+  "idempotencyKeys": {},
+  "reservations": {},
+  "processedEvents": {
+    "evt_k3_replay_test_777": {
+      "processedAt": "2026-10-04T14:51:58.804Z",
+      "details": {
+        "type": "test"
       }
     }
   },
-  "idempotencyKeys": {
-    "PHASE3J-CONTROLLED-TEST:owner-test-001:SEQ-01:EMAIL_1": {
-      "campaignId": "PHASE3J-CONTROLLED-TEST",
-      "recipientId": "OWNER-TEST-001",
-      "sequenceId": "SEQ-01",
-      "stepNumber": 1,
-      "step": "EMAIL_1",
-      "dispatchedAt": "2026-10-04T13:29:14.594Z",
-      "providerMessageId": "controlled-resend-id-001",
-      "sesMessageId": null,
-      "status": "SENT"
-    }
-  },
-  "reservations": {},
-  "processedEvents": {},
-  "auditLog": [
-    {
-      "event": "STEP_COMMITTED",
-      "idempotencyKey": "PHASE3J-CONTROLLED-TEST:owner-test-001:SEQ-01:EMAIL_1",
-      "timestamp": "2026-10-04T13:29:14.594Z"
-    },
-    {
-      "event": "INBOUND_REPLY_PROCESSED",
-      "campaignId": "PHASE3J-CONTROLLED-TEST",
-      "recipientId": "OWNER-TEST-001",
-      "timestamp": "2026-10-04T13:29:14.598Z",
-      "followupsCancelled": true
-    }
-  ]
+  "auditLog": []
 }
