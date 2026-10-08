@@ -1,19 +1,19 @@
 {
   "phase": "3M",
   "report_title": "PHASE_3M_SECURITY_ACCEPTANCE",
-  "generated_at": "2026-10-08T13:30:00+05:30",
-  "status": "FINAL_ACCEPTANCE_BLOCKED_EXTERNAL_PROVIDER_CONFIRMATION",
+  "generated_at": "2026-10-08T15:25:00+05:30",
+  "status": "READY_FOR_FINAL_ACCEPTANCE",
 
   "git": {
     "branch": "main",
-    "latest_commit": "e330044 docs(phase-3l): add final acceptance report",
     "working_tree": "CLEAN"
   },
 
   "deployments": {
     "production": {
       "status": "READY",
-      "deployment_id": "dpl_zp22y0n6i",
+      "deployment_id": "dpl_mdva6tx3z",
+      "deployment_short": "DpswZPFzJ",
       "domain": "https://www.avaniagrofoods.com",
       "homepage_status": "HTTP_200"
     },
@@ -65,9 +65,10 @@
     "status": "PASS_LOCKED"
   },
 
-  "security_condition": {
-    "previous_webhook_secret": "TREATED_AS_COMPROMISED",
-    "provider_rotation_status": "BLOCKED_ON_EXTERNAL_PROVIDER_CONFIRMATION",
-    "requirement": "Owner must confirm or perform signing secret rotation directly in Resend Dashboard (https://resend.com/webhooks). Do not paste or expose secrets in chat."
+  "provider_rotation_confirmation": {
+    "status": "CONFIRMED",
+    "confirmation_statement": "I confirm provider rotation is complete in Resend Dashboard",
+    "evidence": "Owner verified in authenticated Resend Dashboard session, updated Vercel environment variables, and triggered successful production deployment (dpl_mdva6tx3z).",
+    "timestamp": "2026-10-08T15:20:09+05:30"
   }
 }
