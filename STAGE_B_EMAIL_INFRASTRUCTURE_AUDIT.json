@@ -1,0 +1,58 @@
+{
+  "stage": "STAGE_B",
+  "audit_title": "STAGE_B_EMAIL_INFRASTRUCTURE_AUDIT",
+  "generated_at": "2026-10-08T13:55:00+05:30",
+  "domain": "avaniagrofoods.com",
+  "sender_identity": "AVANI AGRO FOODS <sales@avaniagrofoods.com>",
+
+  "domain_authentication": {
+    "spf": {
+      "status": "PASS",
+      "record": "v=spf1 include:zoho.in include:_spf.mail.hostinger.com include:resend.com ~all",
+      "includes_resend": true,
+      "includes_zoho": true,
+      "conflicts": "NONE"
+    },
+    "dkim": {
+      "status": "PASS",
+      "selectors": {
+        "resend._domainkey.avaniagrofoods.com": "PASS (2048-bit RSA key active)",
+        "zmail._domainkey.avaniagrofoods.com": "PASS (RSA key active)"
+      }
+    },
+    "dmarc": {
+      "status": "PASS",
+      "record": "v=DMARC1; p=none",
+      "subdomain_policy": "none",
+      "policy_posture": "MONITORING_P_NONE"
+    }
+  },
+
+  "provider_audits": {
+    "resend": {
+      "status": "AUTHENTICATED_IN_DNS_AND_VERCEL",
+      "sending_domain": "avaniagrofoods.com",
+      "dns_records_aligned": true,
+      "signing_secret_rotation": "UNVERIFIED_EXTERNAL_DASHBOARD_CONFIRMATION_REQUIRED"
+    },
+    "sender_net": {
+      "status": "NOT_AVAILABLE",
+      "notes": "Isolated browser session redirected to auth.sender.net login; no authenticated credentials stored locally"
+    }
+  },
+
+  "outreach_safety": {
+    "OUTREACH_AUTHORIZED": 0,
+    "PILOT_AUTHORIZED": 0,
+    "GLOBAL_OUTREACH_STOP": 1,
+    "EXTERNAL_BUYERS_CONTACTED": 0,
+    "EXTERNAL_BUYER_EMAILS_SENT": 0,
+    "SMTP_PROBES": 0,
+    "MX_PROBES": 0,
+    "campaigns_activated": false,
+    "automated_outreach_activated": false
+  },
+
+  "dns_changes_required": "NONE",
+  "overall_infrastructure_readiness": "EMAIL_INFRASTRUCTURE_READY_PENDING_PROVIDER_ROTATION_SIGN_OFF"
+}
