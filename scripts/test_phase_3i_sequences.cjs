@@ -93,7 +93,8 @@ function runTests() {
       id: 'REC-TEST-OWNED',
       email: 'avaniagrofoods1356@gmail.com',
       companyName: 'Avani Agro Foods Test Desk',
-      contactName: 'Sachin Shinde'
+      contactName: 'Sachin Shinde',
+      approvedForOutreach: true
     };
 
     const state = createRecipientState(recipient);
@@ -138,7 +139,8 @@ function runTests() {
       id: 'REC-SYNTH-001',
       email: 'prospect@synthetic-buyer-test.com',
       companyName: 'Global Botanicals Inc',
-      contactName: 'Procurement Director'
+      contactName: 'Procurement Director',
+      approvedForOutreach: true
     };
 
     const state = createRecipientState(synthRecipient);
@@ -208,7 +210,7 @@ function runTests() {
 
   // 5. Idempotency Key Duplicate Block
   test('5. Idempotency key prevents duplicate dispatch on retry or page refresh', () => {
-    const recipient = { id: 'REC-DUP-01', email: 'dup@test.com', companyName: 'Dup Co', contactName: 'Buyer' };
+    const recipient = { id: 'REC-DUP-01', email: 'dup@test.com', companyName: 'Dup Co', contactName: 'Buyer', approvedForOutreach: true };
     const state = createRecipientState(recipient);
     const campaignId = 'CAMP-DUP-01';
 
@@ -224,7 +226,7 @@ function runTests() {
 
   // 6. Fail-closed Safety: Real Outreach Blocked When Authorization is 0
   test('6. Fail-closed: Real outreach fails closed when outreachAuthorized = false', () => {
-    const recipient = { id: 'BUYER-REAL-01', email: 'external@realbuyer.com', companyName: 'Real Buyer', contactName: 'Head Buyer' };
+    const recipient = { id: 'BUYER-REAL-01', email: 'external@realbuyer.com', companyName: 'Real Buyer', contactName: 'Head Buyer', approvedForOutreach: true };
     const state = createRecipientState(recipient);
     const campaignId = 'CAMP-REAL-01';
 
@@ -241,7 +243,7 @@ function runTests() {
 
   // 7. Fail-closed Safety: Real Outreach Blocked When GLOBAL_OUTREACH_STOP = 1
   test('7. Fail-closed: Real outreach fails closed when globalOutreachStop = 1', () => {
-    const recipient = { id: 'BUYER-REAL-02', email: 'external2@realbuyer.com', companyName: 'Real Buyer 2', contactName: 'Head Buyer' };
+    const recipient = { id: 'BUYER-REAL-02', email: 'external2@realbuyer.com', companyName: 'Real Buyer 2', contactName: 'Head Buyer', approvedForOutreach: true };
     const state = createRecipientState(recipient);
     const campaignId = 'CAMP-REAL-02';
 
@@ -258,7 +260,7 @@ function runTests() {
 
   // 8. Opt-out Permanently Suppresses Recipient
   test('8. Opt-out permanently suppresses recipient and clears follow-up', () => {
-    const recipient = { id: 'REC-OPTOUT-01', email: 'optout@buyer.com', companyName: 'Opt Co', contactName: 'Buyer' };
+    const recipient = { id: 'REC-OPTOUT-01', email: 'optout@buyer.com', companyName: 'Opt Co', contactName: 'Buyer', approvedForOutreach: true };
     const state = createRecipientState(recipient);
     dispatchSequenceStep(state, 'CAMP-OPTOUT', { isTestMode: true });
 
@@ -272,7 +274,7 @@ function runTests() {
 
   // 9. Bounce Handling
   test('9. Bounce stops sequence and records permanent suppression', () => {
-    const recipient = { id: 'REC-BOUNCE-01', email: 'bounce@buyer.com', companyName: 'Bounce Co', contactName: 'Buyer' };
+    const recipient = { id: 'REC-BOUNCE-01', email: 'bounce@buyer.com', companyName: 'Bounce Co', contactName: 'Buyer', approvedForOutreach: true };
     const state = createRecipientState(recipient);
     dispatchSequenceStep(state, 'CAMP-BOUNCE', { isTestMode: true });
 
