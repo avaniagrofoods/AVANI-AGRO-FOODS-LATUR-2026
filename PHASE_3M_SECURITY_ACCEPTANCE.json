@@ -1,0 +1,73 @@
+{
+  "phase": "3M",
+  "report_title": "PHASE_3M_SECURITY_ACCEPTANCE",
+  "generated_at": "2026-10-08T13:30:00+05:30",
+  "status": "FINAL_ACCEPTANCE_BLOCKED_EXTERNAL_PROVIDER_CONFIRMATION",
+
+  "git": {
+    "branch": "main",
+    "latest_commit": "e330044 docs(phase-3l): add final acceptance report",
+    "working_tree": "CLEAN"
+  },
+
+  "deployments": {
+    "production": {
+      "status": "READY",
+      "deployment_id": "dpl_zp22y0n6i",
+      "domain": "https://www.avaniagrofoods.com",
+      "homepage_status": "HTTP_200"
+    },
+    "preview": {
+      "status": "READY",
+      "deployment_id": "dpl_3Y2DDYyJkEwggHDk3wNGDa93nbtB",
+      "domain": "https://avani-agro-foods-latur-2026-ct92kmqu3.vercel.app",
+      "sso_status": "ACTIVE"
+    }
+  },
+
+  "webhook_security": {
+    "production_get": "HTTP_405_METHOD_NOT_ALLOWED (PASS)",
+    "production_unsigned_post": "HTTP_401_UNAUTHORIZED (PASS)",
+    "production_invalid_signature": "HTTP_401_UNAUTHORIZED (PASS)",
+    "preview_unsigned_post": "HTTP_401_UNAUTHORIZED (PASS)",
+    "preview_invalid_signature": "HTTP_401_UNAUTHORIZED (PASS)"
+  },
+
+  "environment_audit": {
+    "RESEND_WEBHOOK_SECRET_production": "PRESENT",
+    "RESEND_WEBHOOK_SECRET_preview": "PRESENT",
+    "RESEND_WEBHOOK_SECRET1": "ABSENT",
+    "TEST_PREVIEW_VAR": "ABSENT",
+    "RESEND_API_KEY": "PRESENT",
+    "RESEND_FROM_EMAIL": "PRESENT"
+  },
+
+  "tests": {
+    "targeted_webhook": "18/18 PASS",
+    "full_regression": "152/152 PASS",
+    "security_scan": "PASS (0 credentials in tracked code)"
+  },
+
+  "dataset_integrity": {
+    "importersData_js": "PASS (02AFC4E0F621B4326A1CBD67BFC31266A14DFA77F1B0F9767315BB971860F595)",
+    "snapshot_642_json": "PASS (86100BDA94BE63A51EDDC6EE2B2458133F607D50CD5F7D66C25193F3C9137F9E)",
+    "manufacturersData_js": "PASS (6F760D437E3C3C213E0571167B33B66B1DF87503E13DE12514BE552F4AED691C)"
+  },
+
+  "safety_locks": {
+    "OUTREACH_AUTHORIZED": 0,
+    "PILOT_AUTHORIZED": 0,
+    "GLOBAL_OUTREACH_STOP": 1,
+    "EXTERNAL_BUYERS_CONTACTED": 0,
+    "EXTERNAL_BUYER_EMAILS_SENT": 0,
+    "SMTP_PROBES": 0,
+    "MX_PROBES": 0,
+    "status": "PASS_LOCKED"
+  },
+
+  "security_condition": {
+    "previous_webhook_secret": "TREATED_AS_COMPROMISED",
+    "provider_rotation_status": "BLOCKED_ON_EXTERNAL_PROVIDER_CONFIRMATION",
+    "requirement": "Owner must confirm or perform signing secret rotation directly in Resend Dashboard (https://resend.com/webhooks). Do not paste or expose secrets in chat."
+  }
+}
