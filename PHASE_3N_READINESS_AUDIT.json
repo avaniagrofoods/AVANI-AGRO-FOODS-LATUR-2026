@@ -1,0 +1,135 @@
+{
+  "phase": "3N",
+  "audit_title": "PHASE_3N_CONTROLLED_OUTREACH_READINESS_AUDIT",
+  "date": "2026-10-08",
+  "mode": "NO_SEND_READINESS_AUDIT_ONLY",
+  "status": "BLOCKED",
+  "final_decision": "CONTROL_REMEDIATION_REQUIRED",
+
+  "git": {
+    "branch": "main",
+    "working_tree": "CLEAN",
+    "head_commit": "b5a27b0"
+  },
+
+  "phase_3m_baseline": {
+    "status": "READY_FOR_FINAL_ACCEPTANCE",
+    "provider_rotation": "CONFIRMED",
+    "webhook_production": "PASS",
+    "webhook_preview": "PASS",
+    "dataset_freeze": "PASS",
+    "security_scan": "PASS"
+  },
+
+  "control_evaluations": {
+    "HUMAN_APPROVAL_GATE": {
+      "status": "PARTIAL",
+      "notes": "Enforced on commercial quotation dispatch (adminReviewed=true required); sequence dispatcher currently lacks a per-lead manual approval flag before SEQ-01"
+    },
+    "OUTREACH_AUTHORIZATION_GATE": {
+      "status": "PASS",
+      "location": "api/_lib/sequenceStateMachine.js:137-146"
+    },
+    "GLOBAL_OUTREACH_STOP": {
+      "status": "PASS",
+      "location": "api/_lib/sequenceStateMachine.js:127-136",
+      "value": 1
+    },
+    "BUYER_VERIFICATION_GATE": {
+      "status": "PASS",
+      "location": "api/_lib/importerVerificationModel.js"
+    },
+    "DUPLICATE_PREVENTION": {
+      "status": "PASS",
+      "method": "Deterministic idempotency key + reservation locking"
+    },
+    "UNSUBSCRIBE_HANDLING": {
+      "status": "PASS",
+      "method": "UNSUBSCRIBE footer in all sequences; STOPPED_OPT_OUT state mapping"
+    },
+    "SUPPRESSION_HANDLING": {
+      "status": "PASS",
+      "method": "Permanent suppression status in sequence store & verification model"
+    },
+    "BOUNCE_HANDLING": {
+      "status": "PASS",
+      "method": "Svix webhook ingests bounce, sets STOPPED_BOUNCE and cancels future steps"
+    },
+    "COMPLAINT_HANDLING": {
+      "status": "PASS",
+      "method": "Mapped to STOPPED_COMPLAINT"
+    },
+    "REPLY_STOP": {
+      "status": "PASS",
+      "method": "processInboundReply() cancels all automated follow-ups immediately and creates PENDING_HUMAN_OPERATOR_REVIEW"
+    },
+    "RATE_LIMITING": {
+      "status": "FAIL",
+      "notes": "Per-recipient 72h delay is enforced, but batch throughput throttling (per-minute, per-hour, 20-30/day pilot cap) is absent from the sequence worker"
+    },
+    "EMAIL_SEND_SAFETY": {
+      "status": "PASS",
+      "method": "Fail-closed unconfigured provider fallback; Idempotency-Key header passed to Resend"
+    },
+    "WEBHOOK_SECURITY": {
+      "status": "PASS",
+      "method": "POST only, nosniff, Svix HMAC-SHA256 signature verification with 5-minute replay window"
+    },
+    "WEBHOOK_EVENT_HANDLING": {
+      "status": "PASS",
+      "method": "Idempotent eventId deduplication and event routing"
+    },
+    "SEQUENCE_ENGINE": {
+      "status": "PASS",
+      "method": "Strict 5-step sequence (SEQ-01 to SEQ-05) with hard cap at 5; 72h wait intervals"
+    },
+    "AUDIT_LOGGING": {
+      "status": "PASS",
+      "method": "Structured history arrays in memory and disk store"
+    },
+    "DOMAIN_SECURITY": {
+      "status": "PASS",
+      "spf": "PASS",
+      "dkim": "PASS",
+      "dmarc": "PASS"
+    },
+    "SECRET_SECURITY": {
+      "status": "PASS",
+      "scan": "0 credentials in tracked code"
+    },
+    "DATASET_FREEZE": {
+      "status": "PASS",
+      "hashes_matched": 3
+    },
+    "NO_SEND_INVARIANT": {
+      "status": "PASS",
+      "outreach_authorized": 0,
+      "pilot_authorized": 0,
+      "global_outreach_stop": 1,
+      "emails_sent": 0,
+      "buyer_contact": 0,
+      "buyer_emails": 0,
+      "smtp_probes": 0,
+      "mx_probes": 0
+    }
+  },
+
+  "remediation_items": [
+    {
+      "control_id": "CTRL-RATE-LIMIT",
+      "severity": "HIGH",
+      "current_state": "No daily or hourly quota governor in sequence worker",
+      "expected_state": "Configurable batch rate limiter (e.g. max 20-30 sends/day for pilot, max 5 sends/minute)",
+      "risk": "Risk of bursting emails if outreach is authorized without pacing",
+      "recommended_remediation": "Implement DailyThroughputGovernor and dispatch pacing queue before pilot authorization"
+    },
+    {
+      "control_id": "CTRL-HUMAN-APPROVAL-PER-LEAD",
+      "severity": "MEDIUM",
+      "current_state": "Sequence dispatcher checks global outreach authorization, but not per-contact approval flag",
+      "expected_state": "Require explicit human approval state (e.g. APPROVED_FOR_OUTREACH) on each recipient record before entering SEQ-01",
+      "risk": "Accidental mass-enqueuing of unreviewed prospects upon global authorization",
+      "recommended_remediation": "Add recipient.approvedForOutreach === true precondition in dispatchSequenceStep()"
+    }
+  ]
+}
