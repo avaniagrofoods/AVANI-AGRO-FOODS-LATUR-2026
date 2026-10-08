@@ -6,9 +6,15 @@
 
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
 
 // Primary and fallback storage paths
-const PRIMARY_DATA_DIR = path.resolve(process.cwd(), 'api/_data');
+const PRIMARY_DATA_DIR = path.resolve(__dirname, '../_data');
 const PRIMARY_FILE_PATH = path.join(PRIMARY_DATA_DIR, 'sequenceStateStore.json');
 const TMP_FILE_PATH = path.join('/tmp', 'sequenceStateStore.json');
 
@@ -49,6 +55,14 @@ function createEmptyStore() {
   };
 }
 
+function getBundledBaselineStore() {
+  try {
+    return require('../_data/sequenceStateStore.json');
+  } catch (e) {
+    return createEmptyStore();
+  }
+}
+
 export function loadStore() {
   if (memoryStore) {
     return memoryStore;
@@ -64,13 +78,14 @@ export function loadStore() {
     if (STORE_PATH !== PRIMARY_FILE_PATH && fs.existsSync(PRIMARY_FILE_PATH)) {
       const raw = fs.readFileSync(PRIMARY_FILE_PATH, 'utf8');
       memoryStore = JSON.parse(raw);
+      saveStore(memoryStore);
       return memoryStore;
     }
   } catch (err) {
-    console.warn('[SequencePersistence] Warning reading persistent store, initializing fresh:', err.message);
+    console.warn('[SequencePersistence] Warning reading persistent store, falling back to baseline:', err.message);
   }
 
-  memoryStore = createEmptyStore();
+  memoryStore = JSON.parse(JSON.stringify(getBundledBaselineStore()));
   saveStore(memoryStore);
   return memoryStore;
 }

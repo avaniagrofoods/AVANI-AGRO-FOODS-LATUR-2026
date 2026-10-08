@@ -6,6 +6,23 @@
 
 const assert = require('assert');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+
+// Isolate test store so test_phase_3k_webhook never resets the production sequenceStateStore.json
+const scratchDir = path.resolve(__dirname, '../scratch');
+if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir, { recursive: true });
+const testStorePath = path.join(scratchDir, 'test_phase_3k_store.json');
+fs.writeFileSync(testStorePath, JSON.stringify({
+  version: '1.0.0',
+  lastUpdated: new Date().toISOString(),
+  sequences: {},
+  idempotencyKeys: {},
+  reservations: {},
+  processedEvents: {},
+  auditLog: []
+}, null, 2), 'utf8');
+process.env.SEQUENCE_STORE_PATH = testStorePath;
 
 // Use a well-formed whsec_-prefixed Base64 test secret
 // This is a DUMMY secret for testing ONLY — not a real production value.

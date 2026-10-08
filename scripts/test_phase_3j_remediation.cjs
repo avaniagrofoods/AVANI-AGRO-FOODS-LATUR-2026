@@ -9,6 +9,21 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
+// Isolate test store so Phase 3J tests never touch production store
+const scratchDir = path.resolve(__dirname, '../scratch');
+if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir, { recursive: true });
+const testStorePath = path.join(scratchDir, 'test_phase_3j_store.json');
+fs.writeFileSync(testStorePath, JSON.stringify({
+  version: '1.0.0',
+  lastUpdated: new Date().toISOString(),
+  sequences: {},
+  idempotencyKeys: {},
+  reservations: {},
+  processedEvents: {},
+  auditLog: []
+}, null, 2), 'utf8');
+process.env.SEQUENCE_STORE_PATH = testStorePath;
+
 // Set dummy webhook secret for test execution
 process.env.RESEND_WEBHOOK_SECRET = 'whsec_dGVzdF93ZWJob29rX3NlY3JldF8zMmJ5dGVzX2FhZjEyMw==';
 

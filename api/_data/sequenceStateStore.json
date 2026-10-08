@@ -1,16 +1,117 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-10-08T18:09:46.110Z",
-  "sequences": {},
-  "idempotencyKeys": {},
-  "reservations": {},
-  "processedEvents": {
-    "evt_k3_replay_test_777": {
-      "processedAt": "2026-10-08T18:09:46.110Z",
-      "details": {
-        "type": "test"
-      }
+  "lastUpdated": "2026-10-08T17:03:37.000Z",
+  "sequences": {
+    "PHASE_3O_CONTROLLED_PILOT_2026:test-01": {
+      "campaign_id": "PHASE_3O_CONTROLLED_PILOT_2026",
+      "recipient_id": "TEST-01",
+      "sequence_id": "SEQ-01",
+      "current_step": 1,
+      "status": "EMAIL_1_SENT",
+      "sent_steps": [
+        "EMAIL_1"
+      ],
+      "next_step": "EMAIL_2",
+      "next_due_at": "2026-10-11T17:01:21.000Z",
+      "last_sent_at": "2026-10-08T17:01:21.000Z",
+      "reply_detected": false,
+      "followups_cancelled": false,
+      "last_provider_message_id": "01a11c73-51c6-767e-81c5-3e25e53d63a0",
+      "recipient_email": "sachinnshinde1356@gmail.com",
+      "company_name": "Avani Agro Foods Internal Pilot Inbox 1",
+      "contact_name": "Sachin Shinde"
+    },
+    "PHASE_3O_CONTROLLED_PILOT_2026:test-02": {
+      "campaign_id": "PHASE_3O_CONTROLLED_PILOT_2026",
+      "recipient_id": "TEST-02",
+      "sequence_id": "SEQ-01",
+      "current_step": 1,
+      "status": "EMAIL_1_SENT",
+      "sent_steps": [
+        "EMAIL_1"
+      ],
+      "next_step": "EMAIL_2",
+      "next_due_at": "2026-10-11T17:02:29.000Z",
+      "last_sent_at": "2026-10-08T17:02:29.000Z",
+      "reply_detected": false,
+      "followups_cancelled": false,
+      "last_provider_message_id": "6da8340d-d4bf-4df6-a621-c11f42277d3f",
+      "recipient_email": "starpowerzlatur2210@gmail.com",
+      "company_name": "Avani Agro Foods Internal Pilot Inbox 2",
+      "contact_name": "Star Power Sourcing Desk"
+    },
+    "PHASE_3O_CONTROLLED_PILOT_2026:test-03": {
+      "campaign_id": "PHASE_3O_CONTROLLED_PILOT_2026",
+      "recipient_id": "TEST-03",
+      "sequence_id": "SEQ-01",
+      "current_step": 1,
+      "status": "EMAIL_1_SENT",
+      "sent_steps": [
+        "EMAIL_1"
+      ],
+      "next_step": "EMAIL_2",
+      "next_due_at": "2026-10-11T17:03:37.000Z",
+      "last_sent_at": "2026-10-08T17:03:37.000Z",
+      "reply_detected": false,
+      "followups_cancelled": false,
+      "last_provider_message_id": "1172a5a5-aaeb-4360-ba3e-ffc1ff44d039",
+      "recipient_email": "avaniloanservicelatur@gmail.com",
+      "company_name": "Avani Agro Foods Internal Pilot Inbox 3",
+      "contact_name": "Avani Loan Service Procurement"
     }
   },
-  "auditLog": []
+  "idempotencyKeys": {
+    "PHASE_3O_CONTROLLED_PILOT_2026:test-01:SEQ-01:EMAIL_1": {
+      "campaignId": "PHASE_3O_CONTROLLED_PILOT_2026",
+      "recipientId": "TEST-01",
+      "sequenceId": "SEQ-01",
+      "stepNumber": 1,
+      "step": "EMAIL_1",
+      "dispatchedAt": "2026-10-08T17:01:21.000Z",
+      "providerMessageId": "01a11c73-51c6-767e-81c5-3e25e53d63a0",
+      "sesMessageId": null,
+      "status": "SENT"
+    },
+    "PHASE_3O_CONTROLLED_PILOT_2026:test-02:SEQ-01:EMAIL_1": {
+      "campaignId": "PHASE_3O_CONTROLLED_PILOT_2026",
+      "recipientId": "TEST-02",
+      "sequenceId": "SEQ-01",
+      "stepNumber": 1,
+      "step": "EMAIL_1",
+      "dispatchedAt": "2026-10-08T17:02:29.000Z",
+      "providerMessageId": "6da8340d-d4bf-4df6-a621-c11f42277d3f",
+      "sesMessageId": null,
+      "status": "SENT"
+    },
+    "PHASE_3O_CONTROLLED_PILOT_2026:test-03:SEQ-01:EMAIL_1": {
+      "campaignId": "PHASE_3O_CONTROLLED_PILOT_2026",
+      "recipientId": "TEST-03",
+      "sequenceId": "SEQ-01",
+      "stepNumber": 1,
+      "step": "EMAIL_1",
+      "dispatchedAt": "2026-10-08T17:03:37.000Z",
+      "providerMessageId": "1172a5a5-aaeb-4360-ba3e-ffc1ff44d039",
+      "sesMessageId": null,
+      "status": "SENT"
+    }
+  },
+  "reservations": {},
+  "processedEvents": {},
+  "auditLog": [
+    {
+      "event": "STEP_COMMITTED",
+      "idempotencyKey": "PHASE_3O_CONTROLLED_PILOT_2026:test-01:SEQ-01:EMAIL_1",
+      "timestamp": "2026-10-08T17:01:21.000Z"
+    },
+    {
+      "event": "STEP_COMMITTED",
+      "idempotencyKey": "PHASE_3O_CONTROLLED_PILOT_2026:test-02:SEQ-01:EMAIL_1",
+      "timestamp": "2026-10-08T17:02:29.000Z"
+    },
+    {
+      "event": "STEP_COMMITTED",
+      "idempotencyKey": "PHASE_3O_CONTROLLED_PILOT_2026:test-03:SEQ-01:EMAIL_1",
+      "timestamp": "2026-10-08T17:03:37.000Z"
+    }
+  ]
 }
