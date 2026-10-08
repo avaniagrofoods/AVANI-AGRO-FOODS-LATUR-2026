@@ -129,6 +129,7 @@ export default function Importers() {
       (selectedProduct === 'Red Onion' && (item.products?.toLowerCase().includes('onion') || item.redOnionInterest === 'High'))
 
     const matchPriority = selectedPriority === 'All' || item.priority === selectedPriority
+    const matchStatus = selectedStatus === 'All' || item.outreachStatus === selectedStatus || item.status === selectedStatus
     const itemExpStatus = item.explicitStatus || item.phase3iStatus || item.verificationStatus
     const matchVerification = selectedVerification === 'All' || itemExpStatus === selectedVerification || item.verificationStatus === selectedVerification
 
