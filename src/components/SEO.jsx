@@ -63,7 +63,19 @@ export default function SEO({ title, description, keywords, image, noindex = fal
         scriptEl.setAttribute('id', 'dynamic-seo-schema')
         document.head.appendChild(scriptEl)
       }
-      scriptEl.textContent = JSON.stringify(schema)
+      const schemaPayload = Array.isArray(schema)
+        ? {
+            '@context': 'https://schema.org',
+            '@graph': schema.map(s => {
+              if (s && s['@context']) {
+                const { ['@context']: _, ...rest } = s
+                return rest
+              }
+              return s
+            })
+          }
+        : schema
+      scriptEl.textContent = JSON.stringify(schemaPayload)
     } else if (scriptEl) {
       scriptEl.remove()
     }

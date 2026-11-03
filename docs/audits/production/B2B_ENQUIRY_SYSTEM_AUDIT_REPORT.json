@@ -1,0 +1,49 @@
+{
+  "timestamp": "2026-11-03T03:22:14.487Z",
+  "tests": [
+    {
+      "name": "Empty Payload Validation",
+      "statusCode": 400,
+      "passed": "Valid customer name is required (max 150 chars).",
+      "detail": "Valid customer name is required (max 150 chars)."
+    },
+    {
+      "name": "Invalid Email Validation",
+      "statusCode": 400,
+      "passed": true,
+      "detail": "Valid customer email is required (max 150 chars)."
+    },
+    {
+      "name": "Forbidden Origin Guard",
+      "statusCode": 403,
+      "passed": true,
+      "detail": "Forbidden origin"
+    },
+    {
+      "name": "Moringa Enquiry Capture & Quotation Calculation",
+      "statusCode": 200,
+      "passed": "AAF-Q-2026-2765",
+      "inquiryId": "AAF-INQ-2026-900942",
+      "quoteId": "AAF-Q-2026-2765",
+      "grandTotal": 2400,
+      "currency": "USD",
+      "detail": "Inquiry registered and quotation draft created successfully."
+    },
+    {
+      "name": "Red Onion Enquiry Capture & Quotation Calculation",
+      "statusCode": 200,
+      "passed": "AAF-Q-2026-8732",
+      "inquiryId": "AAF-INQ-2026-914665",
+      "quoteId": "AAF-Q-2026-8732",
+      "grandTotal": 9600,
+      "currency": "USD",
+      "detail": "Inquiry registered and quotation draft created successfully."
+    },
+    {
+      "name": "WhatsApp Direct Link Verification",
+      "passed": true,
+      "url": "https://wa.me/917219053645?text=Hello%20Sachin%2C%20I%20would%20like%20to%20request%20a%20bulk%20quote%20for%20Moringa%20Powder."
+    }
+  ],
+  "overallStatus": "PASS"
+}

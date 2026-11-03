@@ -920,3 +920,46 @@ textarea.input { resize: vertical; min-height: 140px; }
   text-align: center;
   margin-bottom: 40px;
 }
+
+/* ---- Responsive Blog Article Grid & Content Standards ---- */
+.blog-post-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 48px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+@media (max-width: 991px) {
+  .blog-post-grid {
+    grid-template-columns: 100% !important;
+    gap: 36px !important;
+  }
+}
+
+article {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+article pre {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre;
+  -webkit-overflow-scrolling: touch;
+}
+
+article table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+}
+
+.article-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+

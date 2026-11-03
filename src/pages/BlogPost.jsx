@@ -171,12 +171,7 @@ export default function BlogPost() {
 
         {/* Content Container */}
         <div className="container" style={{ maxWidth: 1180, margin: '0 auto', padding: '48px 24px 80px' }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1fr) 340px',
-            gap: 48,
-            alignItems: 'flex-start'
-          }}>
+          <div className="blog-post-grid">
 
             {/* Main Article Content */}
             <main>
@@ -324,7 +319,9 @@ export default function BlogPost() {
                       <td style={{ padding: '12px 18px', borderBottom: '1px solid #e2e8f0', color: '#334155' }}>{children}</td>
                     ),
                     code: ({ children, className }) => {
-                      if (className) {
+                      const text = String(children || '')
+                      const isMultiLine = text.includes('\n') || Boolean(className)
+                      if (isMultiLine) {
                         return (
                           <pre style={{
                             background: '#0f172a',
@@ -332,9 +329,11 @@ export default function BlogPost() {
                             padding: '20px',
                             borderRadius: 12,
                             overflowX: 'auto',
-                            fontSize: '0.85rem',
+                            maxWidth: '100%',
+                            fontSize: '0.82rem',
                             margin: '24px 0',
-                            lineHeight: 1.6
+                            lineHeight: 1.6,
+                            WebkitOverflowScrolling: 'touch'
                           }}>
                             <code>{children}</code>
                           </pre>
@@ -347,7 +346,8 @@ export default function BlogPost() {
                           padding: '2px 8px',
                           borderRadius: 6,
                           fontSize: '0.9em',
-                          fontWeight: 600
+                          fontWeight: 600,
+                          wordBreak: 'break-word'
                         }}>
                           {children}
                         </code>
