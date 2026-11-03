@@ -1,0 +1,69 @@
+{
+  "timestamp": "2026-11-03T04:08:08.742Z",
+  "totalTests": 12,
+  "passed": 12,
+  "failed": 0,
+  "status": "ALL_PASSED",
+  "results": [
+    {
+      "testName": "1. Valid Moringa RFQ submission with full qualification & attribution",
+      "success": true,
+      "details": ""
+    },
+    {
+      "testName": "2. Valid Red Onion RFQ submission with industrial specifications",
+      "success": true,
+      "details": ""
+    },
+    {
+      "testName": "3. Combined Lot RFQ submission",
+      "success": true,
+      "details": ""
+    },
+    {
+      "testName": "4. Missing required name rejected with HTTP 400",
+      "success": true,
+      "details": ""
+    },
+    {
+      "testName": "5. Invalid email address rejected with HTTP 400",
+      "success": true,
+      "details": ""
+    },
+    {
+      "testName": "6. Anti-spam honeypot silent trap filtered",
+      "success": true,
+      "details": ""
+    },
+    {
+      "testName": "7. Deduplication detection within 60s window",
+      "success": true,
+      "details": ""
+    },
+    {
+      "testName": "8. Unauthorized origin rejected with HTTP 403",
+      "success": true,
+      "details": ""
+    },
+    {
+      "testName": "9. Full 7-parameter session attribution parsed & recorded",
+      "success": true,
+      "details": ""
+    },
+    {
+      "testName": "10. Context-aware prefilled WhatsApp URL generation",
+      "success": true,
+      "details": ""
+    },
+    {
+      "testName": "11. Sitemap XML contains exactly 50 URLs including both new landing pages",
+      "success": true,
+      "details": "Found 50 URLs, moringaLanding: true, onionLanding: true"
+    },
+    {
+      "testName": "12. All 30 baseline articles preserved with 0 broken slugs",
+      "success": true,
+      "details": "Count: 30/30, Missing: "
+    }
+  ]
+}

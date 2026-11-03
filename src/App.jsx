@@ -32,6 +32,10 @@ const Privacy = lazy(() => import('./pages/Privacy'))
 const Terms = lazy(() => import('./pages/Terms'))
 const Disclaimer = lazy(() => import('./pages/Disclaimer'))
 const AffiliateDisclaimer = lazy(() => import('./pages/AffiliateDisclaimer'))
+const MoringaLanding = lazy(() => import('./pages/MoringaLanding'))
+const RedOnionLanding = lazy(() => import('./pages/RedOnionLanding'))
+
+import { initUtmTracking } from './lib/utmTracker'
 
 function PageLoading() {
   return (
@@ -45,6 +49,9 @@ function RouteChangeHandler() {
   const location = useLocation()
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    // Capture and persist UTM parameters across session
+    initUtmTracking()
 
     // Update canonical tag dynamically
     let canonicalTag = document.querySelector('link[rel="canonical"]')
@@ -64,7 +71,7 @@ function RouteChangeHandler() {
         page_title: document.title,
       })
     }
-  }, [location.pathname])
+  }, [location.pathname, location.search])
   return null
 }
 
@@ -81,6 +88,8 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />
               <Route path="/products" element={<Products />} />
+              <Route path="/moringa-powder-bulk-supplier-india" element={<MoringaLanding />} />
+              <Route path="/red-onion-powder-bulk-supplier-india" element={<RedOnionLanding />} />
               <Route path="/catalog" element={<Catalog />} />
               <Route path="/catalog/:slug" element={<Catalog />} />
               <Route path="/trade-coordination" element={<TradeCoordination />} />

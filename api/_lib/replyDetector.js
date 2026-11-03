@@ -8,7 +8,11 @@ import {
   findSequenceByCriteria,
   recordReplyReceived,
   getRecipientSequenceState,
-  saveRecipientSequenceState
+  saveRecipientSequenceState,
+  findSequenceByCriteriaDistributed,
+  recordReplyReceivedDistributed,
+  getRecipientSequenceStateDistributed,
+  saveRecipientSequenceStateDistributed
 } from './sequencePersistence.js';
 
 /**
@@ -185,3 +189,106 @@ export function processInboundReply(eventPayload) {
     inbound
   };
 }
+
+/**
+ * Match incoming reply asynchronously across distributed KV or local fallback
+ */
+export async function matchInboundReplyAsync(inbound) {
+  // If explicit campaign + recipient given, match directly
+  if (inbound.campaignId && inbound.recipientId) {
+    const state = await getRecipientSequenceStateDistributed(inbound.campaignId, inbound.recipientId);
+    if (state) {
+      return {
+        matched: true,
+        campaignId: inbound.campaignId,
+        recipientId: inbound.recipientId,
+        confidence: 'EXPLICIT_HEADERS',
+        state
+      };
+    }
+  }
+
+  // Multi-factor search: Message-ID > References > Email
+  const searchResult = await findSequenceByCriteriaDistributed({
+    email: inbound.fromEmail,
+    inReplyTo: inbound.inReplyTo,
+    references: inbound.references,
+    campaignId: inbound.campaignId
+  });
+
+  if (searchResult.ambiguous) {
+    // Fail-closed on ambiguous match: DO NOT send follow-up, flag for human review
+    for (const matchState of searchResult.matches) {
+      matchState.status = 'MANUAL_REVIEW_REQUIRED';
+      matchState.followups_cancelled = true;
+      matchState.reviewReason = `Ambiguous reply matching: multiple sequences found for ${inbound.fromEmail}`;
+      await saveRecipientSequenceStateDistributed(matchState.campaign_id, matchState.recipient_id, matchState);
+    }
+
+    return {
+      matched: false,
+      ambiguous: true,
+      confidence: 'AMBIGUOUS',
+      reason: 'Multiple active sequences matched inbound sender. Failing closed to MANUAL_REVIEW_REQUIRED.',
+      candidates: searchResult.matches.map(m => ({ campaign_id: m.campaign_id, recipient_id: m.recipient_id }))
+    };
+  }
+
+  if (searchResult.match) {
+    return {
+      matched: true,
+      campaignId: searchResult.match.campaign_id,
+      recipientId: searchResult.match.recipient_id,
+      confidence: searchResult.confidence,
+      state: searchResult.match
+    };
+  }
+
+  // Not found
+  return {
+    matched: false,
+    ambiguous: false,
+    confidence: 'NOT_FOUND',
+    reason: `No active sequence matching incoming sender ${inbound.fromEmail} or In-Reply-To ${inbound.inReplyTo}`
+  };
+}
+
+/**
+ * Complete asynchronous distributed pipeline: Ingest, Validate, Match, and Cancel Future Follow-Ups
+ */
+export async function processInboundReplyAsync(eventPayload) {
+  const inbound = normalizeInboundPayload(eventPayload);
+
+  // Match reply
+  const matchResult = await matchInboundReplyAsync(inbound);
+
+  if (!matchResult.matched) {
+    return {
+      success: false,
+      action: matchResult.ambiguous ? 'FLAGGED_MANUAL_REVIEW' : 'IGNORED_UNMATCHED',
+      reason: matchResult.reason,
+      inbound
+    };
+  }
+
+  // Atomic cancellation in distributed persistent store
+  const updatedState = await recordReplyReceivedDistributed(matchResult.campaignId, matchResult.recipientId, {
+    from: inbound.rawFrom,
+    fromEmail: inbound.fromEmail,
+    subject: inbound.subject,
+    inReplyTo: inbound.inReplyTo,
+    messageId: inbound.messageId,
+    timestamp: inbound.timestamp
+  });
+
+  return {
+    success: true,
+    action: 'FOLLOWUPS_CANCELLED',
+    campaignId: matchResult.campaignId,
+    recipientId: matchResult.recipientId,
+    confidence: matchResult.confidence,
+    state: updatedState,
+    inbound
+  };
+}
+

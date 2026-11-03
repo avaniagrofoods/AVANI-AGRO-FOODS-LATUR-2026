@@ -68,9 +68,10 @@ export default function Footer() {
               Guides &amp; Articles
             </h4>
             <nav className="footer-links" style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.85rem' }}>
-              <Link to="/blog">All 15+ Trade Articles</Link>
-              <Link to="/catalog/moringa-powder">Moringa Specifications</Link>
-              <Link to="/catalog/red-onion-powder">Red Onion Specifications</Link>
+              <Link to="/blog">All 30 B2B Trade Guides</Link>
+              <Link to="/moringa-powder-bulk-supplier-india">Moringa Bulk Supplier India</Link>
+              <Link to="/red-onion-powder-bulk-supplier-india">Red Onion Bulk Supplier India</Link>
+              <Link to="/catalog">Commercial Catalog</Link>
               <Link to="/manufacturer-requirements">Manufacturer Checklist</Link>
               <Link to="/b2b">B2B Directory</Link>
             </nav>

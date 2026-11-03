@@ -78,15 +78,41 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid payload.' });
     }
 
+    // 0. Honeypot Spam Trap Check
+    if (body.honeypot || body.website || body.honeypot_company_url) {
+      return res.status(200).json({
+        success: true,
+        message: 'Your enquiry has been received.',
+        inquiryId: 'AAF-INQ-TRAP-FILTERED'
+      });
+    }
+
     const name = String(body.name || body.fullName || `${body.firstName || ''} ${body.lastName || ''}`).trim();
     const email = String(body.email || '').trim().toLowerCase();
-    const phone = String(body.phone || body.mobile || '').trim();
+    const rawPhone = String(body.phone || body.mobile || '').trim();
+    const isPhoneProvided = rawPhone.length > 0 && rawPhone !== 'N/A' && rawPhone !== 'Not-Provided';
+    const phone = isPhoneProvided ? rawPhone : '';
     const company = String(body.company || body.companyName || 'Direct Buyer').trim();
     const country = String(body.country || 'India').trim();
     const rawProduct = String(body.product || body.inquiry || body.inquiryType || 'Moringa Leaf Powder').trim();
     const rawRequirement = String(body.message || body.buyerRequirement || body.additionalMessage || '').trim();
     const rawQuantity = String(body.quantity || body.quantityOriginal || '100').trim();
     const source = String(body.source || 'Website_Contact_RFQ').trim();
+    const buyerRole = String(body.buyerRole || body.buyerType || 'Procurement Manager').trim();
+    const quantityUnit = String(body.quantityUnit || 'KG').toUpperCase().trim();
+    const intendedApplication = String(body.intendedApplication || '').trim();
+    const packagingPreference = String(body.packagingPreference || '').trim();
+    const purchaseTimeline = String(body.purchaseTimeline || '').trim();
+    const documentsRequested = Array.isArray(body.documentsRequested) 
+      ? body.documentsRequested.join(', ') 
+      : String(body.documentsRequested || '').trim();
+    const utmSource = String(body.utm_source || '').trim();
+    const utmMedium = String(body.utm_medium || '').trim();
+    const utmCampaign = String(body.utm_campaign || '').trim();
+    const utmContent = String(body.utm_content || '').trim();
+    const utmTerm = String(body.utm_term || '').trim();
+    const landingPage = String(body.landing_page || body.page || '').trim();
+    const referrer = String(body.referrer || '').trim();
 
     // 1. Validation & Length Bounds
     if (!name || name.length < 2 || name.length > 150) {
@@ -95,8 +121,8 @@ export default async function handler(req, res) {
     if (!email || !email.includes('@') || !email.includes('.') || email.length > 150) {
       return res.status(400).json({ error: 'Valid customer email is required (max 150 chars).' });
     }
-    if (!phone || phone.length < 6 || phone.length > 50) {
-      return res.status(400).json({ error: 'Valid phone/WhatsApp number is required (max 50 chars).' });
+    if (isPhoneProvided && (phone.length < 6 || phone.length > 50)) {
+      return res.status(400).json({ error: 'Valid phone/WhatsApp number is required (between 6 and 50 chars).' });
     }
     if (company.length > 150) {
       return res.status(400).json({ error: 'Company name exceeds maximum length (150 chars).' });
@@ -193,7 +219,7 @@ export default async function handler(req, res) {
       updatedBy: 'Website Automation Engine'
     });
 
-    // 6. Build Structured Customer Inquiry Record (30 columns matching Section 15)
+    // 6. Build Structured Customer Inquiry Record (30+ columns matching Section 15 & B2B RFQ)
     const inquiryRecord = {
       inquiryId,
       inquiryDate: dateStr,
@@ -202,10 +228,14 @@ export default async function handler(req, res) {
       email,
       phone,
       country,
+      buyerRole,
       product: pm.productName,
       buyerRequirement: rawRequirement || fullDescription,
       quantityOriginal: rawQuantity,
       quantityNormalizedKg: normalizedQuantity,
+      quantityUnit,
+      intendedApplication: intendedApplication || parsedReq.application || 'Commercial Food Processing',
+      packagingPreference: packagingPreference || parsedReq.packaging,
       mesh: parsedReq.mesh,
       moisture: parsedReq.moisture,
       purity: parsedReq.purity,
@@ -213,12 +243,21 @@ export default async function handler(req, res) {
       destination: country,
       destinationPort,
       incoterm,
+      purchaseTimeline: purchaseTimeline || leadTime,
+      documentsRequested: documentsRequested || 'Standard Batch COA',
       requestedPrice: rate,
       currency,
-      coaRequested: rawRequirement.toLowerCase().includes('coa') ? 'YES' : 'NO',
-      certificationsRequested: rawRequirement.toLowerCase().includes('certif') ? 'YES' : 'NO',
+      coaRequested: (rawRequirement.toLowerCase().includes('coa') || documentsRequested.includes('COA')) ? 'YES' : 'NO',
+      certificationsRequested: (rawRequirement.toLowerCase().includes('certif') || documentsRequested.includes('Certif')) ? 'YES' : 'NO',
       leadTime,
       source,
+      landingPage,
+      referrer,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      utmContent,
+      utmTerm,
       quotationId: quote.quoteId,
       quotationStatus: 'DRAFT',
       adminStatus: 'NEW',
@@ -268,8 +307,99 @@ export default async function handler(req, res) {
       googleSheetsQuotation: 'PENDING',
       hubSpot: process.env.HUBSPOT_ACCESS_TOKEN ? 'PENDING' : 'NOT_CONFIGURED',
       zapier: process.env.ZAPIER_WEBHOOK_URL ? 'PENDING' : 'NOT_CONFIGURED',
-      whatsapp: process.env.PICKY_ASSIST_URL ? 'PENDING' : 'NOT_CONFIGURED'
+      whatsapp: process.env.PICKY_ASSIST_URL ? 'PENDING' : 'NOT_CONFIGURED',
+      emailNotification: 'NOT_CONFIGURED_MISSING_RESEND_API_KEY'
     };
+
+    // Dispatch Transactional Email Notifications via Resend API (Internal Alert + Buyer Confirmation)
+    const RESEND_API_KEY = process.env.RESEND_API_KEY;
+    if (RESEND_API_KEY) {
+      try {
+        // Internal notification to trade coordinator
+        const internalRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${RESEND_API_KEY}`
+          },
+          body: JSON.stringify({
+            from: 'AVANI AGRO FOODS <notifications@avaniagrofoods.com>',
+            to: ['sales@avaniagrofoods.com'],
+            subject: `New International B2B Enquiry – ${pm.productName} – ${country}`,
+            html: `
+              <h2>New International B2B Enquiry</h2>
+              <p><strong>Inquiry ID:</strong> ${inquiryId}</p>
+              <p><strong>Quotation ID:</strong> ${quote.quoteId}</p>
+              <p><strong>Date:</strong> ${timestamp}</p>
+              <hr/>
+              <h3>Buyer Profile</h3>
+              <p><strong>Name:</strong> ${name}</p>
+              <p><strong>Company:</strong> ${company}</p>
+              <p><strong>Buyer Role:</strong> ${buyerRole}</p>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Phone / WhatsApp:</strong> ${phone || 'Not provided'}</p>
+              <p><strong>Country:</strong> ${country}</p>
+              <p><strong>Destination Port:</strong> ${destinationPort}</p>
+              <hr/>
+              <h3>Commercial Requirements</h3>
+              <p><strong>Product:</strong> ${pm.productName} (HS: ${pm.hsCode})</p>
+              <p><strong>Quantity:</strong> ${rawQuantity} ${quantityUnit} (${normalizedQuantity} KG)</p>
+              <p><strong>Incoterm:</strong> ${incoterm}</p>
+              <p><strong>Indicative Rate:</strong> ${currency} ${rate} / KG</p>
+              <p><strong>Estimated Grand Total:</strong> ${currency} ${quote.grandTotal}</p>
+              <p><strong>Timeline:</strong> ${purchaseTimeline || leadTime}</p>
+              <p><strong>Application:</strong> ${intendedApplication || 'Food Processing'}</p>
+              <p><strong>Packaging:</strong> ${packagingPreference || parsedReq.packaging}</p>
+              <p><strong>Documents Requested:</strong> ${documentsRequested || 'Standard COA'}</p>
+              <p><strong>Notes:</strong> ${rawRequirement || 'None'}</p>
+              <hr/>
+              <h3>Attribution</h3>
+              <p><strong>Source:</strong> ${source}</p>
+              <p><strong>Landing Page:</strong> ${landingPage || 'Direct'}</p>
+              <p><strong>UTM:</strong> source=${utmSource || '-'}, medium=${utmMedium || '-'}, campaign=${utmCampaign || '-'}</p>
+            `
+          })
+        });
+
+        // Buyer acknowledgement email
+        const buyerRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${RESEND_API_KEY}`
+          },
+          body: JSON.stringify({
+            from: 'AVANI AGRO FOODS <sales@avaniagrofoods.com>',
+            to: [email],
+            subject: 'We Have Received Your Enquiry – AVANI AGRO FOODS',
+            html: `
+              <h2>Thank you for contacting AVANI AGRO FOODS</h2>
+              <p>Dear ${name},</p>
+              <p>We have successfully received your commercial enquiry for <strong>${pm.productName}</strong>.</p>
+              <p><strong>Inquiry Reference:</strong> ${inquiryId}</p>
+              <p><strong>Indicative Quotation Reference:</strong> ${quote.quoteId}</p>
+              <p>Our Trade Coordinator, Sachin Shinde, will review your technical specifications, batch availability with our vetted processing partners, and prepare a formal proforma quotation within 24 hours.</p>
+              <h3>Enquiry Summary</h3>
+              <ul>
+                <li><strong>Product:</strong> ${pm.productName}</li>
+                <li><strong>Quantity:</strong> ${rawQuantity} ${quantityUnit} (${normalizedQuantity} KG)</li>
+                <li><strong>Incoterm & Destination:</strong> ${incoterm} - ${destinationPort}</li>
+                <li><strong>Indicative Pricing Basis:</strong> ${currency} ${rate}/KG (${currency} ${quote.grandTotal})</li>
+              </ul>
+              <p>If you have urgent questions or wish to expedite batch samples, you may reach our trade desk directly on WhatsApp at <a href="https://wa.me/917219053645">+91 7219053645</a>.</p>
+              <br/>
+              <p>Best regards,</p>
+              <p><strong>Sachin Shinde</strong><br/>Trade Coordinator<br/>AVANI AGRO FOODS<br/>Latur, Maharashtra, India<br/>Email: sales@avaniagrofoods.com<br/>Web: https://www.avaniagrofoods.com</p>
+            `
+          })
+        });
+
+        integrations.emailNotification = (internalRes.ok && buyerRes.ok) ? 'SUCCESS' : 'PARTIAL_OR_FAILED';
+      } catch (eErr) {
+        console.error('[Resend Email Dispatch Error]:', eErr.message);
+        integrations.emailNotification = 'FAILED';
+      }
+    }
 
     // 9. Dispatch to Google Sheets Webhook (Both Inquiries and Quotations)
     const GOOGLE_SHEETS_WEBHOOK = process.env.GOOGLE_SHEETS_WEBHOOK || process.env.VITE_GOOGLE_SHEETS_WEBHOOK;
@@ -325,9 +455,9 @@ export default async function handler(req, res) {
       }
     }
 
-    // 11. WhatsApp Webhook Dispatch (if configured)
+    // 11. WhatsApp Webhook Dispatch (if configured and phone is provided)
     const PICKY_ASSIST_URL = process.env.PICKY_ASSIST_URL || '';
-    if (PICKY_ASSIST_URL) {
+    if (PICKY_ASSIST_URL && isPhoneProvided) {
       try {
         await fetch(PICKY_ASSIST_URL, {
           method: 'POST',
@@ -352,12 +482,23 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
+      leadPersistence: 'PERSISTED',
       message: 'Inquiry registered and quotation draft created successfully.',
       inquiryId,
       quoteId: quote.quoteId,
       inquiry: inquiryRecord,
       quote,
       quotationDraft: quote,
+      notificationDeliveryStatus: {
+        leadPersistence: 'SUCCESS',
+        emailNotification: integrations.emailNotification,
+        webhooks: {
+          googleSheetsInquiry: integrations.googleSheetsInquiry,
+          googleSheetsQuotation: integrations.googleSheetsQuotation,
+          zapier: integrations.zapier,
+          whatsapp: integrations.whatsapp
+        }
+      },
       integrations
     });
 

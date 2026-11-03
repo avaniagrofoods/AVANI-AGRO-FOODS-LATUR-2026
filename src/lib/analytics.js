@@ -53,6 +53,71 @@ export const ANALYTICS_EVENTS = {
   PRODUCT_INQUIRY: 'product_inquiry',
   MANUFACTURER_APPLICATION: 'manufacturer_application',
   B2B_TRIAL_START: 'b2b_trial_start',
+  
+  // High-Intent Lead Generation Events
+  PRODUCT_PAGE_VIEW: 'product_page_view',
+  ARTICLE_VIEW: 'article_view',
+  RFQ_OPEN: 'rfq_open',
+  RFQ_STARTED: 'rfq_started',
+  RFQ_SUBMIT_SUCCESS: 'rfq_submit_success',
+  RFQ_VALIDATION_FAILURE: 'rfq_validation_failure',
+  PRODUCT_CTA_CLICK: 'product_cta_click'
+}
+
+export function trackProductPageView(productName = '', source = 'direct') {
+  trackEvent(ANALYTICS_EVENTS.PRODUCT_PAGE_VIEW, {
+    product_name: productName,
+    page_source: source
+  })
+}
+
+export function trackArticleView(articleTitle = '', slug = '', category = '') {
+  trackEvent(ANALYTICS_EVENTS.ARTICLE_VIEW, {
+    article_title: articleTitle,
+    article_slug: slug,
+    article_category: category
+  })
+}
+
+export function trackRfqOpen(product = '', source = '') {
+  trackEvent(ANALYTICS_EVENTS.RFQ_OPEN, {
+    product_interest: product,
+    rfq_source: source
+  })
+}
+
+export function trackRfqStarted(product = '') {
+  trackEvent(ANALYTICS_EVENTS.RFQ_STARTED, {
+    product_interest: product
+  })
+}
+
+export function trackRfqSubmitSuccess(inquiryId = '', product = '', quantity = '', country = '') {
+  trackEvent(ANALYTICS_EVENTS.RFQ_SUBMIT_SUCCESS, {
+    inquiry_id: inquiryId,
+    product_interest: product,
+    quantity_value: quantity,
+    buyer_country: country
+  })
+  trackEvent(ANALYTICS_EVENTS.GENERATE_LEAD, {
+    lead_source: 'b2b_rfq_system',
+    inquiry_id: inquiryId
+  })
+}
+
+export function trackRfqValidationFailure(product = '', errorReason = '') {
+  trackEvent(ANALYTICS_EVENTS.RFQ_VALIDATION_FAILURE, {
+    product_interest: product,
+    validation_error: errorReason
+  })
+}
+
+export function trackProductCtaClick(product = '', ctaLabel = '', source = '') {
+  trackEvent(ANALYTICS_EVENTS.PRODUCT_CTA_CLICK, {
+    product_interest: product,
+    cta_label: ctaLabel,
+    click_source: source
+  })
 }
 
 export function trackWhatsAppClick(source = 'general', product = '') {

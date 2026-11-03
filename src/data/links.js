@@ -173,3 +173,15 @@ export const RECOMMENDED_RESOURCES = [
 
 export const STRIPE_ENABLED = false
 export const STRIPE_LINKS = { INDIA: {}, GLOBAL: {} }
+
+/**
+ * Generates context-aware pre-filled WhatsApp inquiry link
+ */
+export function getWhatsAppInquiryUrl(productName = 'Moringa Powder', pageContext = 'B2B Landing Page', inquiryId = null) {
+  let message = `Hello Sachin Shinde / AVANI AGRO FOODS,\n\nI am contacting you regarding bulk sourcing of ${productName}.\nPage: ${pageContext}`;
+  if (inquiryId) {
+    message += `\nMy Inquiry Reference ID is: ${inquiryId}`;
+  }
+  message += `\nPlease share technical specifications, MOQ, and indicative FOB/CIF proforma pricing.`;
+  return `https://wa.me/917219053645?text=${encodeURIComponent(message)}`;
+}

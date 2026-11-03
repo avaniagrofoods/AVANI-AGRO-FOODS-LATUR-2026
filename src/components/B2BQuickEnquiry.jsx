@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Send, CheckCircle2, Shield, Loader2, X, Phone, Mail, Globe, Package, Building2 } from 'lucide-react'
 import { BUSINESS_INFO, WHATSAPP_NUMBER } from '../data/links'
+import { getAttributionData } from '../lib/utmTracker'
+import { trackRfqStarted, trackRfqSubmitSuccess, trackRfqValidationFailure } from '../lib/analytics'
 
 export default function B2BQuickEnquiry({ 
   productDefault = 'Moringa Powder', 
@@ -28,6 +30,14 @@ export default function B2BQuickEnquiry({
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const [leadMeta, setLeadMeta] = useState(null)
+  const [hasStarted, setHasStarted] = useState(false)
+
+  const handleFocus = () => {
+    if (!hasStarted) {
+      setHasStarted(true)
+      trackRfqStarted(formData.product, sourceContext)
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -35,11 +45,14 @@ export default function B2BQuickEnquiry({
 
     if (!formData.fullName || !formData.email || !formData.companyName) {
       setError('Please provide your Name, Business Email, and Company Name.')
+      trackRfqValidationFailure(formData.product, 'missing_required_fields', sourceContext)
       return
     }
 
     setLoading(true)
     setError('')
+
+    const attribution = getAttributionData()
 
     const payload = {
       name: formData.fullName,
@@ -50,7 +63,10 @@ export default function B2BQuickEnquiry({
       product: formData.product,
       quantity: formData.quantity,
       message: `[${sourceContext}] Application: ${formData.intendedApplication} | Packaging: ${formData.packagingRequirements} | Notes: ${formData.message}`,
-      source: sourceContext
+      source: sourceContext,
+      landing_page: window.location.pathname,
+      referrer: document.referrer || '',
+      ...attribution
     }
 
     try {
@@ -64,16 +80,19 @@ export default function B2BQuickEnquiry({
       if (res.ok && data.success !== false) {
         setSuccess(true)
         setLeadMeta(data)
+        trackRfqSubmitSuccess(formData.product, formData.quantity, formData.country, sourceContext)
       } else {
         // Fallback to direct client mailto / WhatsApp confirmation if backend is offline
         setSuccess(true)
         setLeadMeta({ inquiryId: 'AAF-INQ-' + Math.floor(100000 + Math.random() * 900000) })
+        trackRfqSubmitSuccess(formData.product, formData.quantity, formData.country, sourceContext)
       }
     } catch (err) {
       // Graceful offline fallback
       console.warn('Backend inquiry dispatch error, using client fallback:', err)
       setSuccess(true)
       setLeadMeta({ inquiryId: 'AAF-INQ-' + Math.floor(100000 + Math.random() * 900000) })
+      trackRfqSubmitSuccess(formData.product, formData.quantity, formData.country, sourceContext)
     } finally {
       setLoading(false)
     }

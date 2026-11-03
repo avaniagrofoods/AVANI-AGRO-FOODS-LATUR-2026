@@ -71,6 +71,13 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('[Quotation API] Error:', err.message);
+    if (err.code === 'UNSUPPORTED_SCRIPT_ERROR' || err.message?.includes('UNSUPPORTED_SCRIPT_ERROR')) {
+      return res.status(422).json({
+        success: false,
+        error: 'PDF generation failed: Document contains unsupported non-Latin characters. Standard export quotation PDF requires Latin characters to ensure data integrity.',
+        code: 'UNSUPPORTED_SCRIPT_ERROR'
+      });
+    }
     return res.status(500).json({ error: 'Failed to process quotation request.' });
   }
 }

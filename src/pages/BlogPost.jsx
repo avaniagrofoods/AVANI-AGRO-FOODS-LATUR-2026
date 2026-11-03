@@ -411,11 +411,11 @@ export default function BlogPost() {
                     <Send size={16} /> Quick Commercial Quote
                   </button>
                   <Link
-                    to={isMoringa ? '/catalog/moringa-powder' : '/catalog/red-onion-powder'}
+                    to={isMoringa ? '/moringa-powder-bulk-supplier-india' : '/red-onion-powder-bulk-supplier-india'}
                     className="btn btn-outline"
                     style={{ fontWeight: 700 }}
                   >
-                    View Product Specs
+                    {isMoringa ? 'Bulk Moringa Specifications' : 'Bulk Red Onion Specifications'}
                   </Link>
                 </div>
               </div>
@@ -526,11 +526,11 @@ export default function BlogPost() {
               {/* Product Direct Links */}
               <div style={{ background: 'white', padding: '24px', borderRadius: 20, border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
                 <h4 style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a', marginBottom: 16 }}>
-                  Commercial Product Catalogs
+                  Direct B2B Sourcing Pages
                 </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <Link
-                    to="/catalog/moringa-powder"
+                    to="/moringa-powder-bulk-supplier-india"
                     style={{
                       padding: '12px 16px',
                       borderRadius: 12,
@@ -545,12 +545,12 @@ export default function BlogPost() {
                       color: isMoringa ? '#166534' : '#334155'
                     }}
                   >
-                    <span>🌿 Moringa Leaf Powder</span>
+                    <span>🌿 Moringa Bulk Supplier India</span>
                     <ArrowRight size={14} />
                   </Link>
 
                   <Link
-                    to="/catalog/red-onion-powder"
+                    to="/red-onion-powder-bulk-supplier-india"
                     style={{
                       padding: '12px 16px',
                       borderRadius: 12,
@@ -565,7 +565,7 @@ export default function BlogPost() {
                       color: isOnion ? '#9f1239' : '#334155'
                     }}
                   >
-                    <span>🧅 Dehydrated Red Onion</span>
+                    <span>🧅 Red Onion Bulk Supplier India</span>
                     <ArrowRight size={14} />
                   </Link>
                 </div>

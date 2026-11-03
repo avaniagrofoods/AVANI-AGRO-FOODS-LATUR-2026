@@ -33,9 +33,6 @@ import {
   createInitialDispatchState,
   createInitialFollowUpState,
   generateB2BEmailTemplate,
-  sendQuotationEmail,
-  sendQuotationToBuyer,
-  processDeliveryWebhook,
   recordBuyerResponse,
   updateFollowUp,
   computeDocumentHash,
@@ -1266,8 +1263,16 @@ export default function AdminQuotations() {
         a.click()
         a.remove()
       } else {
-        alert('Serverless PDF generation unavailable. Printing browser view.')
-        window.print()
+        let errorData = null
+        try {
+          errorData = await res.json()
+        } catch (_) {}
+        if (res.status === 422 && errorData?.code === 'UNSUPPORTED_SCRIPT_ERROR') {
+          alert(`PDF Generation Blocked: ${errorData.error || 'Document contains unsupported non-Latin characters.'}`)
+        } else {
+          alert('Serverless PDF generation unavailable. Printing browser view.')
+          window.print()
+        }
       }
     } catch (err) {
       window.print()

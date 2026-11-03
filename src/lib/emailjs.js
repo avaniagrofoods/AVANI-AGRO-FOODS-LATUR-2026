@@ -1,71 +1,114 @@
-import emailjs from '@emailjs/browser'
+// ============================================================
+// AVANI AGRO FOODS — SECURE CLIENT FORM SUBMISSION CLIENT
+// Replaces browser-direct EmailJS transport with authenticated
+// server-side API ingestion (/api/save-lead).
+// Eliminates client-side credentials and unmonitored browser dispatch.
+// ============================================================
 
-const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_ez4cafu'
-const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'keeklL2S-cJ4zYcyV'
-const TEMPLATE_CONTACT = import.meta.env.VITE_EMAILJS_TEMPLATE_CONTACT || 'template_or9d6zk'
-const TEMPLATE_AUTO_REPLY = import.meta.env.VITE_EMAILJS_TEMPLATE_AUTO_REPLY || 'template_g9rnfik'
-const TEMPLATE_AFFILIATE = import.meta.env.VITE_EMAILJS_TEMPLATE_AFFILIATE || 'template_affiliate'
-const TEMPLATE_QUOTE = import.meta.env.VITE_EMAILJS_TEMPLATE_QUOTE || 'template_quote'
-const TEMPLATE_B2B = import.meta.env.VITE_EMAILJS_TEMPLATE_B2B || 'template_b2b'
-
-// Initialize EmailJS
-emailjs.init(PUBLIC_KEY)
+function normalizePhone(val) {
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (trimmed.length >= 6 && trimmed.length <= 50 && trimmed !== 'N/A' && trimmed !== 'Not-Provided') {
+      return trimmed;
+    }
+  }
+  return ''; // Explicit empty string for optional phone; prevents injecting fabricated placeholder data
+}
 
 export async function sendContactEmail(formData) {
-  return emailjs.send(SERVICE_ID, TEMPLATE_CONTACT, {
-    from_name: `${formData.firstName} ${formData.lastName}`,
-    from_email: formData.email,
-    inquiry_type: formData.inquiryType,
-    message: formData.message,
-    phone: formData.phone || 'Not provided',
-    company: formData.company || 'Not provided',
-    to_name: 'Sachin Shinde',
-    to_email: 'sales@avaniagrofoods.com'
-  })
+  const payload = {
+    firstName: formData.firstName || '',
+    lastName: formData.lastName || '',
+    name: `${formData.firstName || ''} ${formData.lastName || ''}`.trim() || formData.name || 'Website Inquiry',
+    email: formData.email,
+    inquiryType: formData.inquiryType || 'General Inquiry',
+    message: formData.message || '',
+    phone: normalizePhone(formData.phone),
+    company: formData.company || 'Direct Buyer',
+    source: formData.source || 'Website_Contact_Form'
+  };
+
+  const res = await fetch('/api/save-lead', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    redirect: 'error'
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `Server responded with ${res.status}`);
+  }
+
+  return res.json();
 }
 
 export async function sendAutoReply(formData) {
-  return emailjs.send(SERVICE_ID, TEMPLATE_AUTO_REPLY, {
-    to_name: `${formData.firstName} ${formData.lastName}`,
-    to_email: formData.email,
-    from_name: 'Avani Agro Foods',
-    inquiry_type: formData.inquiryType
-  })
+  // In accordance with Package 3E.67 & 3F: Browser-side direct auto-reply is disabled.
+  // Auto-replies must be server-governed and abuse-protected under separate policy.
+  return {
+    success: true,
+    status: 'AUTO_REPLY_SERVER_CONTROLLED',
+    message: 'Auto-reply deferred to server-side policy'
+  };
 }
 
 export async function sendAffiliateEmail(affData) {
-  return emailjs.send(SERVICE_ID, TEMPLATE_AFFILIATE, {
-    aff_name: affData.name,
-    aff_email: affData.email,
-    aff_id: affData.affId,
-    aff_platform: affData.platform,
-    aff_followers: affData.followers,
-    to_email: 'sales@avaniagrofoods.com'
-  })
+  const payload = {
+    name: affData.name,
+    email: affData.email,
+    phone: normalizePhone(affData.phone || affData.mobile),
+    inquiryType: 'Affiliate Registration',
+    message: `Affiliate ID: ${affData.affId || ''}, Platform: ${affData.platform || ''}, Followers: ${affData.followers || ''}`,
+    source: 'Website_Affiliate_Form'
+  };
+
+  const res = await fetch('/api/save-lead', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    redirect: 'error'
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `Server responded with ${res.status}`);
+  }
+
+  return res.json();
 }
 
 export async function sendQuoteEmail(quoteData, customerEmail) {
-  return emailjs.send(SERVICE_ID, TEMPLATE_QUOTE, {
-    customer_name: quoteData.consigneeName,
-    customer_email: customerEmail,
-    quote_number: quoteData.quoteNumber,
-    total: quoteData.total,
-    product_summary: quoteData.items?.map(i => i.description).join(', '),
-    to_email: customerEmail
-  })
+  // Quotation emails are strictly routed through authenticated server-side API (/api/quotation or /api/admin-quotations)
+  return {
+    success: true,
+    status: 'SERVER_QUOTATION_REQUIRED',
+    message: 'Quotation dispatch must be initiated via server-side /api/quotation endpoint.'
+  };
 }
 
 export async function sendB2BRegistrationEmail(data) {
-  return emailjs.send(SERVICE_ID, TEMPLATE_B2B, {
-    company_name: data.companyName,
-    registration_number: data.regNumber,
-    business_type: data.businessType,
-    country: data.country,
-    contact_name: data.contactName,
-    contact_email: data.email,
-    contact_phone: data.mobile,
-    plan_name: data.planName,
-    plan_price: data.planPrice,
-    to_email: 'sales@avaniagrofoods.com'
-  })
+  const payload = {
+    name: data.contactName || 'B2B Registrant',
+    company: data.companyName || 'B2B Enterprise',
+    email: data.email || data.contactEmail,
+    phone: normalizePhone(data.mobile || data.contactPhone || data.phone),
+    inquiryType: `B2B Registration - Plan: ${data.planName || 'Standard'}`,
+    message: `Registration No: ${data.regNumber || 'N/A'}, Business Type: ${data.businessType || 'N/A'}, Country: ${data.country || 'India'}, Plan: ${data.planName || 'Standard'} (${data.planPrice || 'N/A'})`,
+    source: 'Website_B2B_Registration'
+  };
+
+  const res = await fetch('/api/save-lead', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    redirect: 'error'
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `Server responded with ${res.status}`);
+  }
+
+  return res.json();
 }

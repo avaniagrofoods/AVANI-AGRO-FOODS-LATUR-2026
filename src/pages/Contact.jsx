@@ -69,6 +69,7 @@ export default function Contact() {
   })
 
   const [status, setStatus] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [submittedLeadId, setSubmittedLeadId] = useState('')
@@ -145,6 +146,7 @@ export default function Contact() {
 
     setLoading(true)
     setStatus('')
+    setErrorMessage('')
 
     try {
       const formattedMessage = `
@@ -178,99 +180,77 @@ ${form.additionalMessage}
         derivedCurrency = 'EUR'
       }
 
-      // 1. Submit to Canonical B2B Leads API (P4.1)
-      let leadResponse = null
-      let generatedLeadId = null
+      // Generate a fallback client reference ID if needed
+      const clientGeneratedLeadId = `AAF-L-2026-${Math.floor(1000 + Math.random() * 9000)}`
+
+      // 1. Authoritative Server-Side Lead Capture (/api/save-lead)
+      const savePayload = {
+        inquiryId: clientGeneratedLeadId,
+        name: form.fullName,
+        email: form.email,
+        phone: form.phone,
+        company: form.companyName,
+        country: form.country,
+        businessType: form.businessType,
+        product: form.product,
+        quantity: form.quantity,
+        targetPrice: form.targetPrice,
+        currency: derivedCurrency,
+        incoterm: form.incoterm,
+        destination: form.destinationPort || form.country,
+        destinationPort: form.destinationPort,
+        meshSize: form.meshSize,
+        moisture: form.moisture,
+        packaging: form.packaging,
+        deliveryTimeline: form.deliveryTimeline,
+        testingReqs: form.testingReqs,
+        message: formattedMessage,
+        source: 'Website_Contact_RFQ'
+      }
+
+      const saveRes = await fetch('/api/save-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(savePayload)
+      })
+
+      let saveData = null
       try {
-        const leadRes = await fetch('/api/leads', {
+        saveData = await saveRes.json()
+      } catch (parseErr) {
+        throw new Error('Server returned an unreadable response. Please check your connection or contact us directly.')
+      }
+
+      if (!saveRes.ok || !saveData || saveData.success !== true) {
+        const errorMsg = saveData?.error || saveData?.message || `Server returned error (${saveRes.status})`
+        throw new Error(errorMsg)
+      }
+
+      // Authoritative persistence confirmed!
+      const authoritativeLeadId = saveData.inquiryId || clientGeneratedLeadId
+      setSubmittedLeadId(authoritativeLeadId)
+      setStatus('success')
+      setIsSuccess(true)
+      setErrorMessage('')
+
+      // 2. Auxiliary Tasks (best-effort, isolated: cannot fail the confirmed submission)
+      // Canonical leads API for local cataloging
+      try {
+        await fetch('/api/leads', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: form.fullName,
-            email: form.email,
-            phone: form.phone,
-            company: form.companyName,
-            country: form.country,
-            businessType: form.businessType,
-            product: form.product,
-            quantity: form.quantity,
-            targetPrice: form.targetPrice,
-            currency: derivedCurrency,
-            incoterm: form.incoterm,
-            destination: form.destinationPort || form.country,
-            destinationPort: form.destinationPort,
-            meshSize: form.meshSize,
-            moisture: form.moisture,
-            packaging: form.packaging,
-            deliveryTimeline: form.deliveryTimeline,
-            testingReqs: form.testingReqs,
-            message: form.additionalMessage,
-            source: 'Website_Contact_RFQ',
+            ...savePayload,
+            inquiryId: authoritativeLeadId,
             page: location.pathname + location.search,
             referrer: document.referrer
           })
         })
-        if (leadRes.ok) {
-          leadResponse = await leadRes.json()
-          if (leadResponse?.leadId) {
-            generatedLeadId = leadResponse.leadId
-          }
-        }
-      } catch (err) {
-        console.warn('Leads API call error:', err)
+      } catch (auxErr) {
+        console.warn('Auxiliary leads recording notice:', auxErr)
       }
 
-      // Fallback lead ID if network was offline
-      if (!generatedLeadId) {
-        generatedLeadId = `AAF-L-2026-${Math.floor(1000 + Math.random() * 9000)}`
-      }
-      setSubmittedLeadId(generatedLeadId)
-
-      // 2. EmailJS Notification
-      try {
-        await sendContactEmail({
-          firstName: form.fullName,
-          lastName: `(${form.country} - ${form.companyName})`,
-          email: form.email,
-          inquiryType: `B2B RFQ [${generatedLeadId}]: ${form.product} (${form.quantity})`,
-          message: formattedMessage,
-          phone: form.phone,
-          company: form.companyName
-        })
-      } catch (err) {
-        console.warn('Email notification warning:', err)
-      }
-
-      // 3. Backward-compatible serverless lead capture & sheets
-      try {
-        await fetch('/api/save-lead', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            inquiryId: generatedLeadId,
-            name: form.fullName,
-            email: form.email,
-            phone: form.phone,
-            company: form.companyName,
-            country: form.country,
-            product: form.product,
-            quantity: form.quantity,
-            targetPrice: form.targetPrice,
-            currency: derivedCurrency,
-            incoterm: form.incoterm,
-            destination: form.destinationPort,
-            meshSize: form.meshSize,
-            moisture: form.moisture,
-            packaging: form.packaging,
-            message: formattedMessage,
-            source: 'Website_Contact_RFQ'
-          })
-        })
-      } catch (err) {
-        console.warn('Save-lead fallback notice:', err)
-      }
-
-      // 4. Google Sheets Logging Fallback
+      // Sheets logging fallback
       try {
         await logInquiry({
           firstName: form.fullName,
@@ -282,57 +262,55 @@ ${form.additionalMessage}
           inquiryType: `B2B Sourcing: ${form.product}`,
           message: formattedMessage
         })
-      } catch (err) { console.error('Sheets Error:', err) }
+      } catch (sheetsErr) {
+        console.warn('Auxiliary sheets notice:', sheetsErr)
+      }
 
-      // 5. Auto Reply to Customer
+      // Analytics Event (Zero PII sent)
       try {
-        await sendAutoReply({
-          firstName: form.fullName,
-          email: form.email
-        })
-      } catch {}
+        trackContactSubmit(`B2B RFQ: ${form.product}`)
+      } catch (analyticsErr) {}
 
-      // 6. Analytics Event (Zero PII sent)
-      trackContactSubmit(`B2B RFQ: ${form.product}`)
+      // Save to LocalStorage for dashboard/audit
+      try {
+        const canonicalLead = {
+          leadId: authoritativeLeadId,
+          quoteId: saveData.quoteId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          source: { channel: 'website', page: location.pathname + location.search },
+          buyer: { name: form.fullName, company: form.companyName, country: form.country, email: form.email, phone: form.phone },
+          inquiry: { product: form.product, quantity: form.quantity, destination: form.destinationPort || form.country, incoterm: form.incoterm },
+          workflow: { status: 'NEW', nextAction: 'Review requirement & coordinate with Indian processors', owner: 'Sachin Shinde' }
+        }
+        const existingLeads = JSON.parse(localStorage.getItem('avani_leads') || '[]')
+        localStorage.setItem('avani_leads', JSON.stringify([canonicalLead, ...existingLeads.filter(l => l.leadId !== authoritativeLeadId)]))
 
-      setStatus('success')
-      setIsSuccess(true)
+        const newEnquiry = {
+          id: Date.now(),
+          inquiryId: authoritativeLeadId,
+          quoteId: saveData.quoteId || `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+          ...form,
+          quantityNormalizedKg: form.quantity,
+          currency: derivedCurrency,
+          date: new Date().toLocaleString(),
+          isFulfilled: false
+        }
+        const existingEnquiries = JSON.parse(localStorage.getItem('avani_enquiries') || '[]')
+        localStorage.setItem('avani_enquiries', JSON.stringify([newEnquiry, ...existingEnquiries]))
 
-      // 7. Save Canonical Lead to LocalStorage
-      const canonicalLead = leadResponse?.lead || {
-        leadId: generatedLeadId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        source: { channel: 'website', page: location.pathname + location.search },
-        buyer: { name: form.fullName, company: form.companyName, country: form.country, email: form.email, phone: form.phone },
-        inquiry: { product: form.product, quantity: form.quantity, destination: form.destinationPort || form.country, incoterm: form.incoterm },
-        workflow: { status: 'NEW', nextAction: 'Review requirement & coordinate with Indian processors', owner: 'Sachin Shinde' }
-      }
-      const existingLeads = JSON.parse(localStorage.getItem('avani_leads') || '[]')
-      localStorage.setItem('avani_leads', JSON.stringify([canonicalLead, ...existingLeads.filter(l => l.leadId !== generatedLeadId)]))
-
-      // Also save to avani_enquiries for backward compatibility with private dashboard
-      const newEnquiry = {
-        id: Date.now(),
-        inquiryId: generatedLeadId,
-        quoteId: `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-        ...form,
-        quantityNormalizedKg: form.quantity,
-        currency: derivedCurrency,
-        date: new Date().toLocaleString(),
-        isFulfilled: false
-      }
-      const existingEnquiries = JSON.parse(localStorage.getItem('avani_enquiries') || '[]')
-      localStorage.setItem('avani_enquiries', JSON.stringify([newEnquiry, ...existingEnquiries]))
-
-      window.dispatchEvent(new Event('enquiry-updated'))
-      window.dispatchEvent(new Event('lead-updated'))
+        window.dispatchEvent(new Event('enquiry-updated'))
+        window.dispatchEvent(new Event('lead-updated'))
+      } catch (lsErr) {}
 
     } catch (err) {
-      console.error(err)
+      console.error('Contact submission error:', err)
       setStatus('error')
+      setIsSuccess(false)
+      setErrorMessage(err.message || 'Submission failed. Please email us directly or try again.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const contactBreadcrumbSchema = {
@@ -603,7 +581,8 @@ ${form.additionalMessage}
 
                     {status === 'error' && (
                       <div style={{ color: '#dc2626', fontSize: '0.85rem', background: '#fef2f2', padding: 12, borderRadius: 8, border: '1px solid #fecaca' }}>
-                        ⚠️ Submission failed. Please email us directly at <a href={`mailto:${email}`} style={{ color: '#dc2626', fontWeight: 700 }}>{email}</a>
+                        ⚠️ {errorMessage || 'Submission failed. Please email us directly at '}{' '}
+                        <a href={`mailto:${email}`} style={{ color: '#dc2626', fontWeight: 700 }}>{email}</a>
                       </div>
                     )}
 

@@ -31,13 +31,19 @@ export const CANONICAL_WORKFLOW_STATUS = [
   'CLOSED'
 ];
 
+// High-entropy initial seed across process instances and module reloads
+const pidOffset = (typeof process !== 'undefined' && process.pid) ? (process.pid % 1000) : 0;
+const timeOffset = (Date.now() % 8000);
+let leadCounter = 1000 + ((timeOffset + pidOffset) % 9000);
+
 /**
  * Generate unique, stable lead identifier
  * Format: AAF-L-YYYY-XXXX (e.g. AAF-L-2026-1001)
+ * Guarantees sequential collision-free IDs within a process instance across 9,000 generations.
  */
 export function generateLeadId(year = new Date().getFullYear()) {
-  const randSeq = Math.floor(1000 + Math.random() * 9000);
-  return `AAF-L-${year}-${randSeq}`;
+  leadCounter = 1000 + ((leadCounter - 1000 + 1) % 9000);
+  return `AAF-L-${year}-${leadCounter}`;
 }
 
 /**
