@@ -143,6 +143,12 @@ async function runProductionAudit() {
             const data = JSON.parse(s.innerText);
             if (data['@type'] === 'BlogPosting') hasBlogPosting = true;
             if (data['@type'] === 'BreadcrumbList') hasBreadcrumbs = true;
+            if (data['@graph'] && Array.isArray(data['@graph'])) {
+              data['@graph'].forEach(item => {
+                if (item['@type'] === 'BlogPosting') hasBlogPosting = true;
+                if (item['@type'] === 'BreadcrumbList') hasBreadcrumbs = true;
+              });
+            }
           } catch(e) {}
         });
 
@@ -162,11 +168,11 @@ async function runProductionAudit() {
         const hasFaqSection = /FAQ|Frequently Asked Questions/i.test(document.body.innerText);
 
         // CTAs in DOM
-        const hasQuoteCta = /Request Official Quotation|Request Quotation|Quick Enquiry|Connect with Sachin Shinde/i.test(document.body.innerText);
+        const hasQuoteCta = /Quote|Quotation|Enquiry|Inquiry|Connect with Sachin/i.test(document.body.innerText);
         const hasWhatsAppCta = document.querySelector('a[href*="wa.me"]') !== null;
 
         // Related articles in DOM
-        const relatedLinks = Array.from(document.querySelectorAll('a[href*="/blog/article-"]'));
+        const relatedLinks = Array.from(document.querySelectorAll('aside a[href*="/blog/"]'));
 
         return {
           h1,
@@ -195,7 +201,7 @@ async function runProductionAudit() {
       result.canonicalMatch = (domData.canonical === articleUrl);
       result.metaDescOk = Boolean(domData.metaDesc && domData.metaDesc.length > 40);
       result.ogTagsOk = Boolean(domData.ogTitle && domData.ogImage && domData.ogDesc);
-      result.schemaOk = Boolean(domData.hasBlogPosting || domData.hasBreadcrumbs);
+      result.schemaOk = Boolean(domData.hasBlogPosting && domData.hasBreadcrumbs);
       result.renderedH2Count = domData.h2Count;
       result.renderedWordCount = domData.wordCount;
       result.imageDomOk = domData.imgRendered;
