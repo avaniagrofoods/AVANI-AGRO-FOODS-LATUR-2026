@@ -311,7 +311,14 @@ async function runLiveVerification() {
 
   // Test 3.1: Supabase Unconfigured Graceful Handling
   const supabaseModule = await import('../api/_lib/supabaseClient.js');
+  const savedUrl = process.env.SUPABASE_URL;
+  const savedViteUrl = process.env.VITE_SUPABASE_URL;
+  delete process.env.SUPABASE_URL;
+  delete process.env.VITE_SUPABASE_URL;
   const fallbackLeadSave = await supabaseModule.saveLeadToSupabase({ inquiryId: 'AAF-TEST-UNCONFIGURED', product: 'Moringa' });
+  process.env.SUPABASE_URL = savedUrl;
+  if (savedViteUrl) process.env.VITE_SUPABASE_URL = savedViteUrl;
+
   if (fallbackLeadSave.persisted === false && fallbackLeadSave.status === 'SUPABASE_UNCONFIGURED') {
     recordTest('P3-01', 'Supabase Unconfigured Graceful Handling', 'Phase 3', 'PASS', 
       `Correctly reports unconfigured without crashing: status=${fallbackLeadSave.status}`);
@@ -320,14 +327,34 @@ async function runLiveVerification() {
       `Unexpected result: ${JSON.stringify(fallbackLeadSave)}`);
   }
 
-  // Test 3.2: Honesty in Storage Status (No False Success)
+  // Test 3.2: Primary Database Live Lead Persistence Verification
   const integrationsReported = resMoringa.responseData?.integrations;
-  if (integrationsReported && integrationsReported.supabaseLead !== 'SUCCESS') {
+  const inqIdMoringa = resMoringa.responseData?.inquiryId;
+  let dbRecordFound = false;
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const checkRes = await fetch(`${process.env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/leads?inquiry_id=eq.${inqIdMoringa}`, {
+        headers: {
+          'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+        }
+      });
+      if (checkRes.ok) {
+        const rows = await checkRes.json();
+        dbRecordFound = rows.length > 0 && rows[0].inquiry_id === inqIdMoringa;
+      }
+    } catch (_) {}
+  }
+
+  if (integrationsReported?.supabaseLead === 'SUCCESS' && dbRecordFound) {
+    recordTest('P3-02', 'Primary Database Live Lead Persistence & Verification', 'Phase 3', 'PASS', 
+      `Lead ${inqIdMoringa} successfully written and verified in live Supabase PostgreSQL leads table.`);
+  } else if (integrationsReported?.supabaseLead === 'NOT_CONFIGURED_MISSING_CREDENTIALS') {
     recordTest('P3-02', 'Zero False Success Invariant', 'Phase 3', 'PASS', 
-      `System honestly reports Supabase status as "${integrationsReported.supabaseLead}" instead of claiming FALSE SUCCESS.`);
+      'System honestly reports unconfigured state without claiming false success.');
   } else {
-    recordTest('P3-02', 'Zero False Success Invariant', 'Phase 3', 'FAIL', 
-      'System falsely claimed database success when unconfigured.');
+    recordTest('P3-02', 'Primary Database Live Lead Persistence & Verification', 'Phase 3', 'FAIL', 
+      `Database persistence failed or record not found: status=${integrationsReported?.supabaseLead}, dbFound=${dbRecordFound}`);
   }
 
   // Test 3.3: Database Timeout / Abort Handling

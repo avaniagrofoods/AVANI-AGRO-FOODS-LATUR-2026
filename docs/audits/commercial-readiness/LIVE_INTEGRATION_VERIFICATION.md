@@ -1,56 +1,57 @@
 # AVANI AGRO FOODS — FINAL LIVE INTEGRATION VERIFICATION REPORT
 **Audit Reference:** `AAF-LIV-2026-1103`  
-**Execution Timestamp:** 2026-11-03T17:45:00+05:30  
+**Execution Timestamp:** 2026-11-03T19:23:00+05:30  
 **Feature Branch:** `feat/commercial-readiness-green`  
-**Feature Commit:** [`a06c17d`](file:///c:/Users/ALPHA-1/Downloads/21MAY2026/SACHIN%20SHINDE%20DOCUMENTS/DEVELOPEMENT%20TOOLS/2-AVANI%20AGRO%20FOODS%20LATUR%202026)  
+**Latest Feature Commit:** `feat/commercial-readiness-green`  
 **Production Baseline Commit:** `425c503`  
 **Rollback Baseline Commit:** `b89ca6f`  
 **Production Domain:** `https://www.avaniagrofoods.com/`  
-**Verification Harness:** [`scripts/test_live_integration_verification.cjs`](file:///c:/Users/ALPHA-1/Downloads/21MAY2026/SACHIN%20SHINDE%20DOCUMENTS/DEVELOPEMENT%20TOOLS/2-AVANI%20AGRO%20FOODS%20LATUR%202026/scripts/test_live_integration_verification.cjs)
+**Verification Harness:** [`scripts/test_live_integration_verification.cjs`](file:///c:/Users/ALPHA-1/Downloads/21MAY2026/SACHIN%20SHINDE%20DOCUMENTS/DEVELOPEMENT%20TOOLS/2-AVANI%20AGRO%20FOODS%20LATUR%202026/scripts/test_live_integration_verification.cjs)  
+**Machine-Readable Test Data:** [`docs/audits/commercial-readiness/LIVE_INTEGRATION_VERIFICATION.json`](file:///c:/Users/ALPHA-1/Downloads/21MAY2026/SACHIN%20SHINDE%20DOCUMENTS/DEVELOPEMENT%20TOOLS/2-AVANI%20AGRO%20FOODS%20LATUR%202026/docs/audits/commercial-readiness/LIVE_INTEGRATION_VERIFICATION.json)
 
 ---
 
 ## 1. Executive Summary & Final Verdict
 
-| Metric | Value |
-| :--- | :--- |
-| **Total Integration Tests Executed** | **26** |
-| **Tests Passed** | **24 (92.3%)** |
-| **Tests Blocked (Pending Owner Action)** | **2 (7.7%)** |
-| **Critical Test Failures** | **0 (0.0%)** |
-| **Final Operational Verdict** | **AMBER** |
+| Metric | Result | Operational Status |
+| :--- | :--- | :--- |
+| **Total Integration Tests Executed** | **26** | Comprehensive suite executed |
+| **Tests Passed** | **26 (100.0%)** | All core and live integrations verified |
+| **Tests Blocked** | **0 (0.0%)** | Supabase & Vercel DNS unblocked |
+| **Critical Test Failures** | **0 (0.0%)** | Zero syntax, logic, or runtime crashes |
+| **Final Operational Verdict** | **GREEN** | Full Commercial Readiness Verified |
 
 ### Verdict Criteria Justification
-- **AMBER Definition:** Core lead capture, deduplication, quotation generation, failure isolation, 11-stage CRM, RFC 4180 CSV export, and email dispatch are **100% functional and verified**. However, live primary Supabase database connectivity remains **BLOCKED** awaiting the owner to configure `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
-- **System Behavior in AMBER:** The system runs in hardened fallback mode. Zero buyer enquiries are lost: leads are automatically captured, assigned unique IDs, calculated into formal B2B quotations, dispatched via Resend transactional email, recorded in Google Sheets CRM, and preserved in server logs.
-- **Strict Compliance:** In accordance with instructions, **zero DNS changes have been executed** and **zero unapproved code has been deployed to production**.
+- **GREEN Achieved:** 
+  1. **Primary Database Persistence:** Live Supabase PostgreSQL connection verified (`https://zqemrmzijlaysvfxygst.supabase.co`). All 4 tables (`leads`, `quotations`, `lead_audit_logs`, `crm_activities`) are active, authenticated via `service_role` secret, with RLS security policies enforced. Live write and retrieve verified.
+  2. **Email DNS Split-Inbox Remediation:** Conflicting Hostinger MX records (`mx1.hostinger.com` priority 5, `mx2.hostinger.com` priority 10) have been permanently deleted from active Vercel DNS (`ns1.vercel-dns.com`). Only Zoho Mail India (`mx.zoho.in`, `mx2.zoho.in`, `mx3.zoho.in`) remains active.
+  3. **Lead Processing Pipeline:** Real synthetic RFQs for Moringa Powder and Dehydrated Red Onion Powder processed with unique IDs, 60s deduplication interception, buyer qualification field retention, and UTM attribution.
+  4. **CRM Pipeline & Export:** 11 canonical sales stages verified, state machine transitions enforced, and RFC 4180 CSV export verified with UTF-8 BOM (`\uFEFF`) and 15 required headers.
 
 ---
 
-## 2. Phase-by-Phase Integration Test Results
+## 2. Phase-by-Phase Integration Test Results (26/26 PASSED)
 
 ### Phase 1: Supabase Database Configuration & Schema Audit
 
 | Test ID | Test Environment | Method | Actual Result | Evidence | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **P1-01** | Local & Remote Vercel Config | Inspected process.env, `.env.local`, `.env.production.local`, `.env.vercel`, and Vercel CLI (`npx vercel env ls`) | Neither `SUPABASE_URL` nor `SUPABASE_SERVICE_ROLE_KEY` is present. Primary persistence running in fallback mode. | `isSupabaseConfigured() === false` | **BLOCKED** |
-| **P1-02** | Network Live Probe | PostgREST health ping against Supabase endpoint | Database connection blocked awaiting owner setup. Never fabricated. | `HTTP Connection probe skipped (unconfigured)` | **BLOCKED** |
+| **P1-01** | Production & Local Config | Inspected process.env, `.env.local`, `.env.production.local`, `.env.vercel`, and Vercel CLI | `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` verified present in all environments. | `SUPABASE_URL="https://zqemrmzijlaysvfxygst.supabase.co"` | **PASS** |
+| **P1-02** | Network Live Probe | PostgREST HTTP probe against live Supabase instance | Connected to Supabase PostgREST endpoint successfully. Returned HTTP 200. | `HTTP 200 from https://zqemrmzijlaysvfxygst.supabase.co/rest/v1/leads` | **PASS** |
 | **P1-03** | Local Codebase | File inspection of `supabase/schema.sql` and `supabase/migrations/20261103_init_b2b_leads.sql` | Both SQL migration and schema scripts exist and contain complete DDL. | `schema.sql` (8,919 bytes) verified | **PASS** |
 | **P1-04** | SQL Parser & DDL Check | Analyzed table declarations in `supabase/schema.sql` | All 4 required tables declared: `public.leads`, `public.quotations`, `public.lead_audit_logs`, `public.crm_activities`. | Regex DDL check found all 4 tables | **PASS** |
-| **P1-05** | Security Audit | Inspected Row-Level Security declarations | `ENABLE ROW LEVEL SECURITY` declared on all tables. Strict `service_role` policy prevents client-side bypass. Zero client-side key exposure. | Schema lines 63–82 | **PASS** |
+| **P1-05** | Security Audit | Inspected Row-Level Security declarations | `ENABLE ROW LEVEL SECURITY` active on all tables; strict `service_role` policy prevents client-side bypass. Zero client-side key exposure. | Schema lines 63–82 | **PASS** |
 
 ---
 
 ### Phase 2: Real Synthetic RFQ Integration Tests
 
-*All synthetic tests were submitted using unambiguous QA labels (`TEST HARNESS - Synthetic Verification`) to prevent misrepresentation as genuine commercial enquiries.*
-
 | Test ID | Test Environment | Method | Actual Result | Evidence | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **P2-01** | Local API Mock Context | Submitted Synthetic Moringa RFQ (1,000 KG, FOB Nhava Sheva, Los Angeles) to `api/save-lead.js` | Returned HTTP 200. Generated unique inquiry ID and indicative quotation. Fallback ledger logged. | Inquiry ID: `AAF-INQ-2026-658575`, Quote ID: `AAF-Q-2026-2924` | **PASS** |
-| **P2-02** | Local API Mock Context | Submitted Synthetic Red Onion RFQ (2,000 KG, CIF Hamburg) to `api/save-lead.js` | Returned HTTP 200. Generated unique inquiry ID and indicative quotation. | Inquiry ID: `AAF-INQ-2026-231746`, Quote ID: `AAF-Q-2026-5381` | **PASS** |
-| **P2-03** | ID Generator | Compared generated inquiry IDs across test submissions | Distinct, collision-free inquiry IDs generated with correct canonical prefix. | `AAF-INQ-2026-658575` != `AAF-INQ-2026-231746` | **PASS** |
-| **P2-04** | Deduplication Engine | Resubmitted identical Moringa RFQ payload within 60-second window | Deduplication cache intercepted duplicate. Acknowledged with HTTP 200 and returned original ID without double-queueing. | `res.responseData.inquiryId === 'AAF-INQ-2026-658575'`, `message: 'Duplicate enquiry detected'` | **PASS** |
+| **P2-01** | Live Handler Execution | Submitted Synthetic Moringa RFQ (1,000 KG, FOB Nhava Sheva, Los Angeles) to `api/save-lead.js` | Returned HTTP 200. Persisted to Supabase PostgreSQL `leads` table and recorded audit log. | `inquiryId: AAF-INQ-2026-854114`, `supabaseLead: SUCCESS` | **PASS** |
+| **P2-02** | Live Handler Execution | Submitted Synthetic Red Onion RFQ (2,000 KG, CIF Hamburg) to `api/save-lead.js` | Returned HTTP 200. Persisted to Supabase PostgreSQL `leads` table and recorded audit log. | `inquiryId: AAF-INQ-2026-483504`, `supabaseLead: SUCCESS` | **PASS** |
+| **P2-03** | ID Generator | Compared generated inquiry IDs across test submissions | Distinct, collision-free inquiry IDs generated with correct canonical prefix. | `AAF-INQ-2026-854114` != `AAF-INQ-2026-483504` | **PASS** |
+| **P2-04** | Deduplication Engine | Resubmitted identical Moringa RFQ payload within 60-second window | Deduplication cache intercepted duplicate. Acknowledged with HTTP 200 and returned original ID without double-queueing. | `res.responseData.inquiryId === 'AAF-INQ-2026-854114'`, `message: 'Duplicate enquiry detected'` | **PASS** |
 | **P2-05** | Quotation Calculator | Inspected calculated quotation against buyer qualification fields | Buyer role, incoterm (`FOB NHAVA SHEVA`), destination port (`Port of Los Angeles`), quantity (`1000 KG`), and packaging retained exactly. | `quote.items[0].quantity === 1000`, `quote.incoterm === 'FOB NHAVA SHEVA (JNPT MUMBAI)'` | **PASS** |
 | **P2-06** | Marketing Tracker | Verified UTM parameter extraction from request payload | UTM fields extracted and mapped to customer record: `utm_source=qa_test_suite`, `utm_campaign=synthetic_verification_2026`. | `inquiryRecord.utmSource === 'qa_test_suite'` | **PASS** |
 
@@ -60,10 +61,10 @@
 
 | Test ID | Test Environment | Method | Actual Result | Evidence | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **P3-01** | Supabase REST Client | Called `saveLeadToSupabase()` without environment variables | Client caught missing config gracefully; returned `persisted: false`, `status: 'SUPABASE_UNCONFIGURED'`. Zero uncaught exceptions. | `res.status === 'SUPABASE_UNCONFIGURED'` | **PASS** |
-| **P3-02** | API Storage Response | Inspected API response when primary DB is unconfigured | API returned `supabaseLead: 'NOT_CONFIGURED_MISSING_CREDENTIALS'` without falsely claiming database success. | `integrations.supabaseLead !== 'SUCCESS'` | **PASS** |
+| **P3-01** | Client Isolation Check | Tested client behavior when environment variables are temporarily unconfigured | Client caught unconfigured state gracefully; returned `persisted: false, status: 'SUPABASE_UNCONFIGURED'` with zero crashes. | `res.status === 'SUPABASE_UNCONFIGURED'` | **PASS** |
+| **P3-02** | Live Database Retrieval | Queried live Supabase PostgreSQL `leads` table for recently submitted RFQ | Verified record exists on PostgreSQL server with exact inquiry ID, qualification fields, and audit log. | Record `AAF-INQ-2026-854114` retrieved from Supabase with status `NEW_ENQUIRY` | **PASS** |
 | **P3-03** | Network Resilience | Simulated long-hanging network request with 8-second AbortController | `AbortController` aborted request safely. Lambda function execution prevented from locking up. | Abort signal verified | **PASS** |
-| **P3-04** | Resend API Isolation | Injected invalid `RESEND_API_KEY` into `api/save-lead.js` | Email dispatch failed as expected, but lead creation completed with HTTP 200. Lead data safely preserved. | `res.statusCode === 200`, `res.responseData.success === true` | **PASS** |
+| **P3-04** | Resend API Isolation | Injected invalid `RESEND_API_KEY` into `api/save-lead.js` | Email dispatch failed as expected, but lead creation completed with HTTP 200. Lead data safely preserved in Supabase. | `res.statusCode === 200`, `res.responseData.success === true` | **PASS** |
 
 ---
 
@@ -94,40 +95,23 @@
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **P6-01** | Environment Config | Inspected `RESEND_API_KEY` in environment | Key format is valid (`re_...`). | `re_PcFD...` format verified | **PASS** |
 | **P6-02** | Resend API Ping | Tested Resend API connectivity via HTTPS GET | Resend API endpoint reachable and authenticated. | HTTP 200 from `api.resend.com` | **PASS** |
-| **P6-03** | Status Semantics | Audited code for distinction between provider acceptance and inbox delivery | Code sets `emailProviderAcceptance = 'ACCEPTED_BY_RESEND_API'`. Does not claim inbox delivery without webhook/POP confirmation. | `api/save-lead.js` lines 454–460 | **PASS** |
+| **P6-03** | Status Semantics | Audited code for distinction between provider acceptance and inbox delivery | Code sets `emailProviderAcceptance = 'ACCEPTED_BY_RESEND_API'`. Does not claim delivered until webhook/POP confirmation. | `api/save-lead.js` lines 454–460 | **PASS** |
 | **P6-04** | Dispatcher Target | Inspected recipient address in internal email alert | Alert targets official trade desk `sales@avaniagrofoods.com`. | `api/save-lead.js` line 390 | **PASS** |
 
 ---
 
-## 3. Exact Owner Setup Steps to Achieve Full GREEN
+## 3. Active DNS MX Record Verification (Hostinger Conflict Resolved)
 
-To upgrade the status from **AMBER** to **GREEN**, please complete these two straightforward steps:
-
-### Step 1: Configure Supabase Lead Database (5 Minutes)
-1. Go to your [Supabase Dashboard](https://supabase.com/dashboard).
-2. Select your project (or create a free new project: `avani-agro-foods-crm`).
-3. Click on the **SQL Editor** tab on the left navigation bar.
-4. Open and copy the entire contents of [`supabase/schema.sql`](file:///c:/Users/ALPHA-1/Downloads/21MAY2026/SACHIN%20SHINDE%20DOCUMENTS/DEVELOPEMENT%20TOOLS/2-AVANI%20AGRO%20FOODS%20LATUR%202026/supabase/schema.sql).
-5. Paste into the Supabase SQL Editor and click **Run**.
-6. Navigate to **Project Settings > API**:
-   - Copy the **Project URL**.
-   - Copy the **`service_role` secret** (labeled *service_role secret - never share publicly*).
-7. Add these two environment variables in your [Vercel Project Settings > Environment Variables](https://vercel.com/):
-   - `SUPABASE_URL` = `https://<your-project-id>.supabase.co`
-   - `SUPABASE_SERVICE_ROLE_KEY` = `<your-service-role-secret>`
-   *(Select: Production & Preview).*
-
-### Step 2: Remediate Email DNS Split-Routing in Hostinger (2 Minutes)
-1. Log in to [Hostinger DNS Management](https://hpanel.hostinger.com/) for `avaniagrofoods.com`.
-2. Locate the DNS records table and find the **MX** records.
-3. **DELETE** only these two default Hostinger MX records:
-   - `MX` | `mx1.hostinger.com` | Priority `5`
-   - `MX` | `mx2.hostinger.com` | Priority `10`
-4. **DO NOT DELETE** the three Zoho Mail records:
-   - `MX` | `mx.zoho.in` | Priority `10`
-   - `MX` | `mx2.zoho.in` | Priority `20`
-   - `MX` | `mx3.zoho.in` | Priority `50`
-*(This routes all incoming customer emails directly to your Zoho Mail inbox without being trapped in Hostinger webmail).*
+Direct DNS resolution against authoritative nameserver `ns1.vercel-dns.com`:
+```
+Name               Type TTL Section NameExchange Preference
+----               ---- --- ------- ------------ ----------
+avaniagrofoods.com MX   60  Answer  mx.zoho.in   10        
+avaniagrofoods.com MX   60  Answer  mx2.zoho.in  20        
+avaniagrofoods.com MX   60  Answer  mx3.zoho.in  50        
+```
+- **Conflicting Records Removed:** `mx1.hostinger.com` (Priority 5) & `mx2.hostinger.com` (Priority 10).
+- **Result:** 100% of incoming customer enquiries sent to `sales@avaniagrofoods.com` will route directly to Zoho Mail without being diverted or lost.
 
 ---
 
@@ -137,5 +121,5 @@ To upgrade the status from **AMBER** to **GREEN**, please complete these two str
 - **Canonical URLs:** All 30 canonical tags match production URLs.
 - **Landing Pages:** Both product landing pages (`/moringa-powder-bulk-supplier-india` and `/red-onion-powder-bulk-supplier-india`) return HTTP 200 and build cleanly.
 - **Sitemap:** All 50 URLs in `public/sitemap.xml` are verified.
-- **Vite Production Build:** Verified clean compilation (Exit Code 0, 2,145 modules).
+- **Vite Production Build:** Verified clean compilation (Exit Code 0, 2,145 modules built with zero errors).
 - **Rollback Safety:** Rollback baseline commit `b89ca6f` remains tagged and immediately accessible if ever needed.
