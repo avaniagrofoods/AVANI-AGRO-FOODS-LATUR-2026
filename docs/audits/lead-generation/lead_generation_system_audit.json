@@ -1,0 +1,197 @@
+{
+  "system": "AVANI AGRO FOODS International B2B Lead Generation System",
+  "auditDate": "2026-11-03T04:12:00Z",
+  "productionDomain": "https://www.avaniagrofoods.com",
+  "deployment": {
+    "deploymentId": "dpl_Hj83jtrVwf4GhDf282UDn1yCVYSe",
+    "productionUrl": "https://avani-agro-foods-latur-2026-kaiw23i9r.vercel.app",
+    "customDomain": "https://www.avaniagrofoods.com",
+    "status": "READY",
+    "commitHash": "febe14f"
+  },
+  "businessIdentity": {
+    "company": "AVANI AGRO FOODS",
+    "owner": "Sachin Shinde",
+    "role": "Trade Coordinator",
+    "location": "Latur, Maharashtra, India",
+    "email": "sales@avaniagrofoods.com",
+    "phone": "+91 7219053645",
+    "whatsapp": "+91 7219053645",
+    "entityType": "Indian Agricultural Trade Coordination Business",
+    "directRegistration": "Udyam / MSME Registered Firm (Government of India)",
+    "operatingModel": "Coordinates commercial sourcing, processing oversight, third-party laboratory verification, and export execution with vetted FSSAI-licensed regional facilities. Does not own manufacturing factories or farming estates."
+  },
+  "phases": {
+    "phase1_conversion_audit": {
+      "status": "COMPLETED",
+      "articlesAudited": 30,
+      "categoriesCount": 12,
+      "totalWords": 26214,
+      "averageWordsPerArticle": 874,
+      "brokenAliases": 0,
+      "featuredImagesVerified": 30,
+      "imageFormat": "Genuine WebP (1200x675)",
+      "reportPath": "docs/audits/lead-generation/PHASE_1_BASELINE_CONVERSION_AUDIT.md",
+      "inventoryPath": "docs/audits/lead-generation/BASELINE_30_ARTICLES_INVENTORY.json"
+    },
+    "phase2_b2b_landing_pages": {
+      "status": "COMPLETED",
+      "pages": [
+        {
+          "slug": "moringa-powder-bulk-supplier-india",
+          "url": "https://www.avaniagrofoods.com/moringa-powder-bulk-supplier-india",
+          "title": "Moringa Powder Bulk Supplier India | Export Grade B2B Wholesale | AVANI AGRO FOODS",
+          "hsCode": "1211.90.29",
+          "indicativeMesh": "80–100 Mesh (Fine Powder)",
+          "moisture": "≤ 7.0%",
+          "primaryPort": "Nhava Sheva (JNPT Mumbai, Port Code: INNSA)",
+          "httpStatusLive": 200,
+          "hasStructuredData": true
+        },
+        {
+          "slug": "red-onion-powder-bulk-supplier-india",
+          "url": "https://www.avaniagrofoods.com/red-onion-powder-bulk-supplier-india",
+          "title": "Red Onion Powder Bulk Supplier India | Dehydrated B2B Wholesale | AVANI AGRO FOODS",
+          "hsCode": "0712.20.00",
+          "indicativeMesh": "60–80 Mesh / 80–100 Mesh",
+          "moisture": "≤ 6.0%",
+          "primaryPort": "Nhava Sheva (JNPT Mumbai, Port Code: INNSA)",
+          "httpStatusLive": 200,
+          "hasStructuredData": true
+        }
+      ]
+    },
+    "phase3_b2b_rfq_component": {
+      "status": "COMPLETED",
+      "component": "src/components/B2BRFQForm.jsx",
+      "fields": [
+        "name",
+        "company",
+        "email",
+        "phone",
+        "buyerRole",
+        "country",
+        "product",
+        "quantity",
+        "quantityUnit",
+        "incoterm",
+        "destinationPort",
+        "purchaseTimeline",
+        "intendedApplication",
+        "packagingPreference",
+        "documentsRequested",
+        "notes",
+        "privacyConsent",
+        "honeypot_company_url"
+      ],
+      "antiSpam": "Honeypot trap + distributed rate limiting",
+      "attributionIntegration": "getAttributionData() from src/lib/utmTracker.js",
+      "analyticsIntegration": "trackRfqStarted, trackRfqSubmitSuccess, trackRfqValidationFailure"
+    },
+    "phase4_lead_management_backend": {
+      "status": "COMPLETED",
+      "apiEndpoint": "api/save-lead.js",
+      "inquiryRecordColumns": 32,
+      "quotationRecordColumns": 28,
+      "qualificationStatuses": [
+        "NEW",
+        "RESEARCH",
+        "CONTACTED",
+        "CONNECTED",
+        "QUALIFIED",
+        "REQUIREMENT_RECEIVED",
+        "SAMPLE",
+        "QUOTE",
+        "NEGOTIATION",
+        "PO",
+        "REPEAT",
+        "LOST",
+        "NURTURE"
+      ],
+      "deduplicationWindowSeconds": 60
+    },
+    "phase5_email_notifications": {
+      "status": "COMPLETED",
+      "provider": "Resend REST API",
+      "internalAlertTo": "sales@avaniagrofoods.com",
+      "internalSubjectPattern": "New International B2B Enquiry – [Product] – [Country]",
+      "buyerSubjectPattern": "We Have Received Your Enquiry – AVANI AGRO FOODS",
+      "liveTestStatus": "SUCCESS"
+    },
+    "phase6_whatsapp_handoff": {
+      "status": "COMPLETED",
+      "helperFunction": "getWhatsAppInquiryUrl(productName, pageContext, inquiryId)",
+      "whatsappNumber": "917219053645",
+      "prefilledMessageContext": true
+    },
+    "phase7_factual_accuracy_governance": {
+      "status": "COMPLETED",
+      "centralConfig": "src/data/centralProductConfig.js",
+      "threeTierFramework": {
+        "tier1_direct": ["Udyam / MSME Registered Firm"],
+        "tier2_partner_facilities": ["FSSAI", "ISO 22000:2018 / BRCGS", "Halal & Kosher"],
+        "tier3_batch_testing": ["NABL Laboratory COA", "Microbiology Assay", "Heavy Metals Panel", "Pesticide Residue Screen", "Phytosanitary Certificate", "Certificate of Origin"]
+      },
+      "outboundPolicy": "GLOBAL_OUTREACH_STOP=1 (ODR-20261024-POLICIES-O01-O05)"
+    },
+    "phase8_internal_cross_linking": {
+      "status": "COMPLETED",
+      "articleToLandingPageLinks": "Every article links to /moringa-powder-bulk-supplier-india or /red-onion-powder-bulk-supplier-india via CTA and sidebar",
+      "footerLinksUpdated": true
+    },
+    "phase9_analytics_attribution": {
+      "status": "COMPLETED",
+      "utmTracker": "src/lib/utmTracker.js",
+      "parametersPersisted": [
+        "utm_source",
+        "utm_medium",
+        "utm_campaign",
+        "utm_content",
+        "utm_term",
+        "landing_page",
+        "referrer"
+      ],
+      "storageMechanism": "sessionStorage + memory fallback"
+    },
+    "phase10_technical_seo_sitemap": {
+      "status": "COMPLETED",
+      "sitemapPath": "public/sitemap.xml",
+      "totalUrls": 50,
+      "articlesCount": 30,
+      "landingPagesCount": 2,
+      "landingPagePriority": 0.95,
+      "jsonLdSchemas": ["BreadcrumbList", "Product", "FAQPage", "Organization"]
+    },
+    "phase11_buyer_experience": {
+      "status": "COMPLETED",
+      "moq": "100 kg Commercial Trials / Full Container Loads",
+      "ports": "Nhava Sheva (JNPT Mumbai, INNSA)",
+      "samplePolicy": "DHL/FedEx pre-shipment representative samples coordinated with batch COA"
+    },
+    "phase12_automated_test_suite": {
+      "status": "COMPLETED",
+      "script": "scripts/test_lead_generation_e2e.cjs",
+      "totalTests": 12,
+      "passed": 12,
+      "failed": 0,
+      "summary": "12/12 PASSED (100% success rate)",
+      "resultsFile": "docs/audits/lead-generation/E2E_LEAD_GENERATION_TEST_RESULTS.json"
+    },
+    "phase13_production_deployment": {
+      "status": "COMPLETED",
+      "buildStatus": "PASSED (2145 modules, built in 4.94s / 13.13s local)",
+      "deploymentReady": true,
+      "liveVerifiedEndpoints": [
+        "https://www.avaniagrofoods.com/moringa-powder-bulk-supplier-india",
+        "https://www.avaniagrofoods.com/red-onion-powder-bulk-supplier-india",
+        "https://www.avaniagrofoods.com/sitemap.xml",
+        "https://www.avaniagrofoods.com/api/save-lead"
+      ]
+    },
+    "phase14_comprehensive_deliverables": {
+      "status": "COMPLETED",
+      "markdownReport": "docs/audits/lead-generation/LEAD_GENERATION_SYSTEM_AUDIT.md",
+      "jsonReport": "docs/audits/lead-generation/lead_generation_system_audit.json"
+    }
+  }
+}
