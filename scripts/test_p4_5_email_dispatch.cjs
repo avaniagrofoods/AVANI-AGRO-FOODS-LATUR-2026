@@ -67,7 +67,7 @@ const {
   evaluateBuyerReadyGate,
   setAdminOverride,
   PRODUCT_MASTER
-} = require('../src/data/quotationModel.js')
+} = require('../api/_lib/quotationModel.js')
 
 const {
   calculateQuotation,
@@ -106,6 +106,11 @@ console.log('AVANI AGRO FOODS — P4.5 CONTROLLED BUYER DISPATCH TEST SUITE')
 console.log('============================================================\n')
 
 async function main() {
+  const prevAuth = process.env.OUTREACH_AUTHORIZED;
+  const prevStop = process.env.GLOBAL_OUTREACH_STOP;
+  process.env.OUTREACH_AUTHORIZED = '1';
+  process.env.GLOBAL_OUTREACH_STOP = '0';
+  try {
   // Helper to build a valid base quotation for testing
   function createValidBaseQuote() {
     const baseLead = {
@@ -865,6 +870,10 @@ async function main() {
 
   if (failedTests > 0) {
     process.exit(1)
+  }
+  } finally {
+    if (prevAuth !== undefined) process.env.OUTREACH_AUTHORIZED = prevAuth; else delete process.env.OUTREACH_AUTHORIZED;
+    if (prevStop !== undefined) process.env.GLOBAL_OUTREACH_STOP = prevStop; else delete process.env.GLOBAL_OUTREACH_STOP;
   }
 }
 

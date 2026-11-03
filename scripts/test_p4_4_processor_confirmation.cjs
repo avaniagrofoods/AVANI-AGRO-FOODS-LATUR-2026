@@ -121,7 +121,7 @@ const {
   sanitizeText,
   DEFAULT_COMMERCIAL_TERMS,
   SOURCING_POSITIONING_NOTICES
-} = require('../src/data/quotationModel.js')
+} = require('../api/_lib/quotationModel.js')
 
 // Import P4.1 lead validator
 const { validateLeadPayload } = require('../src/data/leadModel.js')
@@ -154,9 +154,14 @@ async function runAsyncTest(num, name, fn) {
 }
 
 async function runAllTests() {
-  const { calculateQuotation } = await import('../api/_lib/quotationEngine.js')
+  const prevAuth = process.env.OUTREACH_AUTHORIZED;
+  const prevStop = process.env.GLOBAL_OUTREACH_STOP;
+  process.env.OUTREACH_AUTHORIZED = '1';
+  process.env.GLOBAL_OUTREACH_STOP = '0';
+  try {
+    const { calculateQuotation } = await import('../api/_lib/quotationEngine.js')
 
-  console.log('============================================================')
+    console.log('============================================================')
   console.log('AVANI AGRO FOODS — P4.4 PROCESSOR CONFIRMATION & DISPATCH')
   console.log('DETERMINISTIC TEST SUITE (70 CRITICAL TESTS)')
   console.log('============================================================\n')
@@ -962,6 +967,10 @@ async function runAllTests() {
 
   if (failed > 0) {
     process.exit(1)
+  }
+  } finally {
+    if (prevAuth !== undefined) process.env.OUTREACH_AUTHORIZED = prevAuth; else delete process.env.OUTREACH_AUTHORIZED;
+    if (prevStop !== undefined) process.env.GLOBAL_OUTREACH_STOP = prevStop; else delete process.env.GLOBAL_OUTREACH_STOP;
   }
 }
 

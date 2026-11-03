@@ -1,36 +1,40 @@
 User-agent: *
 
-# Allow all public content
+# Allow all public pages
 Allow: /
 Allow: /about
 Allow: /products
+Allow: /catalog
+Allow: /catalog/
+Allow: /trade-coordination
+Allow: /export-process
+Allow: /resources
+Allow: /affiliate
+Allow: /affiliate-disclosure
+Allow: /affiliate-disclaimer
+Allow: /export-compliance
+Allow: /manufacturer-requirements
+Allow: /blog
+Allow: /blog/
 Allow: /contact
 Allow: /b2b
 Allow: /b2b/store
-Allow: /blog
-Allow: /export-compliance
-Allow: /manufacturer-requirements
 Allow: /privacy
+Allow: /privacy-policy
 Allow: /terms
 Allow: /disclaimer
 
-# Block confidential and private portals
-Disallow: /private/
+# Block confidential and private administrative portals
 Disallow: /private
+Disallow: /private/
 Disallow: /admin/
 Disallow: /admin
-Disallow: /manufacturers
-Disallow: /manufacturers/
 Disallow: /importers
-Disallow: /importers/
-Disallow: /affiliate/dashboard
-Disallow: /affiliate/directory
-Disallow: /affiliate-login
+Disallow: /manufacturers
 Disallow: /quotation-sheet
-Disallow: /tools
 Disallow: /api/
 
-# Block session/query URLs
+# Block session/query parameters
 Disallow: /*?*session*
 Disallow: /*?*token*
 

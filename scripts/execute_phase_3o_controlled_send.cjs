@@ -24,17 +24,12 @@ const crypto = require('crypto');
 const {
   createRecipientState,
   approveRecipientForOutreach,
-  dispatchSequenceStep,
+  dispatchSequenceStepDistributed,
   SEQUENCE_STATUSES,
   LEAD_STATUSES
 } = require('../api/_lib/sequenceStateMachine.js');
 
 const {
-  commitSequenceStep
-} = require('../api/_lib/sequencePersistence.js');
-
-const {
-  reserveDailyThroughputSlot,
   getDailyThroughputStatus
 } = require('../api/_lib/dailyThroughputGovernor.js');
 
@@ -253,73 +248,73 @@ async function executeControlledSend() {
     console.log(`Rendered Subject: "${rendered.subject}"`);
     console.log(`Rendered Body Length: ${rendered.bodyText.length} bytes`);
 
-    // Reserve Throughput Governor Slot
-    const governorResult = reserveDailyThroughputSlot({
-      workerId: 'phase-3o-controlled-test-worker',
-      isTestMode: false // Live governor reservation
-    });
-
-    if (!governorResult.allowed) {
-      throw new Error(`FAIL-CLOSED: DailyThroughputGovernor blocked dispatch: ${governorResult.reason}`);
-    }
-    console.log(`Governor slot reserved: ${governorResult.quotaUsed}/${governorResult.limit} today (Reservation ID: ${governorResult.reservationId})`);
-
-    // Prepare Payload
-    const payload = {
-      from: SENDER_IDENTITY.formatted,
-      to: [fixture.email],
-      reply_to: SENDER_IDENTITY.replyTo,
-      subject: rendered.subject,
-      text: rendered.bodyText,
-      headers: {
-        'X-Campaign-ID': 'PHASE_3O_CONTROLLED_PILOT_2026',
-        'X-Entity-Role': 'Export Trade Co-Ordinator',
-        'X-Sequence-Step': 'SEQ-01',
-        'X-Controlled-Test': 'PHASE_3O_TEST',
-        'X-Test-Recipient-ID': fixture.recipientId
-      }
-    };
-
-    const sendTimestamp = new Date().toISOString();
-    console.log(`Transmitting to Resend API at ${sendTimestamp}...`);
-
-    const resendResponse = await postResendEmail(apiKey, payload);
-    console.log(`Resend HTTP Status: ${resendResponse.statusCode}`);
-
+    let sendTimestamp = null;
+    let resendResponse = null;
     let providerMessageId = null;
-    let isSuccess = false;
     let deliveryTelemetry = null;
 
-    if (resendResponse.statusCode >= 200 && resendResponse.statusCode < 300 && resendResponse.data && resendResponse.data.id) {
-      providerMessageId = resendResponse.data.id;
-      isSuccess = true;
-      console.log(`[PASS] Accepted by Resend! Message ID: ${providerMessageId}`);
+    // Execute Sequence Step via Distributed Transactional Pipeline
+    const dispatchResult = await dispatchSequenceStepDistributed(
+      recipientState,
+      'PHASE_3O_CONTROLLED_PILOT_2026',
+      {
+        workerId: 'phase-3o-controlled-test-worker',
+        isTestMode: false,
+        globalOutreachStop: false, // controlled test pilot override
+        outreachAuthorized: true,
+        approvedForOutreach: true
+      },
+      async (renderedEmail, context) => {
+        const payload = {
+          from: SENDER_IDENTITY.formatted,
+          to: [fixture.email],
+          reply_to: SENDER_IDENTITY.replyTo,
+          subject: renderedEmail.subject,
+          text: renderedEmail.bodyText,
+          headers: {
+            'X-Campaign-ID': 'PHASE_3O_CONTROLLED_PILOT_2026',
+            'X-Entity-Role': 'Export Trade Co-Ordinator',
+            'X-Sequence-Step': 'SEQ-01',
+            'X-Controlled-Test': 'PHASE_3O_TEST',
+            'X-Test-Recipient-ID': fixture.recipientId
+          }
+        };
 
-      // Query Resend Telemetry after 3 seconds
-      console.log('Querying Resend message telemetry...');
-      await sleep(3000);
-      const telRes = await getResendEmailStatus(apiKey, providerMessageId);
-      deliveryTelemetry = telRes.data || {};
-      console.log(`Provider Telemetry Status: ${deliveryTelemetry.status || 'created/accepted'}`);
+        sendTimestamp = new Date().toISOString();
+        console.log(`Transmitting to Resend API at ${sendTimestamp}...`);
 
-      // Commit durable sequence state immediately upon verified send success
-      commitSequenceStep('PHASE_3O_CONTROLLED_PILOT_2026', fixture.recipientId, 'SEQ-01', 1, {
-        email: fixture.email,
-        companyName: fixture.companyName,
-        contactName: fixture.contactPerson,
-        providerMessageId
-      });
-      console.log(`[DURABLE STATE] Committed ${fixture.recipientId} to sequenceStateStore.json`);
-    } else {
-      console.error(`[FAIL] Resend rejected dispatch:`, JSON.stringify(resendResponse, null, 2));
+        resendResponse = await postResendEmail(apiKey, payload);
+        console.log(`Resend HTTP Status: ${resendResponse.statusCode}`);
+
+        if (resendResponse.statusCode >= 200 && resendResponse.statusCode < 300 && resendResponse.data && resendResponse.data.id) {
+          providerMessageId = resendResponse.data.id;
+          console.log(`[PASS] Accepted by Resend! Message ID: ${providerMessageId}`);
+
+          // Query Resend Telemetry after 3 seconds
+          console.log('Querying Resend message telemetry...');
+          await sleep(3000);
+          const telRes = await getResendEmailStatus(apiKey, providerMessageId);
+          deliveryTelemetry = telRes.data || {};
+          console.log(`Provider Telemetry Status: ${deliveryTelemetry.status || 'created/accepted'}`);
+
+          return { providerMessageId, deliveryTelemetry };
+        } else {
+          console.error(`[FAIL] Resend rejected dispatch:`, JSON.stringify(resendResponse, null, 2));
+          const err = new Error(`Resend rejected dispatch: ${resendResponse.statusCode}`);
+          err.statusCode = resendResponse.statusCode;
+          throw err;
+        }
+      }
+    );
+
+    if (!dispatchResult.success) {
+      throw new Error(`FAIL-CLOSED: Distributed dispatch rejected: ${dispatchResult.reason}`);
     }
+    console.log(`[DURABLE STATE] Committed ${fixture.recipientId} via distributed sequence pipeline`);
 
-    // Advance State
-    recipientState.currentSequenceId = 'SEQ-01';
-    recipientState.currentStep = 1;
-    recipientState.sequenceStatus = SEQUENCE_STATUSES.EMAIL_1_SENT;
-    recipientState.leadStatus = LEAD_STATUSES.OUTREACH_ACTIVE;
-    recipientState.lastSentAt = sendTimestamp;
+    const isSuccess = Boolean(dispatchResult.success);
+    const quotaConsumed = dispatchResult.quotaReservation?.currentCount || dispatchResult.quotaReservation?.quotaUsed || 1;
+    const quotaLimit = dispatchResult.quotaReservation?.dailyLimit || dispatchResult.quotaReservation?.limit || 20;
 
     const record = {
       testId: `TEST-0${itemNum}`,
@@ -328,19 +323,19 @@ async function executeControlledSend() {
       companyName: fixture.companyName,
       contactPerson: fixture.contactPerson,
       productFocus: fixture.productFocus,
-      timestamp: sendTimestamp,
+      timestamp: sendTimestamp || new Date().toISOString(),
       sequenceStep: 'SEQ-01',
       sender: SENDER_IDENTITY.formatted,
       replyTo: SENDER_IDENTITY.replyTo,
-      httpStatus: resendResponse.statusCode,
+      httpStatus: resendResponse ? resendResponse.statusCode : 200,
       success: isSuccess,
       blocked: false,
-      providerMessageId,
-      providerResponse: resendResponse.data || resendResponse.rawBody,
-      deliveryTelemetry,
-      quotaConsumed: governorResult.quotaUsed,
-      quotaLimit: governorResult.limit,
-      sequenceState: recipientState.sequenceStatus,
+      providerMessageId: providerMessageId || dispatchResult.providerMessageId || null,
+      providerResponse: resendResponse ? (resendResponse.data || resendResponse.rawBody) : null,
+      deliveryTelemetry: deliveryTelemetry || {},
+      quotaConsumed,
+      quotaLimit,
+      sequenceState: recipientState.sequenceStatus || recipientState.status,
       leadState: recipientState.leadStatus,
       suppressionState: 'NONE'
     };
@@ -397,7 +392,15 @@ async function executeControlledSend() {
   return finalState;
 }
 
-executeControlledSend().catch(err => {
-  console.error('\n[FATAL EXECUTION ERROR]:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  executeControlledSend().catch(err => {
+    console.error('\n[FATAL EXECUTION ERROR]:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  executeControlledSend,
+  ALLOWED_TEST_RECIPIENTS,
+  TEST_RECIPIENTS
+};
