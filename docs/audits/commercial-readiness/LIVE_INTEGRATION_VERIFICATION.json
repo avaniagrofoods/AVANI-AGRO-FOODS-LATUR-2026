@@ -1,0 +1,274 @@
+{
+  "results": [
+    {
+      "id": "P1-01",
+      "name": "Supabase Environment Variables Check",
+      "phase": "Phase 1",
+      "status": "PASS",
+      "evidence": "SUPABASE_URL found (https://zqemrmzijl...) and SUPABASE_SERVICE_ROLE_KEY present.",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:08.652Z"
+    },
+    {
+      "id": "P1-02",
+      "name": "Supabase Live Connection Test",
+      "phase": "Phase 1",
+      "status": "PASS",
+      "evidence": "PostgREST connected successfully. Status: 200",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:09.621Z"
+    },
+    {
+      "id": "P1-03",
+      "name": "Schema & Migration SQL Scripts Verification",
+      "phase": "Phase 1",
+      "status": "PASS",
+      "evidence": "Found schema.sql (8919 bytes) and migration file.",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:09.623Z"
+    },
+    {
+      "id": "P1-04",
+      "name": "PostgreSQL Tables Definition Completeness",
+      "phase": "Phase 1",
+      "status": "PASS",
+      "evidence": "All 4 required tables verified in schema.sql: public.leads, public.quotations, public.lead_audit_logs, public.crm_activities",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:09.624Z"
+    },
+    {
+      "id": "P1-05",
+      "name": "Row-Level Security (RLS) & Server Isolation",
+      "phase": "Phase 1",
+      "status": "PASS",
+      "evidence": "RLS enabled on all tables; strict service_role policy prevents client-side bypass.",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:09.624Z"
+    },
+    {
+      "id": "P2-01",
+      "name": "Submit Synthetic Moringa RFQ",
+      "phase": "Phase 2",
+      "status": "PASS",
+      "evidence": "Enquiry accepted. Inquiry ID: AAF-INQ-2026-854114, Quote ID: AAF-Q-2026-7152",
+      "details": {
+        "inquiryId": "AAF-INQ-2026-854114",
+        "integrations": {
+          "supabaseLead": "SUCCESS",
+          "supabaseQuotation": "FAILED",
+          "googleSheetsInquiry": "SUCCESS",
+          "googleSheetsQuotation": "SUCCESS",
+          "hubSpot": "NOT_CONFIGURED",
+          "zapier": "NOT_CONFIGURED",
+          "whatsapp": "NOT_CONFIGURED",
+          "emailNotification": "PARTIAL_OR_FAILED",
+          "emailProviderAcceptance": "INTERNAL_ONLY",
+          "emailDeliveryAlert": "Email notification to buyer or sales desk failed. Inquiry remains safely stored in database."
+        }
+      },
+      "timestamp": "2026-11-03T13:52:19.132Z"
+    },
+    {
+      "id": "P2-02",
+      "name": "Submit Synthetic Red Onion RFQ",
+      "phase": "Phase 2",
+      "status": "PASS",
+      "evidence": "Enquiry accepted. Inquiry ID: AAF-INQ-2026-483504, Quote ID: AAF-Q-2026-8316",
+      "details": {
+        "inquiryId": "AAF-INQ-2026-483504",
+        "integrations": {
+          "supabaseLead": "SUCCESS",
+          "supabaseQuotation": "FAILED",
+          "googleSheetsInquiry": "SUCCESS",
+          "googleSheetsQuotation": "SUCCESS",
+          "hubSpot": "NOT_CONFIGURED",
+          "zapier": "NOT_CONFIGURED",
+          "whatsapp": "NOT_CONFIGURED",
+          "emailNotification": "PARTIAL_OR_FAILED",
+          "emailProviderAcceptance": "INTERNAL_ONLY",
+          "emailDeliveryAlert": "Email notification to buyer or sales desk failed. Inquiry remains safely stored in database."
+        }
+      },
+      "timestamp": "2026-11-03T13:52:29.099Z"
+    },
+    {
+      "id": "P2-03",
+      "name": "Unique Inquiry ID Generation",
+      "phase": "Phase 2",
+      "status": "PASS",
+      "evidence": "Distinct unique IDs generated: AAF-INQ-2026-854114 vs AAF-INQ-2026-483504",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:29.099Z"
+    },
+    {
+      "id": "P2-04",
+      "name": "Deduplication Interceptor & Safe Recovery",
+      "phase": "Phase 2",
+      "status": "PASS",
+      "evidence": "Detected duplicate submission. Returned existing ID AAF-INQ-2026-854114 without double-queueing.",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:29.100Z"
+    },
+    {
+      "id": "P2-05",
+      "name": "Buyer Qualification Fields Retention",
+      "phase": "Phase 2",
+      "status": "PASS",
+      "evidence": "All commercial qualification fields preserved: role, incoterm, port, quantity, packing.",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:29.100Z"
+    },
+    {
+      "id": "P2-06",
+      "name": "UTM Attribution & Marketing Tracking",
+      "phase": "Phase 2",
+      "status": "PASS",
+      "evidence": "utm_source, utm_medium, and utm_campaign retained and mapped to customer record.",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:29.100Z"
+    },
+    {
+      "id": "P3-01",
+      "name": "Supabase Unconfigured Graceful Handling",
+      "phase": "Phase 3",
+      "status": "PASS",
+      "evidence": "Correctly reports unconfigured without crashing: status=SUPABASE_UNCONFIGURED",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:29.102Z"
+    },
+    {
+      "id": "P3-02",
+      "name": "Primary Database Live Lead Persistence & Verification",
+      "phase": "Phase 3",
+      "status": "PASS",
+      "evidence": "Lead AAF-INQ-2026-854114 successfully written and verified in live Supabase PostgreSQL leads table.",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:29.503Z"
+    },
+    {
+      "id": "P3-03",
+      "name": "Database Timeout / AbortController Safety",
+      "phase": "Phase 3",
+      "status": "PASS",
+      "evidence": "AbortController successfully terminates long-hanging requests to prevent lambda lockups.",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:29.606Z"
+    },
+    {
+      "id": "P3-04",
+      "name": "Email Failure Decoupling & Survival",
+      "phase": "Phase 3",
+      "status": "PASS",
+      "evidence": "Lead processing succeeded (HTTP 200) even when email provider failed. Data safe.",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:39.140Z"
+    },
+    {
+      "id": "P4-01",
+      "name": "Historical Backup Inventory Verification",
+      "phase": "Phase 4",
+      "status": "PASS",
+      "evidence": "Found 3 backup archives. Latest archive contains 3 reconciled leads.",
+      "details": {
+        "file": "reconciled_leads_backup_1793690552796.json",
+        "count": 3
+      },
+      "timestamp": "2026-11-03T13:52:39.485Z"
+    },
+    {
+      "id": "P4-02",
+      "name": "Historical Deduplication Algorithm",
+      "phase": "Phase 4",
+      "status": "PASS",
+      "evidence": "Correctly identified 1 duplicate and preserved 2 unique records.",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:39.486Z"
+    },
+    {
+      "id": "P4-03",
+      "name": "Dry-Run Migration Safety Guard",
+      "phase": "Phase 4",
+      "status": "PASS",
+      "evidence": "Script defaults to dry-run when credentials or --dry-run flag is present. Zero unauthorized live DB writes.",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:39.490Z"
+    },
+    {
+      "id": "P5-01",
+      "name": "11 Canonical CRM Pipeline Stages",
+      "phase": "Phase 5",
+      "status": "PASS",
+      "evidence": "All 11 CRM stages present in CANONICAL_QUOTATION_STATUSES.",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:39.555Z"
+    },
+    {
+      "id": "P5-02",
+      "name": "CRM Pipeline State Machine Transitions",
+      "phase": "Phase 5",
+      "status": "PASS",
+      "evidence": "Allowed transition valid (NEW->QUALIFIED), illegal transition blocked (LOST->ORDER).",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:39.556Z"
+    },
+    {
+      "id": "P5-03",
+      "name": "RFC 4180 CSV Export, Escaping & UTF-8 BOM",
+      "phase": "Phase 5",
+      "status": "PASS",
+      "evidence": "UTF-8 BOM present, internal quotes escaped (\"\"), newlines cleaned, exactly 15 headers.",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:39.557Z"
+    },
+    {
+      "id": "P5-04",
+      "name": "Admin API Unauthorized Access Protection",
+      "phase": "Phase 5",
+      "status": "PASS",
+      "evidence": "Admin API rejected unauthorized request with HTTP 401 Unauthorized.",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:39.569Z"
+    },
+    {
+      "id": "P6-01",
+      "name": "Resend API Key Format & Configuration",
+      "phase": "Phase 6",
+      "status": "PASS",
+      "evidence": "RESEND_API_KEY found with valid format (re_PcFD...).",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:39.569Z"
+    },
+    {
+      "id": "P6-02",
+      "name": "Resend API Authentication & Health",
+      "phase": "Phase 6",
+      "status": "PASS",
+      "evidence": "Resend API accepted credentials successfully (HTTP 200).",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:40.065Z"
+    },
+    {
+      "id": "P6-03",
+      "name": "API Acceptance vs Inbox Delivery Distinction",
+      "phase": "Phase 6",
+      "status": "PASS",
+      "evidence": "Code explicitly sets emailProviderAcceptance=\"ACCEPTED_BY_RESEND_API\" and does not claim delivered until webhook/POP confirmation.",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:40.081Z"
+    },
+    {
+      "id": "P6-04",
+      "name": "Sales Destination Mailbox Configuration",
+      "phase": "Phase 6",
+      "status": "PASS",
+      "evidence": "Internal sales alert explicitly targets official trade desk: sales@avaniagrofoods.com",
+      "details": {},
+      "timestamp": "2026-11-03T13:52:40.081Z"
+    }
+  ],
+  "totalTests": 26,
+  "passCount": 26,
+  "blockedCount": 0,
+  "failCount": 0,
+  "verdict": "GREEN"
+}

@@ -1,0 +1,328 @@
+{
+  "auditReport": {
+    "reportId": "AAF-CRR-2026-1103",
+    "timestamp": "2026-11-03T12:30:00+05:30",
+    "target": {
+      "businessName": "AVANI AGRO FOODS",
+      "tradeCoordinator": "Sachin Shinde",
+      "location": "Latur, Maharashtra, India",
+      "contactEmail": "sales@avaniagrofoods.com",
+      "contactPhone": "+91 7219053645",
+      "productionDomain": "https://www.avaniagrofoods.com/",
+      "activeGitCommit": "425c503",
+      "rollbackCommit": "b89ca6f",
+      "activeVercelDeploymentId": "dpl_3YdZBkUK5QnaL73z3CkWuHtx4n3K",
+      "activeVercelUrl": "https://avani-agro-foods-latur-2026-lr07baa55.vercel.app"
+    },
+    "overallVerdict": {
+      "status": "AMBER",
+      "classification": "Technically Operational — Controlled Commercial Readiness",
+      "rationale": "The system is fully deployed, functionally tested, and capable of capturing leads and generating export quotations. However, durable storage currently depends on external webhook endpoints (Google Sheets CRM) and email logging rather than a dedicated transactional SQL/NoSQL database; inbound MX DNS records are split across Hostinger and Zoho; and end-user inbox deliverability remains unverified under enterprise spam filters."
+    },
+    "auditSummary": {
+      "audit1_deploymentVerification": "PASS",
+      "audit2_leadStorage": "PARTIAL",
+      "audit3_emailDelivery": "PARTIAL",
+      "audit4_adminLeadManagement": "PARTIAL",
+      "audit5_productClaimsEvidence": "PASS",
+      "audit6_quotationGovernance": "PASS",
+      "audit7_privacyAndSecurity": "PASS"
+    },
+    "detailedAudits": {
+      "audit1_deploymentVerification": {
+        "status": "PASS",
+        "evidence": {
+          "productionDomain": "https://www.avaniagrofoods.com/",
+          "httpStatusRoot": 200,
+          "activeCommit": "425c503",
+          "rollbackPoint": "b89ca6f",
+          "activeDeploymentId": "dpl_3YdZBkUK5QnaL73z3CkWuHtx4n3K",
+          "buildExitCode": 0,
+          "buildTimeSeconds": 3.79,
+          "modulesBuilt": 2145,
+          "landingPages": [
+            {
+              "url": "https://www.avaniagrofoods.com/moringa-powder-bulk-supplier-india",
+              "httpStatus": 200,
+              "contentBytes": 6113,
+              "canonical": "https://www.avaniagrofoods.com/moringa-powder-bulk-supplier-india"
+            },
+            {
+              "url": "https://www.avaniagrofoods.com/red-onion-powder-bulk-supplier-india",
+              "httpStatus": 200,
+              "contentBytes": 6113,
+              "canonical": "https://www.avaniagrofoods.com/red-onion-powder-bulk-supplier-india"
+            }
+          ],
+          "sitemap": {
+            "url": "https://www.avaniagrofoods.com/sitemap.xml",
+            "httpStatus": 200,
+            "declaredUrls": 50,
+            "includesBothLandingPages": true,
+            "includesAll30Articles": true
+          },
+          "robotsTxt": {
+            "url": "https://www.avaniagrofoods.com/robots.txt",
+            "httpStatus": 200,
+            "sitemapDeclared": true
+          },
+          "criticalRuntimeErrors": 0
+        }
+      },
+      "audit2_leadStorage": {
+        "status": "PARTIAL",
+        "evidence": {
+          "storageLocations": [
+            "In-memory execution cache (60s sliding window deduplication)",
+            "External Google Sheets CRM Webhook (targetSheet: 'Customer Inquiries' & 'Quotations')",
+            "Client-side localStorage ('avani_leads', 'avani_enquiries', 'avani_quotations')",
+            "Transactional inbox audit log (sales@avaniagrofoods.com via Resend)"
+          ],
+          "durability": "PARTIAL. Ephemeral Vercel serverless containers do not persist state across cold starts. Persistence relies on external webhook delivery to Google Sheets and email records.",
+          "uniqueIdFormat": {
+            "inquiryId": "AAF-INQ-2026-XXXXXX",
+            "quotationId": "AAF-Q-2026-XXXX",
+            "clientFallback": "AAF-L-2026-XXXX"
+          },
+          "deduplication": {
+            "mechanism": "Keyed by email_productId_quantity in in-memory Map",
+            "windowMs": 60000,
+            "duplicateResponse": "HTTP 200 with existing leadId/quoteId"
+          },
+          "retainedFields": 32,
+          "qualificationFieldsPreserved": [
+            "name", "company", "email", "phone", "buyerRole", "country", "product",
+            "quantity", "quantityUnit", "quantityNormalizedKg", "incoterm", "destinationPort",
+            "purchaseTimeline", "intendedApplication", "packagingPreference", "documentsRequested",
+            "notes", "source", "landingPage", "referrer", "utmSource", "utmMedium",
+            "utmCampaign", "utmContent", "utmTerm", "mesh", "moisture", "purity",
+            "requestedPrice", "currency", "coaRequested", "certificationsRequested"
+          ],
+          "faultTolerance": "Email failure or webhook timeout does not abort customer response; inquiry ID returned to buyer."
+        }
+      },
+      "audit3_emailDelivery": {
+        "status": "PARTIAL",
+        "evidence": {
+          "provider": "Resend REST API",
+          "internalAlert": {
+            "recipient": "sales@avaniagrofoods.com",
+            "sender": "notifications@avaniagrofoods.com",
+            "subject": "New International B2B Enquiry – [Product] – [Country]",
+            "status": "API Accepted (Verified Live)"
+          },
+          "buyerAcknowledgement": {
+            "recipient": "buyer_email",
+            "sender": "sales@avaniagrofoods.com",
+            "subject": "We Have Received Your Enquiry – AVANI AGRO FOODS",
+            "status": "API Accepted (Verified Live)"
+          },
+          "dnsAuthentication": {
+            "spf": {
+              "record": "v=spf1 include:zoho.in include:_spf.mail.hostinger.com include:resend.com ~all",
+              "status": "PASS (resend.com explicitly authorized)"
+            },
+            "dkim": {
+              "selector": "resend._domainkey.avaniagrofoods.com",
+              "status": "PASS (Valid RSA public key published)"
+            },
+            "dmarc": {
+              "record": "v=DMARC1; p=none",
+              "status": "PASS (Monitoring mode configured)"
+            },
+            "mx": {
+              "records": [
+                { "host": "mx.zoho.in", "preference": 10 },
+                { "host": "mx2.hostinger.com", "preference": 10 },
+                { "host": "mx2.zoho.in", "preference": 20 },
+                { "host": "mx1.hostinger.com", "preference": 5 },
+                { "host": "mx3.zoho.in", "preference": 50 }
+              ],
+              "status": "WARNING: Split MX records between Hostinger and Zoho Mail may lead to fragmented delivery of inbound trade emails."
+            }
+          },
+          "inboxPlacementStatus": "NOT VERIFIED (Actual enterprise corporate spam filter reception unverified)",
+          "safetyGatesActive": {
+            "GLOBAL_OUTREACH_STOP": 1,
+            "OUTREACH_AUTHORIZED": 0,
+            "REAL_BUYER_EMAILS": 0
+          }
+        }
+      },
+      "audit4_adminLeadManagement": {
+        "status": "PARTIAL",
+        "evidence": {
+          "adminDashboardUrl": "/admin/quotations",
+          "privateDashboardUrl": "/dashboard",
+          "accessControl": "PasswordGate with HMAC-signed session cookies ('avani_gate_session')",
+          "leadSearch": "PASS (Full text query on Quote ID, Buyer, Company, Country)",
+          "countryFilter": "PARTIAL (Available via search query; dedicated dropdown not implemented)",
+          "productFilter": "PARTIAL (Available in builder and master; list filter is text/status-based)",
+          "leadStatusTransitions": "PASS (17 canonical states: DRAFT, PROCESSOR_CHECK, READY_FOR_BUYER, SENT_TO_BUYER, ACCEPTED, PO_RECEIVED, etc.)",
+          "internalNotes": "PASS (internalSupplierNote, negotiationNotes, notes)",
+          "followUpScheduling": "PASS (nextFollowUpDate, followUpType, followUpForm)",
+          "documentExport": {
+            "pdfExport": "PASS (Vector PDF via pdf-lib with WinAnsi safety sanitization)",
+            "docxExport": "PASS (Native Microsoft Word DOCX via docx library)",
+            "csvExport": "NOT IMPLEMENTED directly in UI (handled externally via Google Sheets sync)"
+          }
+        }
+      },
+      "audit5_productClaimsEvidenceRegister": {
+        "status": "PASS",
+        "evidence": {
+          "centralConfigPath": "src/data/centralProductConfig.js",
+          "tradeModel": "Indian Agricultural Trade Coordinator & Sourcing Partner (Latur, Maharashtra). Does not claim factory or farm ownership.",
+          "certificationsFramework": {
+            "directRegistrations": [
+              {
+                "name": "Udyam / MSME Registration",
+                "holder": "AVANI AGRO FOODS",
+                "classification": "VERIFIED (Direct Micro Enterprise Registration)"
+              }
+            ],
+            "partnerFacilityLicenses": [
+              {
+                "name": "FSSAI Food Safety License",
+                "holder": "Regional Processing Partner Units",
+                "classification": "VERIFIED (Mandatory partner manufacturing license)"
+              },
+              {
+                "name": "ISO 22000:2018 / BRCGS",
+                "holder": "Audited Partner Processing Facilities",
+                "classification": "VERIFIED (Partner facility certification)"
+              }
+            ],
+            "batchSpecificDocumentation": [
+              {
+                "name": "Certificate of Analysis (COA)",
+                "issuer": "NABL-Accredited ISO/IEC 17025 Laboratories",
+                "classification": "VERIFIED (Batch-specific pre-shipment documentation)"
+              },
+              {
+                "name": "Phytosanitary Certificate",
+                "issuer": "NPPO / Ministry of Agriculture, India",
+                "classification": "VERIFIED (Pre-loading export clearance)"
+              },
+              {
+                "name": "Certificate of Origin (COO)",
+                "issuer": "Authorized Indian Chamber of Commerce / EIA",
+                "classification": "VERIFIED (Customs origin documentation)"
+              }
+            ]
+          },
+          "specificationsRegister": [
+            {
+              "product": "Moringa Leaf Powder",
+              "hsCode": "1211.90.29",
+              "meshSize": "80–100 Mesh / 120 Mesh available",
+              "moisture": "≤ 7.0%",
+              "crudeProtein": "25.0%–28.0% (typical)",
+              "acidInsolubleAsh": "≤ 1.0%",
+              "shelfLife": "24 Months (<25°C, sealed)",
+              "moq": "100 kg / 20ft FCL (~8–10 MT)",
+              "incoterms": "FOB Nhava Sheva (JNPT Mumbai) / CIF World Ports",
+              "classification": "VERIFIED (Indicative export standard verified against trade model)"
+            },
+            {
+              "product": "Dehydrated Red Onion Powder",
+              "hsCode": "0712.20.00",
+              "meshSize": "60–80 Mesh / 80–100 Mesh available",
+              "moisture": "≤ 6.0%",
+              "totalAsh": "≤ 5.0%",
+              "shelfLife": "24 Months",
+              "moq": "100 kg / 20ft FCL (~14–16 MT)",
+              "incoterms": "FOB Nhava Sheva (JNPT Mumbai) / CIF World Ports",
+              "classification": "VERIFIED (Indicative export standard verified against trade model)"
+            }
+          ]
+        }
+      },
+      "audit6_quotationGovernance": {
+        "status": "PASS",
+        "evidence": {
+          "quotationEngine": "api/_lib/quotationEngine.js & src/data/quotationCore.js",
+          "basePricingDefaults": {
+            "moringaPowder": "INR 350.00 / USD 4.80 per KG",
+            "redOnionPowder": "INR 800.00 / USD 9.60 per KG"
+          },
+          "freightAndPackagingInclusion": "Separate line-item allocation for subtotal, freight, insurance, documentation, and packaging",
+          "incotermSupport": ["FOB Nhava Sheva (JNPT Mumbai)", "CIF Destination Port", "CFR", "EXW"],
+          "reconciliationGate": "Buyer-Ready Gate enforces 3-way reconciliation (buyer requirement, processor confirmation, commercial terms)",
+          "manualApprovalEnforcement": "Quotation starts in DRAFT; transition to READY_FOR_BUYER requires processor verification checklist",
+          "safetyInvariants": {
+            "globalOutreachStop": "Enforced in api/_lib/quotationModel.js (fails closed)",
+            "outreachAuthorized": "Enforced in api/_lib/quotationModel.js (fails closed)",
+            "realBuyerEmails": "Enforced in api/_lib/quotationModel.js (fails closed)"
+          },
+          "documentIntegrity": "SHA-256 document hashing + WinAnsi character sanitization for PDF parity"
+        }
+      },
+      "audit7_privacyAndSecurity": {
+        "status": "PASS",
+        "evidence": {
+          "rateLimiting": "5 submissions per 15 minutes per IP (Distributed KV with memory fallback)",
+          "antiSpamBotTrap": "Honeypot fields ('honeypot_company_url', 'honeypot') silently filter bots",
+          "originVerification": "Strict allowed-origin checks on serverless APIs",
+          "timingAttackDefense": "crypto.timingSafeEqual used for password verification and session tokens",
+          "sessionIntegrity": "HMAC-SHA256 cookie signing with secret verification",
+          "securityHeaders": {
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+            "Cache-Control": "no-store, no-cache, must-revalidate"
+          },
+          "secretLeakageCheck": "Zero private API keys or credentials exposed in frontend JavaScript bundles"
+        }
+      }
+    },
+    "commercialRisks": [
+      {
+        "riskId": "CR-01",
+        "severity": "HIGH",
+        "category": "Data Persistence",
+        "description": "Lack of primary relational or document database on Vercel backend. If Google Sheets webhook is unreachable, leads are only stored in email logs and browser localStorage.",
+        "mitigation": "Provision a serverless database (Upstash Redis, Supabase PostgreSQL, or Neon) as the primary transactional ledger."
+      },
+      {
+        "riskId": "CR-02",
+        "severity": "MEDIUM",
+        "category": "Email Deliverability & Routing",
+        "description": "DNS MX records are simultaneously pointed to Hostinger (preferences 5, 10) and Zoho Mail (preferences 10, 20, 50). This split configuration can cause incoming B2B buyer inquiries to land unpredictably in different webmail platforms.",
+        "mitigation": "Consolidate MX records under one primary mail service (either Hostinger or Zoho Mail) and deprecate the other."
+      },
+      {
+        "riskId": "CR-03",
+        "severity": "LOW",
+        "category": "Admin Usability",
+        "description": "The admin quotation interface lacks a direct one-click CSV export button and dedicated dropdown filters for country and product, requiring users to rely on search queries or the Google Sheets interface.",
+        "mitigation": "Implement client-side CSV table export in AdminQuotations.jsx."
+      }
+    ],
+    "prioritizedOwnerActionList": [
+      {
+        "priority": "P1 - CRITICAL",
+        "action": "Consolidate MX Records in DNS",
+        "owner": "Sachin Shinde",
+        "instructions": "Log in to Hostinger/DNS registrar. Choose either Zoho Mail or Hostinger Webmail as the sole mail provider for sales@avaniagrofoods.com. Remove redundant MX records to eliminate split-inbox delivery."
+      },
+      {
+        "priority": "P2 - HIGH",
+        "action": "Verify Google Sheets CRM Webhook",
+        "owner": "Sachin Shinde",
+        "instructions": "Ensure GOOGLE_SHEETS_WEBHOOK is set in Vercel environment variables with a live Google Apps Script deployment URL to maintain continuous durable offsite lead logging."
+      },
+      {
+        "priority": "P3 - MEDIUM",
+        "action": "Connect Primary Persistent Database",
+        "owner": "Sachin Shinde / Engineering",
+        "instructions": "Connect a dedicated serverless PostgreSQL (e.g., Supabase or Neon) or Upstash Redis instance to store all leads and quotations with transactional ACID guarantees."
+      },
+      {
+        "priority": "P4 - LOW",
+        "action": "Add CSV Export Button to Admin Portal",
+        "owner": "Engineering",
+        "instructions": "Add a one-click 'Export to CSV' button in AdminQuotations.jsx for rapid offline analysis."
+      }
+    ]
+  }
+}

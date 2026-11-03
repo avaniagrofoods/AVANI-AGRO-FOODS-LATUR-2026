@@ -45,24 +45,39 @@ import {
   createQuotationFromLead
 } from '../data/quotationModel'
 
+export const CRM_WORKFLOW_STAGES = [
+  { id: 'NEW_ENQUIRY', label: '1. New Enquiry', color: '#3b82f6', bg: '#eff6ff' },
+  { id: 'QUALIFIED', label: '2. Qualified', color: '#06b6d4', bg: '#ecfeff' },
+  { id: 'SUPPLIER_CONFIRMATION_PENDING', label: '3. Supplier Confirmation Pending', color: '#eab308', bg: '#fefce8' },
+  { id: 'SPECIFICATION_SHARED', label: '4. Specification Shared', color: '#8b5cf6', bg: '#f5f3ff' },
+  { id: 'QUOTATION_PREPARATION', label: '5. Quotation Preparation', color: '#f97316', bg: '#fff7ed' },
+  { id: 'QUOTATION_SENT', label: '6. Quotation Sent', color: '#10b981', bg: '#ecfdf5' },
+  { id: 'FOLLOWUP_PENDING', label: '7. Follow-up Pending', color: '#6366f1', bg: '#eef2ff' },
+  { id: 'SAMPLE_REQUESTED', label: '8. Sample Requested', color: '#ec4899', bg: '#fdf2f8' },
+  { id: 'NEGOTIATION', label: '9. Negotiation', color: '#f59e0b', bg: '#fffbeb' },
+  { id: 'ORDER_RECEIVED', label: '10. Order Received', color: '#22c55e', bg: '#f0fdf4' },
+  { id: 'LOST_NOT_QUALIFIED', label: '11. Lost / Not Qualified', color: '#6b7280', bg: '#f3f4f6' }
+]
+
 const STATUS_LIST = [
   'ALL',
+  'NEW_ENQUIRY',
+  'QUALIFIED',
+  'SUPPLIER_CONFIRMATION_PENDING',
+  'SPECIFICATION_SHARED',
+  'QUOTATION_PREPARATION',
+  'QUOTATION_SENT',
+  'FOLLOWUP_PENDING',
+  'SAMPLE_REQUESTED',
+  'NEGOTIATION',
+  'ORDER_RECEIVED',
+  'LOST_NOT_QUALIFIED',
   'DRAFT',
   'PROCESSOR_CHECK',
-  'PROCESSOR_CONFIRMED',
-  'COMMERCIAL_REVIEW',
   'READY_FOR_BUYER',
-  'READY_TO_SEND',
   'SENT_TO_BUYER',
-  'DELIVERY_PENDING',
-  'DELIVERED',
-  'OPENED',
-  'NEGOTIATION',
-  'REVISED',
   'ACCEPTED',
-  'PO_RECEIVED',
-  'SEND_FAILED',
-  'CANCELLED'
+  'PO_RECEIVED'
 ]
 
 const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AED']
@@ -1319,6 +1334,88 @@ export default function AdminQuotations() {
     alert(`Product Master for ${editMasterForm.productName} updated successfully! HS Code is now: ${editMasterForm.hsCode}`)
   }
 
+  // Phase 4: Secure CSV Export with RFC 4180 escaping and UTF-8 BOM
+  const handleExportCsv = (recordsToExport = null) => {
+    const list = recordsToExport || filteredQuotations
+    if (!list || list.length === 0) {
+      alert('No quotation or lead records available to export.')
+      return
+    }
+
+    const headers = [
+      'Inquiry ID',
+      'Submission Date',
+      'Buyer Name',
+      'Company',
+      'Country',
+      'Email',
+      'Product',
+      'Quantity',
+      'Destination',
+      'Incoterm',
+      'Application',
+      'Lead Status',
+      'Next Follow-Up Date',
+      'UTM Source',
+      'UTM Campaign'
+    ]
+
+    const escapeCsv = (val) => {
+      if (val === null || val === undefined) return '""'
+      const str = String(val).replace(/\r\n/g, ' ').replace(/\n/g, ' ').replace(/\r/g, ' ')
+      return `"${str.replace(/"/g, '""')}"`
+    }
+
+    const rows = list.map(q => {
+      const inquiryId = q.inquiryId || q.leadId || q.quoteId || 'N/A'
+      const date = q.date || q.inquiryDate || (q.createdAt ? String(q.createdAt).split('T')[0] : '')
+      const buyerName = q.buyerName || q.customerName || q.name || ''
+      const company = q.companyName || q.company || ''
+      const country = q.country || ''
+      const email = q.email || ''
+      const product = q.items?.[0]?.name || q.product || 'Moringa Leaf Powder'
+      const qty = q.items?.[0]?.quantity
+        ? `${q.items[0].quantity} ${q.items[0].unit || 'KG'}`
+        : (q.quantity ? String(q.quantity) : 'N/A')
+      const destination = q.destinationPort || q.destination || ''
+      const incoterm = q.incoterm || 'FOB Nhava Sheva (JNPT Mumbai)'
+      const application = q.intendedApplication || q.commercialRequirement?.specification || q.notes || 'Food & Beverage Processing'
+      const status = q.status || q.quotationStatus || 'NEW_ENQUIRY'
+      const nextFollowUp = q.nextFollowUpDate || q.followUp?.nextFollowUpDate || ''
+      const utmSource = q.utmSource || q.utm_source || q.source || 'Website_Contact_RFQ'
+      const utmCampaign = q.utmCampaign || q.utm_campaign || '-'
+
+      return [
+        escapeCsv(inquiryId),
+        escapeCsv(date),
+        escapeCsv(buyerName),
+        escapeCsv(company),
+        escapeCsv(country),
+        escapeCsv(email),
+        escapeCsv(product),
+        escapeCsv(qty),
+        escapeCsv(destination),
+        escapeCsv(incoterm),
+        escapeCsv(application),
+        escapeCsv(status),
+        escapeCsv(nextFollowUp),
+        escapeCsv(utmSource),
+        escapeCsv(utmCampaign)
+      ].join(',')
+    })
+
+    const csvContent = '\uFEFF' + [headers.map(h => `"${h}"`).join(','), ...rows].join('\r\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `Avani_B2B_Leads_Export_${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   // Filtered Quotations
   const filteredQuotations = quotations.filter(q => {
     const matchStatus = statusFilter === 'ALL' || q.status === statusFilter
@@ -1444,26 +1541,50 @@ export default function AdminQuotations() {
                     />
                   </div>
 
-                  {/* Status Pills */}
-                  <div style={{ display: 'flex', gap: 6, overflowX: 'auto' }}>
-                    {STATUS_LIST.slice(0, 7).map(st => (
-                      <button
-                        key={st}
-                        onClick={() => setStatusFilter(st)}
-                        className="btn"
-                        style={{
-                          padding: '6px 12px',
-                          fontSize: '0.75rem',
-                          borderRadius: 14,
-                          fontWeight: 700,
-                          background: statusFilter === st ? 'var(--color-primary)' : 'var(--color-bg-alt)',
-                          color: statusFilter === st ? 'white' : 'var(--color-text)',
-                          border: statusFilter === st ? '1px solid var(--color-primary)' : '1px solid var(--color-border)'
-                        }}
-                      >
-                        {st}
-                      </button>
-                    ))}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    {/* Status Pills */}
+                    <div style={{ display: 'flex', gap: 6, overflowX: 'auto', maxWidth: '100%' }}>
+                      {STATUS_LIST.slice(0, 8).map(st => (
+                        <button
+                          key={st}
+                          onClick={() => setStatusFilter(st)}
+                          className="btn"
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: '0.75rem',
+                            borderRadius: 14,
+                            fontWeight: 700,
+                            background: statusFilter === st ? 'var(--color-primary)' : 'var(--color-bg-alt)',
+                            color: statusFilter === st ? 'white' : 'var(--color-text)',
+                            border: statusFilter === st ? '1px solid var(--color-primary)' : '1px solid var(--color-border)'
+                          }}
+                        >
+                          {st.replace(/_/g, ' ')}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Phase 4: CSV Export Button */}
+                    <button
+                      onClick={() => handleExportCsv()}
+                      className="btn"
+                      style={{
+                        padding: '8px 14px',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        borderRadius: 8,
+                        background: '#10b981',
+                        color: 'white',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6
+                      }}
+                      title="Download RFC 4180 compliant CSV export with UTF-8 BOM"
+                    >
+                      <Download size={14} /> Export CSV ({filteredQuotations.length})
+                    </button>
                   </div>
                 </div>
               </div>

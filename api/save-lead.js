@@ -12,6 +12,7 @@
 import { calculateQuotation, parseQuantityKg, COMPANY_INFO } from './_lib/quotationEngine.js';
 import { matchProductMaster } from './_lib/productMaster.js';
 import { getClientIp, checkRateLimit, isAllowedOrigin } from './_lib/auth.js';
+import { saveLeadToSupabase, saveQuotationToSupabase, isSupabaseConfigured } from './_lib/supabaseClient.js';
 
 // In-memory cache for recent submissions to prevent double clicks (1 min window)
 const recentSubmissions = new Map();
@@ -301,103 +302,166 @@ export default async function handler(req, res) {
     // Store in recent deduplication cache
     recentSubmissions.set(dedupKey, { inquiryId, quoteId });
 
-    // 8. Integrations Status Tracking
+    // 8. Primary Durable Database Persistence (Supabase PostgreSQL)
+    let supabaseLeadPersistence = 'NOT_CONFIGURED_MISSING_CREDENTIALS';
+    let supabaseQuotePersistence = 'NOT_CONFIGURED_MISSING_CREDENTIALS';
+    let supabaseLeadDetails = null;
+
+    if (isSupabaseConfigured()) {
+      try {
+        const sLead = await saveLeadToSupabase(inquiryRecord);
+        supabaseLeadPersistence = sLead.persisted ? 'SUCCESS' : 'FAILED';
+        supabaseLeadDetails = sLead;
+      } catch (sErr) {
+        console.error('[Supabase Primary Persistence Error - Lead]:', sErr.message);
+        supabaseLeadPersistence = 'FAILED';
+      }
+
+      try {
+        const sQuote = await saveQuotationToSupabase(quotationRecord);
+        supabaseQuotePersistence = sQuote.persisted ? 'SUCCESS' : 'FAILED';
+      } catch (sqErr) {
+        console.error('[Supabase Primary Persistence Error - Quote]:', sqErr.message);
+        supabaseQuotePersistence = 'FAILED';
+      }
+    }
+
+    // 9. Integrations Status Tracking
     const integrations = {
+      supabaseLead: supabaseLeadPersistence,
+      supabaseQuotation: supabaseQuotePersistence,
       googleSheetsInquiry: 'PENDING',
       googleSheetsQuotation: 'PENDING',
       hubSpot: process.env.HUBSPOT_ACCESS_TOKEN ? 'PENDING' : 'NOT_CONFIGURED',
       zapier: process.env.ZAPIER_WEBHOOK_URL ? 'PENDING' : 'NOT_CONFIGURED',
       whatsapp: process.env.PICKY_ASSIST_URL ? 'PENDING' : 'NOT_CONFIGURED',
-      emailNotification: 'NOT_CONFIGURED_MISSING_RESEND_API_KEY'
+      emailNotification: 'NOT_CONFIGURED_MISSING_RESEND_API_KEY',
+      emailProviderAcceptance: 'NOT_ATTEMPTED',
+      emailDeliveryAlert: null
     };
+
+    // Helper for resilient Resend email dispatch with retry
+    async function sendResendEmailWithRetry(payload, maxRetries = 1) {
+      const RESEND_API_KEY = process.env.RESEND_API_KEY;
+      if (!RESEND_API_KEY) return { ok: false, status: 0, error: 'MISSING_KEY' };
+
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 7000);
+          const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${RESEND_API_KEY}`
+            },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          if (res.ok) {
+            const data = await res.json().catch(() => ({}));
+            return { ok: true, status: res.status, id: data.id };
+          }
+          if (res.status >= 500 && attempt < maxRetries) {
+            await new Promise(r => setTimeout(r, 400));
+            continue;
+          }
+          return { ok: false, status: res.status };
+        } catch (fetchErr) {
+          if (attempt < maxRetries) {
+            await new Promise(r => setTimeout(r, 400));
+            continue;
+          }
+          return { ok: false, error: fetchErr.message };
+        }
+      }
+      return { ok: false, error: 'RETRY_EXHAUSTED' };
+    }
 
     // Dispatch Transactional Email Notifications via Resend API (Internal Alert + Buyer Confirmation)
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
     if (RESEND_API_KEY) {
       try {
         // Internal notification to trade coordinator
-        const internalRes = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${RESEND_API_KEY}`
-          },
-          body: JSON.stringify({
-            from: 'AVANI AGRO FOODS <notifications@avaniagrofoods.com>',
-            to: ['sales@avaniagrofoods.com'],
-            subject: `New International B2B Enquiry – ${pm.productName} – ${country}`,
-            html: `
-              <h2>New International B2B Enquiry</h2>
-              <p><strong>Inquiry ID:</strong> ${inquiryId}</p>
-              <p><strong>Quotation ID:</strong> ${quote.quoteId}</p>
-              <p><strong>Date:</strong> ${timestamp}</p>
-              <hr/>
-              <h3>Buyer Profile</h3>
-              <p><strong>Name:</strong> ${name}</p>
-              <p><strong>Company:</strong> ${company}</p>
-              <p><strong>Buyer Role:</strong> ${buyerRole}</p>
-              <p><strong>Email:</strong> ${email}</p>
-              <p><strong>Phone / WhatsApp:</strong> ${phone || 'Not provided'}</p>
-              <p><strong>Country:</strong> ${country}</p>
-              <p><strong>Destination Port:</strong> ${destinationPort}</p>
-              <hr/>
-              <h3>Commercial Requirements</h3>
-              <p><strong>Product:</strong> ${pm.productName} (HS: ${pm.hsCode})</p>
-              <p><strong>Quantity:</strong> ${rawQuantity} ${quantityUnit} (${normalizedQuantity} KG)</p>
-              <p><strong>Incoterm:</strong> ${incoterm}</p>
-              <p><strong>Indicative Rate:</strong> ${currency} ${rate} / KG</p>
-              <p><strong>Estimated Grand Total:</strong> ${currency} ${quote.grandTotal}</p>
-              <p><strong>Timeline:</strong> ${purchaseTimeline || leadTime}</p>
-              <p><strong>Application:</strong> ${intendedApplication || 'Food Processing'}</p>
-              <p><strong>Packaging:</strong> ${packagingPreference || parsedReq.packaging}</p>
-              <p><strong>Documents Requested:</strong> ${documentsRequested || 'Standard COA'}</p>
-              <p><strong>Notes:</strong> ${rawRequirement || 'None'}</p>
-              <hr/>
-              <h3>Attribution</h3>
-              <p><strong>Source:</strong> ${source}</p>
-              <p><strong>Landing Page:</strong> ${landingPage || 'Direct'}</p>
-              <p><strong>UTM:</strong> source=${utmSource || '-'}, medium=${utmMedium || '-'}, campaign=${utmCampaign || '-'}</p>
-            `
-          })
+        const internalResult = await sendResendEmailWithRetry({
+          from: 'AVANI AGRO FOODS <notifications@avaniagrofoods.com>',
+          to: ['sales@avaniagrofoods.com'],
+          subject: `New International B2B Enquiry – ${pm.productName} – ${country}`,
+          html: `
+            <h2>New International B2B Enquiry</h2>
+            <p><strong>Inquiry ID:</strong> ${inquiryId}</p>
+            <p><strong>Quotation ID:</strong> ${quote.quoteId}</p>
+            <p><strong>Date:</strong> ${timestamp}</p>
+            <hr/>
+            <h3>Buyer Profile</h3>
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Company:</strong> ${company}</p>
+            <p><strong>Buyer Role:</strong> ${buyerRole}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Phone / WhatsApp:</strong> ${phone || 'Not provided'}</p>
+            <p><strong>Country:</strong> ${country}</p>
+            <p><strong>Destination Port:</strong> ${destinationPort}</p>
+            <hr/>
+            <h3>Commercial Requirements</h3>
+            <p><strong>Product:</strong> ${pm.productName} (HS: ${pm.hsCode})</p>
+            <p><strong>Quantity:</strong> ${rawQuantity} ${quantityUnit} (${normalizedQuantity} KG)</p>
+            <p><strong>Incoterm:</strong> ${incoterm}</p>
+            <p><strong>Indicative Rate:</strong> ${currency} ${rate} / KG</p>
+            <p><strong>Estimated Grand Total:</strong> ${currency} ${quote.grandTotal}</p>
+            <p><strong>Timeline:</strong> ${purchaseTimeline || leadTime}</p>
+            <p><strong>Application:</strong> ${intendedApplication || 'Food Processing'}</p>
+            <p><strong>Packaging:</strong> ${packagingPreference || parsedReq.packaging}</p>
+            <p><strong>Documents Requested:</strong> ${documentsRequested || 'Standard COA'}</p>
+            <p><strong>Notes:</strong> ${rawRequirement || 'None'}</p>
+            <hr/>
+            <h3>Attribution</h3>
+            <p><strong>Source:</strong> ${source}</p>
+            <p><strong>Landing Page:</strong> ${landingPage || 'Direct'}</p>
+            <p><strong>UTM:</strong> source=${utmSource || '-'}, medium=${utmMedium || '-'}, campaign=${utmCampaign || '-'}</p>
+          `
         });
 
         // Buyer acknowledgement email
-        const buyerRes = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${RESEND_API_KEY}`
-          },
-          body: JSON.stringify({
-            from: 'AVANI AGRO FOODS <sales@avaniagrofoods.com>',
-            to: [email],
-            subject: 'We Have Received Your Enquiry – AVANI AGRO FOODS',
-            html: `
-              <h2>Thank you for contacting AVANI AGRO FOODS</h2>
-              <p>Dear ${name},</p>
-              <p>We have successfully received your commercial enquiry for <strong>${pm.productName}</strong>.</p>
-              <p><strong>Inquiry Reference:</strong> ${inquiryId}</p>
-              <p><strong>Indicative Quotation Reference:</strong> ${quote.quoteId}</p>
-              <p>Our Trade Coordinator, Sachin Shinde, will review your technical specifications, batch availability with our vetted processing partners, and prepare a formal proforma quotation within 24 hours.</p>
-              <h3>Enquiry Summary</h3>
-              <ul>
-                <li><strong>Product:</strong> ${pm.productName}</li>
-                <li><strong>Quantity:</strong> ${rawQuantity} ${quantityUnit} (${normalizedQuantity} KG)</li>
-                <li><strong>Incoterm & Destination:</strong> ${incoterm} - ${destinationPort}</li>
-                <li><strong>Indicative Pricing Basis:</strong> ${currency} ${rate}/KG (${currency} ${quote.grandTotal})</li>
-              </ul>
-              <p>If you have urgent questions or wish to expedite batch samples, you may reach our trade desk directly on WhatsApp at <a href="https://wa.me/917219053645">+91 7219053645</a>.</p>
-              <br/>
-              <p>Best regards,</p>
-              <p><strong>Sachin Shinde</strong><br/>Trade Coordinator<br/>AVANI AGRO FOODS<br/>Latur, Maharashtra, India<br/>Email: sales@avaniagrofoods.com<br/>Web: https://www.avaniagrofoods.com</p>
-            `
-          })
+        const buyerResult = await sendResendEmailWithRetry({
+          from: 'AVANI AGRO FOODS <sales@avaniagrofoods.com>',
+          to: [email],
+          subject: 'We Have Received Your Enquiry – AVANI AGRO FOODS',
+          html: `
+            <h2>Thank you for contacting AVANI AGRO FOODS</h2>
+            <p>Dear ${name},</p>
+            <p>We have successfully received your commercial enquiry for <strong>${pm.productName}</strong>.</p>
+            <p><strong>Inquiry Reference:</strong> ${inquiryId}</p>
+            <p><strong>Indicative Quotation Reference:</strong> ${quote.quoteId}</p>
+            <p>Our Trade Coordinator, Sachin Shinde, will review your technical specifications, batch availability with our vetted processing partners, and prepare a formal proforma quotation within 24 hours.</p>
+            <h3>Enquiry Summary</h3>
+            <ul>
+              <li><strong>Product:</strong> ${pm.productName}</li>
+              <li><strong>Quantity:</strong> ${rawQuantity} ${quantityUnit} (${normalizedQuantity} KG)</li>
+              <li><strong>Incoterm & Destination:</strong> ${incoterm} - ${destinationPort}</li>
+              <li><strong>Indicative Pricing Basis:</strong> ${currency} ${rate}/KG (${currency} ${quote.grandTotal})</li>
+            </ul>
+            <p>If you have urgent questions or wish to expedite batch samples, you may reach our trade desk directly on WhatsApp at <a href="https://wa.me/917219053645">+91 7219053645</a>.</p>
+            <br/>
+            <p>Best regards,</p>
+            <p><strong>Sachin Shinde</strong><br/>Trade Coordinator<br/>AVANI AGRO FOODS<br/>Latur, Maharashtra, India<br/>Email: sales@avaniagrofoods.com<br/>Web: https://www.avaniagrofoods.com</p>
+          `
         });
 
-        integrations.emailNotification = (internalRes.ok && buyerRes.ok) ? 'SUCCESS' : 'PARTIAL_OR_FAILED';
+        if (internalResult.ok && buyerResult.ok) {
+          integrations.emailNotification = 'SUCCESS';
+          integrations.emailProviderAcceptance = 'ACCEPTED_BY_RESEND_API';
+        } else {
+          integrations.emailNotification = 'PARTIAL_OR_FAILED';
+          integrations.emailProviderAcceptance = internalResult.ok ? 'INTERNAL_ONLY' : 'FAILED';
+          integrations.emailDeliveryAlert = 'Email notification to buyer or sales desk failed. Inquiry remains safely stored in database.';
+          console.warn('[Resend Dispatch Notice]: Email delivery incomplete, but lead record preserved safely.');
+        }
       } catch (eErr) {
         console.error('[Resend Email Dispatch Error]:', eErr.message);
         integrations.emailNotification = 'FAILED';
+        integrations.emailDeliveryAlert = 'Email notification service unreachable. Inquiry preserved in primary database.';
       }
     }
 
@@ -490,8 +554,11 @@ export default async function handler(req, res) {
       quote,
       quotationDraft: quote,
       notificationDeliveryStatus: {
-        leadPersistence: 'SUCCESS',
+        leadPersistence: supabaseLeadPersistence === 'SUCCESS' ? 'PERSISTED_SUPABASE' : (integrations.googleSheetsInquiry === 'SUCCESS' ? 'PERSISTED_SECONDARY_LEDGER' : 'PERSISTED_LOCAL_AND_EMAIL'),
+        supabasePersistence: supabaseLeadPersistence,
         emailNotification: integrations.emailNotification,
+        emailProviderAcceptance: integrations.emailProviderAcceptance,
+        emailDeliveryAlert: integrations.emailDeliveryAlert,
         webhooks: {
           googleSheetsInquiry: integrations.googleSheetsInquiry,
           googleSheetsQuotation: integrations.googleSheetsQuotation,
