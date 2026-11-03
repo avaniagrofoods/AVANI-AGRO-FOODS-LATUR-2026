@@ -5,6 +5,7 @@
 
 import { validateLeadPayload, createLeadRecord } from './_lib/leadModel.js';
 import { getClientIp, checkRateLimit, isAllowedOrigin } from './_lib/auth.js';
+import { saveLeadToSupabase, isSupabaseConfigured } from './_lib/supabaseClient.js';
 
 // In-memory deduplication cache (60s window)
 const recentLeadSubmissions = new Map();
@@ -102,12 +103,25 @@ export default async function handler(req, res) {
       timestamp: Date.now()
     });
 
+    // 8.1 Primary Database Persistence (Supabase PostgreSQL)
+    let supabasePersistence = 'NOT_CONFIGURED_MISSING_CREDENTIALS';
+    if (isSupabaseConfigured()) {
+      try {
+        const sRes = await saveLeadToSupabase(lead);
+        supabasePersistence = sRes.persisted ? 'SUCCESS' : 'FAILED';
+      } catch (sErr) {
+        console.error('[Leads API] Supabase persistence notice:', sErr.message);
+        supabasePersistence = 'FAILED';
+      }
+    }
+
     // 9. Return Structured Success Response (strictly preserving commercial data without PII leakage)
     return res.status(201).json({
       success: true,
       message: 'RFQ received successfully.',
       leadId: lead.leadId,
       lead,
+      supabasePersistence,
       nextStep: 'Our team will review your requirement and contact you regarding specifications, availability, sample/COA requirements, and quotation.'
     });
 
