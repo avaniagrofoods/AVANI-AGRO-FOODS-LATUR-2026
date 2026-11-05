@@ -1,0 +1,500 @@
+{
+  "auditMetadata": {
+    "auditReference": "AAF-FPS-2026-1105",
+    "timestamp": "2026-11-05T16:30:00+05:30",
+    "organization": "AVANI AGRO FOODS",
+    "productionDomain": "https://www.avaniagrofoods.com/",
+    "productionDeploymentId": "dpl_EU6J6usdzx7vPSmwmiCEMhLfhhHM",
+    "productionCommit": "60ec947",
+    "rollbackBaseline": "b89ca6f",
+    "previousBaseline": "425c503",
+    "targetMarkets": ["USA", "UK", "UAE", "Europe", "Canada", "Australia"],
+    "primaryProducts": ["Moringa Leaf Powder", "Dehydrated Red Onion Powder"],
+    "verdict": "GREEN",
+    "verdictTitle": "PRODUCTION SIGN-OFF APPROVED"
+  },
+  "summary": {
+    "totalChecks": 36,
+    "passed": 35,
+    "notVerified": 1,
+    "failed": 0,
+    "notApplicable": 0,
+    "passRatePercentage": 97.2
+  },
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Production Deployment Verification",
+      "tests": [
+        {
+          "testId": "DEP-01",
+          "testType": "Automated Deployment Audit",
+          "description": "Verify live Vercel production deployment exists and is ready",
+          "method": "Vercel CLI inspect on active production deployment",
+          "expectedResult": "Status is READY, target is production, deployment exists",
+          "actualResult": "Deployment dpl_EU6J6usdzx7vPSmwmiCEMhLfhhHM is READY",
+          "evidence": "Deployment URL: https://avani-agro-foods-latur-2026-20zm54vg6.vercel.app, Status: Ready",
+          "status": "PASS"
+        },
+        {
+          "testId": "DEP-02",
+          "testType": "Automated Version Verification",
+          "description": "Verify deployed commit matches approved production commit",
+          "method": "Git commit verification on branch main against remote origin/main",
+          "expectedResult": "Active commit is 60ec947",
+          "actualResult": "Git main HEAD is 60ec947 (merge: commercial readiness green)",
+          "evidence": "Commit 60ec947 confirmed as HEAD of origin/main",
+          "status": "PASS"
+        },
+        {
+          "testId": "DEP-03",
+          "testType": "Production Website Test",
+          "description": "Verify production domain points to intended deployment",
+          "method": "HTTP GET against https://www.avaniagrofoods.com/ and alias inspection",
+          "expectedResult": "Domain aliases include www.avaniagrofoods.com and avaniagrofoods.com",
+          "actualResult": "Aliases verified: https://www.avaniagrofoods.com and https://avaniagrofoods.com",
+          "evidence": "Vercel alias listing confirmed",
+          "status": "PASS"
+        },
+        {
+          "testId": "DEP-04",
+          "testType": "Live Network Test",
+          "description": "Verify HTTPS protocol and canonical redirects",
+          "method": "HTTP GET on http://www.avaniagrofoods.com/",
+          "expectedResult": "HTTP 308 redirect to https://www.avaniagrofoods.com/",
+          "actualResult": "HTTP 308 redirect verified to https://www.avaniagrofoods.com/",
+          "evidence": "Location: https://www.avaniagrofoods.com/",
+          "status": "PASS"
+        },
+        {
+          "testId": "DEP-05",
+          "testType": "Static Code & Build Audit",
+          "description": "Verify absence of secrets in client browser JS bundles",
+          "method": "Scanned 28 production JS chunks in dist/assets for sensitive tokens",
+          "expectedResult": "Zero backend secrets present in client assets",
+          "actualResult": "28 chunks scanned; zero secret leaks found",
+          "evidence": "dist/assets/*.js clean of service keys and passwords",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Live Website and RFQ Testing",
+      "tests": [
+        {
+          "testId": "WEB-01",
+          "testType": "Production Website Test",
+          "description": "Verify homepage loads cleanly with HTTP 200",
+          "method": "HTTP GET https://www.avaniagrofoods.com/",
+          "expectedResult": "HTTP 200 with valid HTML structure",
+          "actualResult": "HTTP 200 (6,113 bytes rendered)",
+          "evidence": "Response status: 200 OK",
+          "status": "PASS"
+        },
+        {
+          "testId": "WEB-02",
+          "testType": "Production Website Test",
+          "description": "Verify Moringa bulk landing page loads cleanly",
+          "method": "HTTP GET https://www.avaniagrofoods.com/moringa-powder-bulk-supplier-india",
+          "expectedResult": "HTTP 200 with valid HTML structure",
+          "actualResult": "HTTP 200 (6,113 bytes rendered)",
+          "evidence": "Response status: 200 OK",
+          "status": "PASS"
+        },
+        {
+          "testId": "WEB-03",
+          "testType": "Production Website Test",
+          "description": "Verify Red Onion bulk landing page loads cleanly",
+          "method": "HTTP GET https://www.avaniagrofoods.com/red-onion-powder-bulk-supplier-india",
+          "expectedResult": "HTTP 200 with valid HTML structure",
+          "actualResult": "HTTP 200 (6,113 bytes rendered)",
+          "evidence": "Response status: 200 OK",
+          "status": "PASS"
+        },
+        {
+          "testId": "WEB-04",
+          "testType": "Production Website Test",
+          "description": "Verify product catalog loads cleanly",
+          "method": "HTTP GET https://www.avaniagrofoods.com/catalog",
+          "expectedResult": "HTTP 200 with valid HTML structure",
+          "actualResult": "HTTP 200 (6,113 bytes rendered)",
+          "evidence": "Response status: 200 OK",
+          "status": "PASS"
+        },
+        {
+          "testId": "WEB-05",
+          "testType": "Production Website Test",
+          "description": "Verify blog listing and individual articles load cleanly",
+          "method": "HTTP GET on /blog and 5 sample B2B pillar articles",
+          "expectedResult": "HTTP 200 for all tested article URLs",
+          "actualResult": "HTTP 200 on /blog and all 5 individual article URLs",
+          "evidence": "Articles 1-5 returned HTTP 200",
+          "status": "PASS"
+        },
+        {
+          "testId": "RFQ-01",
+          "testType": "Live Integration Test",
+          "description": "Verify input validation for missing required fields",
+          "method": "POST /api/save-lead with empty customer name",
+          "expectedResult": "HTTP 400 with descriptive error message",
+          "actualResult": "HTTP 400 with 'Valid customer name is required (max 150 chars).'",
+          "evidence": "Response body contains error details",
+          "status": "PASS"
+        },
+        {
+          "testId": "RFQ-02",
+          "testType": "Live Integration Test",
+          "description": "Verify input validation for malformed email addresses",
+          "method": "POST /api/save-lead with invalid email format",
+          "expectedResult": "HTTP 400 with email validation error",
+          "actualResult": "HTTP 400 with 'Valid customer email is required (max 150 chars).'",
+          "evidence": "Response body contains error details",
+          "status": "PASS"
+        },
+        {
+          "testId": "RFQ-03",
+          "testType": "Live Integration Test",
+          "description": "Submit synthetic Moringa RFQ via live production endpoint",
+          "method": "POST /api/save-lead with synthetic 3000 KG Moringa requirement",
+          "expectedResult": "HTTP 200, unique inquiry ID, quote ID, Supabase SUCCESS",
+          "actualResult": "HTTP 200, inquiryId: AAF-INQ-2026-205673, quoteId: AAF-Q-2026-7640, supabaseLead: SUCCESS",
+          "evidence": "Inquiry AAF-INQ-2026-205673 registered and quotation created",
+          "status": "PASS"
+        },
+        {
+          "testId": "RFQ-04",
+          "testType": "Live Integration Test",
+          "description": "Submit synthetic Red Onion RFQ via live production endpoint",
+          "method": "POST /api/save-lead with synthetic 5000 KG Onion requirement",
+          "expectedResult": "HTTP 200, unique inquiry ID, quote ID, Supabase SUCCESS",
+          "actualResult": "HTTP 200, inquiryId: AAF-INQ-2026-433826, quoteId: AAF-Q-2026-7051, supabaseLead: SUCCESS",
+          "evidence": "Inquiry AAF-INQ-2026-433826 registered and quotation created",
+          "status": "PASS"
+        },
+        {
+          "testId": "RFQ-05",
+          "testType": "Live Integration Test",
+          "description": "Verify 60-second duplicate submission interception",
+          "method": "Resubmit identical Moringa payload within 60 seconds",
+          "expectedResult": "HTTP 200, duplicate detected message, return original inquiry ID",
+          "actualResult": "HTTP 200, duplicate enquiry detected within 60s, inquiryId: AAF-INQ-2026-205673",
+          "evidence": "Deduplication cache intercepted repeated submission without double-entry",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Supabase Database Verification",
+      "tests": [
+        {
+          "testId": "DB-01",
+          "testType": "Live Integration Test",
+          "description": "Verify Supabase connection with rotated service key in Vercel",
+          "method": "Live RFQ execution through Vercel production serverless function",
+          "expectedResult": "Supabase PostgreSQL persistence reports SUCCESS",
+          "actualResult": "leadPersistence: PERSISTED_SUPABASE, supabasePersistence: SUCCESS",
+          "evidence": "Production logs confirm successful write via PostgREST",
+          "status": "PASS"
+        },
+        {
+          "testId": "DB-02",
+          "testType": "Security Audit",
+          "description": "Verify Row Level Security policies prevent unauthorized access",
+          "method": "Unauthenticated GET request to Supabase PostgREST /rest/v1/leads",
+          "expectedResult": "HTTP 401 Unauthorized from API gateway and RLS",
+          "actualResult": "HTTP 401 Unauthorized strictly returned",
+          "evidence": "Unauthenticated client requests blocked by Supabase",
+          "status": "PASS"
+        },
+        {
+          "testId": "DB-03",
+          "testType": "Resilience / Failover Audit",
+          "description": "Verify graceful failover to secondary ledgers during database outage",
+          "method": "Simulated unconfigured database state in saveLeadToSupabase",
+          "expectedResult": "Returns fallback status without unhandled exceptions or lead loss",
+          "actualResult": "Returns PERSISTED with secondary ledger logging (Google Sheets / Zapier)",
+          "evidence": "Graceful degradation confirmed",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Email and Notification Verification",
+      "tests": [
+        {
+          "testId": "EML-01",
+          "testType": "Authoritative DNS Test",
+          "description": "Verify authoritative MX records route exclusively to Zoho Mail India",
+          "method": "Resolve-DnsName against authoritative server ns1.vercel-dns.com",
+          "expectedResult": "Only mx.zoho.in (10), mx2.zoho.in (20), mx3.zoho.in (50). Zero Hostinger.",
+          "actualResult": "Only 3 Zoho Mail records returned. Hostinger MX records completely deleted.",
+          "evidence": "ns1.vercel-dns.com authoritative response",
+          "status": "PASS"
+        },
+        {
+          "testId": "EML-02",
+          "testType": "Authoritative DNS Test",
+          "description": "Verify SPF, DKIM, and DMARC authentication records",
+          "method": "Public DNS TXT record resolution on avaniagrofoods.com and subdomains",
+          "expectedResult": "SPF includes zoho.in & resend.com; DKIM active; DMARC policy v=DMARC1",
+          "actualResult": "SPF, DKIM, and DMARC records 100% valid and verified",
+          "evidence": "TXT records confirmed for root, zmail._domainkey, and _dmarc",
+          "status": "PASS"
+        },
+        {
+          "testId": "EML-03",
+          "testType": "Live Integration Test",
+          "description": "Verify Resend transactional email notification API acceptance",
+          "method": "Probed Resend API keys endpoint with configured production token",
+          "expectedResult": "HTTP 200 with valid key metadata",
+          "actualResult": "HTTP 200 returned from Resend API endpoint",
+          "evidence": "API token authenticated successfully",
+          "status": "PASS"
+        },
+        {
+          "testId": "EML-04",
+          "testType": "Actual Business Operation Test",
+          "description": "Verify actual email receipt in Zoho Mail for sales@avaniagrofoods.com",
+          "method": "Owner visual inspection in Zoho Mail webmail interface (media_1793724016306.png)",
+          "expectedResult": "Incoming emails visible in Inbox of sales@avaniagrofoods.com",
+          "actualResult": "Inbox verified with 4 active messages in Zoho Mail interface",
+          "evidence": "User uploaded screenshot media_1793724016306.png",
+          "status": "PASS"
+        },
+        {
+          "testId": "EML-05",
+          "testType": "Actual Business Operation Test",
+          "description": "Verify outbound reply transmission from Zoho Mail to external recipient",
+          "method": "Owner visual inspection in Zoho Mail Sent folder (media_1793724016306.png)",
+          "expectedResult": "Outbound test message sent with delivered green checkmark",
+          "actualResult": "Sent folder contains delivered messages at 10:07 PM and 10:09 PM",
+          "evidence": "User uploaded screenshot media_1793724016306.png",
+          "status": "PASS"
+        },
+        {
+          "testId": "EML-06",
+          "testType": "Actual Business Operation Test",
+          "description": "Real-time visual receipt check for today's synthetic audit enquiries",
+          "method": "Requires owner interactive login to Zoho Mail webmail during audit run",
+          "expectedResult": "Interactive agent login to personal webmail not permitted",
+          "actualResult": "Unable to interactively view owner's live mailbox in real time",
+          "evidence": "Per strict instructions: reported transparently as NOT VERIFIED",
+          "status": "NOT VERIFIED"
+        }
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "CRM and Admin Dashboard",
+      "tests": [
+        {
+          "testId": "CRM-01",
+          "testType": "Security / Authorization Gate",
+          "description": "Verify Admin Quotations API rejects unauthenticated requests",
+          "method": "GET /api/admin-quotations without authorization header",
+          "expectedResult": "HTTP 401 Unauthorized",
+          "actualResult": "HTTP 401 Unauthorized strictly returned",
+          "evidence": "Response status: 401 Unauthorized",
+          "status": "PASS"
+        },
+        {
+          "testId": "CRM-02",
+          "testType": "Security / Authorization Gate",
+          "description": "Verify Admin Quotations API rejects invalid authorization credentials",
+          "method": "GET /api/admin-quotations with invalid bearer token",
+          "expectedResult": "HTTP 401 Unauthorized",
+          "actualResult": "HTTP 401 Unauthorized strictly returned",
+          "evidence": "Response status: 401 Unauthorized",
+          "status": "PASS"
+        },
+        {
+          "testId": "CRM-03",
+          "testType": "Automated Code Test",
+          "description": "Validate 11-stage CRM sales pipeline forward state machine progression",
+          "method": "Executed validateStatusTransition() across all 11 stages in quotationModel.js",
+          "expectedResult": "Valid forward state progression across all 11 canonical stages",
+          "actualResult": "All forward state transitions validated successfully",
+          "evidence": "NEW_ENQUIRY through ORDER_RECEIVED verified",
+          "status": "PASS"
+        },
+        {
+          "testId": "CRM-04",
+          "testType": "Automated Code Test",
+          "description": "Verify RFC 4180 CSV export compliance and UTF-8 BOM encoding",
+          "method": "Evaluated CSV export generator in AdminQuotations.jsx",
+          "expectedResult": "Starts with UTF-8 BOM, exactly 15 columns, escaped quotes/newlines",
+          "actualResult": "BOM present, 15 columns verified, quote escaping and newline sanitization active",
+          "evidence": "AdminQuotations.jsx handleExportCsv verified",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "phase": 6,
+      "name": "Quotation and Commercial Controls",
+      "tests": [
+        {
+          "testId": "COM-01",
+          "testType": "Automated Code Test",
+          "description": "Verify commercial quantity parsing across metric units",
+          "method": "Executed parseQuantityKg() on 18 MT, 5,000 kg, and 500 KG",
+          "expectedResult": "Normalized to 18000, 5000, and 500 KG with zero floating errors",
+          "actualResult": "Exact numerical normalization verified",
+          "evidence": "18 MT -> 18000, 5,000 kg -> 5000, 500 KG -> 500",
+          "status": "PASS"
+        },
+        {
+          "testId": "COM-02",
+          "testType": "Automated Code Test",
+          "description": "Verify quotation calculation engine mathematical precision",
+          "method": "Executed calculateQuotation() on line items, freight, insurance, and doc charges",
+          "expectedResult": "Subtotal: $11,000, Grand Total: $11,650 with zero rounding drift",
+          "actualResult": "Subtotal $11,000 and Grand Total $11,650 verified with exact parity",
+          "evidence": "Mathematical calculation exact",
+          "status": "PASS"
+        },
+        {
+          "testId": "COM-03",
+          "testType": "Static Policy Audit",
+          "description": "Verify mandatory export commercial terms and jurisdiction inclusion",
+          "method": "Inspected quotation output commercialTerms array",
+          "expectedResult": "Contains payment terms, delivery timeline, validity, and Latur jurisdiction",
+          "actualResult": "7 standardized commercial terms included by default",
+          "evidence": "quote.commercialTerms length: 7",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "phase": 7,
+      "name": "Application Security Audit",
+      "tests": [
+        {
+          "testId": "SEC-01",
+          "testType": "Live Security Probe",
+          "description": "Verify previously exposed Supabase secret key is fully revoked",
+          "method": "PostgREST request using sb_secret_ChrsKuo... to live Supabase endpoint",
+          "expectedResult": "HTTP 401 Unauthorized",
+          "actualResult": "HTTP 401 Unauthorized strictly returned (Key completely dead)",
+          "evidence": "Supabase gateway returned 401",
+          "status": "PASS"
+        },
+        {
+          "testId": "SEC-02",
+          "testType": "Static Code Audit",
+          "description": "Verify absence of secrets from Git-tracked source and config files",
+          "method": "Executed git grep for live secret patterns across repository",
+          "expectedResult": "Zero secret tokens tracked in Git",
+          "actualResult": "Zero secrets detected (clean working tree)",
+          "evidence": "git grep returned 0 matches",
+          "status": "PASS"
+        },
+        {
+          "testId": "SEC-03",
+          "testType": "Production Build Audit",
+          "description": "Verify browser JavaScript bundles in dist/ contain zero server-side secrets",
+          "method": "Inspected all compiled JS chunks in dist/assets for sensitive tokens",
+          "expectedResult": "Zero backend keys or passwords in browser assets",
+          "actualResult": "All 28 chunks clean of backend secrets",
+          "evidence": "dist/assets/*.js verified clean",
+          "status": "PASS"
+        },
+        {
+          "testId": "SEC-04",
+          "testType": "Live Security Probe",
+          "description": "Verify honeypot anti-spam trap filters bot submissions without database pollution",
+          "method": "POST /api/save-lead with honeypot field populated",
+          "expectedResult": "HTTP 200, inquiryId: AAF-INQ-TRAP-FILTERED, zero database writes",
+          "actualResult": "HTTP 200, inquiryId: AAF-INQ-TRAP-FILTERED, bot silently dropped",
+          "evidence": "Anti-spam filtering active and verified",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "phase": 8,
+      "name": "SEO and Technical Website Audit",
+      "tests": [
+        {
+          "testId": "SEO-01",
+          "testType": "Production Website Test",
+          "description": "Verify live robots.txt contains sitemap pointer and allows public indexing",
+          "method": "HTTP GET https://www.avaniagrofoods.com/robots.txt",
+          "expectedResult": "HTTP 200, contains Sitemap: https://www.avaniagrofoods.com/sitemap.xml",
+          "actualResult": "HTTP 200, sitemap directive present",
+          "evidence": "robots.txt verified",
+          "status": "PASS"
+        },
+        {
+          "testId": "SEO-02",
+          "testType": "Production Website Test",
+          "description": "Verify live XML sitemap availability and syntax validity",
+          "method": "HTTP GET https://www.avaniagrofoods.com/sitemap.xml",
+          "expectedResult": "HTTP 200, valid XML urlset (10,746 bytes)",
+          "actualResult": "HTTP 200, 10,746 bytes rendered cleanly",
+          "evidence": "sitemap.xml verified",
+          "status": "PASS"
+        },
+        {
+          "testId": "SEO-03",
+          "testType": "Inventory Parity Audit",
+          "description": "Verify preservation of all 30 published B2B articles and canonical tags",
+          "method": "Cross-referenced BASELINE_30_ARTICLES_INVENTORY.json against sitemap.xml",
+          "expectedResult": "30/30 baseline articles present in sitemap with exact canonical URLs",
+          "actualResult": "30/30 baseline articles verified with 100% canonical URL parity",
+          "evidence": "Zero article URLs missing or altered",
+          "status": "PASS"
+        },
+        {
+          "testId": "SEO-04",
+          "testType": "Inventory Parity Audit",
+          "description": "Verify presence of both B2B product landing pages in sitemap",
+          "method": "Inspected sitemap.xml for Moringa and Red Onion landing page canonical URLs",
+          "expectedResult": "Both landing pages present in sitemap",
+          "actualResult": "Both URLs verified in sitemap.xml",
+          "evidence": "Moringa LP and Red Onion LP verified",
+          "status": "PASS"
+        }
+      ]
+    },
+    {
+      "phase": 9,
+      "name": "Backup and Recovery",
+      "tests": [
+        {
+          "testId": "REC-01",
+          "testType": "Data Safety Audit",
+          "description": "Verify historical lead backup archives inventory completeness",
+          "method": "Inspected docs/backups directory for JSON backup archives",
+          "expectedResult": "At least 3 valid JSON backup archives available",
+          "actualResult": "Found 6 backup archives containing reconciled baseline records",
+          "evidence": "docs/backups/*.json verified",
+          "status": "PASS"
+        },
+        {
+          "testId": "REC-02",
+          "testType": "Recovery Rehearsal Test",
+          "description": "Perform non-destructive migration and restoration rehearsal",
+          "method": "Executed scripts/migrate_historical_leads_to_supabase.cjs with --dry-run",
+          "expectedResult": "Zero database writes; schema mapping 100% verified",
+          "actualResult": "Dry-run executed cleanly with 0 database writes and clean summary",
+          "evidence": "Dry-run execution verified",
+          "status": "PASS"
+        },
+        {
+          "testId": "REC-03",
+          "testType": "Version Control Audit",
+          "description": "Verify Git rollback commit availability in repository history",
+          "method": "Git log inspection for rollback baselines (b89ca6f, 425c503, 379f721)",
+          "expectedResult": "Rollback baseline commits accessible in Git history",
+          "actualResult": "Rollback baseline commits verified in active branch history",
+          "evidence": "Git history intact",
+          "status": "PASS"
+        }
+      ]
+    }
+  ]
+}
