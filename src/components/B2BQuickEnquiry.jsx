@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Send, CheckCircle2, Shield, Loader2, X, Phone, Mail, Globe, Package, Building2 } from 'lucide-react'
+import { Send, CheckCircle2, Shield, Loader2, X, Phone, Mail, Globe, Package, Building2, AlertTriangle } from 'lucide-react'
 import { BUSINESS_INFO, WHATSAPP_NUMBER } from '../data/links'
 import { getAttributionData } from '../lib/utmTracker'
 import { trackRfqStarted, trackRfqSubmitSuccess, trackRfqValidationFailure } from '../lib/analytics'
@@ -76,23 +76,29 @@ export default function B2BQuickEnquiry({
         body: JSON.stringify(payload)
       })
 
-      const data = await res.json()
-      if (res.ok && data.success !== false) {
+      let data = null
+      try {
+        data = await res.json()
+      } catch (jsonErr) {
+        throw new Error('Server returned an unreadable response.')
+      }
+
+      if (res.ok && data.success && data.inquiryId) {
         setSuccess(true)
         setLeadMeta(data)
+        setError('')
         trackRfqSubmitSuccess(formData.product, formData.quantity, formData.country, sourceContext)
       } else {
-        // Fallback to direct client mailto / WhatsApp confirmation if backend is offline
-        setSuccess(true)
-        setLeadMeta({ inquiryId: 'AAF-INQ-' + Math.floor(100000 + Math.random() * 900000) })
-        trackRfqSubmitSuccess(formData.product, formData.quantity, formData.country, sourceContext)
+        const errMsg = data?.error || 'Enquiry submission could not be confirmed by our trade system. Your details are preserved below. Please retry or contact Trade Coordinator Sachin Shinde directly.'
+        setError(errMsg)
+        setSuccess(false)
+        setLeadMeta(null)
       }
     } catch (err) {
-      // Graceful offline fallback
-      console.warn('Backend inquiry dispatch error, using client fallback:', err)
-      setSuccess(true)
-      setLeadMeta({ inquiryId: 'AAF-INQ-' + Math.floor(100000 + Math.random() * 900000) })
-      trackRfqSubmitSuccess(formData.product, formData.quantity, formData.country, sourceContext)
+      console.warn('Backend inquiry dispatch error:', err)
+      setError('A network connection issue occurred while submitting your enquiry. Your details are preserved below. Please retry or contact Trade Coordinator Sachin Shinde directly on WhatsApp or Email.')
+      setSuccess(false)
+      setLeadMeta(null)
     } finally {
       setLoading(false)
     }
@@ -173,8 +179,66 @@ export default function B2BQuickEnquiry({
           </div>
 
           {error && (
-            <div style={{ padding: '10px 16px', background: '#fee2e2', color: '#991b1b', borderRadius: 8, fontSize: '0.82rem', marginBottom: 16 }}>
-              {error}
+            <div 
+              role="alert"
+              style={{
+                padding: '16px 20px',
+                background: '#fff5f5',
+                border: '2px solid #ef4444',
+                borderRadius: 12,
+                color: '#991b1b',
+                marginBottom: 20,
+                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.08)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <AlertTriangle size={20} color="#dc2626" />
+                <strong style={{ fontSize: '0.95rem', color: '#991b1b' }}>Submission Unconfirmed</strong>
+              </div>
+              <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', lineHeight: 1.45, color: '#4b5563' }}>
+                {error}
+              </p>
+              <p style={{ margin: '0 0 12px 0', fontSize: '0.8rem', color: '#6b7280' }}>
+                Your form input is preserved below. You may retry or contact Trade Coordinator Sachin Shinde directly:
+              </p>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <a
+                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Namaste Sachin, I tried submitting an enquiry on your website for ${formData.product} (${formData.quantity}) to ${formData.country || 'International'}, but encountered a network error. Company: ${formData.companyName || 'N/A'}. Please advise on quote.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    background: '#25D366',
+                    color: 'white',
+                    fontWeight: 700,
+                    fontSize: '0.8rem',
+                    padding: '8px 14px',
+                    borderRadius: 6,
+                    textDecoration: 'none'
+                  }}
+                >
+                  <Phone size={14} /> WhatsApp Desk
+                </a>
+                <a
+                  href={`mailto:${BUSINESS_INFO.email}?subject=${encodeURIComponent(`Urgent RFQ: ${formData.product} - ${formData.companyName || formData.fullName}`)}&body=${encodeURIComponent(`Dear Sachin Shinde,\n\nI was attempting to submit an export inquiry on your website for ${formData.product} (${formData.quantity}).\n\nBuyer: ${formData.fullName}\nCompany: ${formData.companyName}\nEmail: ${formData.email}\nPhone: ${formData.phone || 'N/A'}\nCountry: ${formData.country}\nNotes: ${formData.message || 'Please provide quotation.'}\n\nPlease confirm availability and FOB/CIF pricing.`)}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    background: '#1a4d2e',
+                    color: 'white',
+                    fontWeight: 700,
+                    fontSize: '0.8rem',
+                    padding: '8px 14px',
+                    borderRadius: 6,
+                    textDecoration: 'none'
+                  }}
+                >
+                  <Mail size={14} /> Direct Email
+                </a>
+              </div>
             </div>
           )}
 

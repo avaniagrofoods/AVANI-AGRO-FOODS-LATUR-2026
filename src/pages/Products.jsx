@@ -2,10 +2,11 @@ import { useState } from 'react'
 import SEO from '../components/SEO'
 import { Link } from 'react-router-dom'
 import { WHATSAPP_NUMBER, BUSINESS_INFO } from '../data/links'
-import { sendContactEmail } from '../lib/emailjs'
+import { getAttributionData } from '../lib/utmTracker'
+import { trackRfqSubmitSuccess } from '../lib/analytics'
 import { 
   CheckCircle, Package, Globe, Award, Zap, 
-  ArrowRight, X, Mail, User, Send, Check, Shield, FileText
+  ArrowRight, X, Mail, User, Send, Check, Shield, FileText, AlertTriangle, Loader2, Phone
 } from 'lucide-react'
 
 const PRODUCTS = [
@@ -91,14 +92,17 @@ export default function Products() {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [submissionResult, setSubmissionResult] = useState(null)
+  const [submissionError, setSubmissionError] = useState(null)
 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     country: '',
     quantity: '',
     company: '',
-    packaging: '25 kg Drums / Cartons',
+    packaging: '25 kg Food-Grade HDPE Bags with Liners',
     incoterm: 'FOB Nhava Sheva (Mumbai)',
     message: ''
   })
@@ -106,23 +110,86 @@ export default function Products() {
   const handleInquirySubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setSubmissionError(null)
+
+    // Form Validations
+    if (!formData.name.trim() || formData.name.trim().length < 2) {
+      setSubmissionError('Please enter your full contact name (at least 2 characters).')
+      setLoading(false)
+      return
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!formData.email.trim() || !emailRegex.test(formData.email.trim())) {
+      setSubmissionError('Please provide a valid corporate business email address.')
+      setLoading(false)
+      return
+    }
+
+    if (!formData.company.trim()) {
+      setSubmissionError('Please enter your company or business name.')
+      setLoading(false)
+      return
+    }
+
+    if (!formData.country.trim()) {
+      setSubmissionError('Please specify your destination country or port.')
+      setLoading(false)
+      return
+    }
+
+    const attribution = getAttributionData()
+
+    const payload = {
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim() || 'Not-Provided',
+      company: formData.company.trim(),
+      country: formData.country.trim(),
+      product: selectedProduct?.name || 'Moringa Leaf Powder',
+      quantity: formData.quantity,
+      quantityUnit: 'KG',
+      incoterm: formData.incoterm,
+      destinationPort: formData.country.trim(),
+      packagingPreference: formData.packaging,
+      message: `[Product Catalogue Modal] Packaging: ${formData.packaging} | Incoterm: ${formData.incoterm} | Notes: ${formData.message || 'Commercial Sourcing Quote'}`,
+      source: 'Product_Catalog_Modal',
+      landing_page: window.location.pathname,
+      referrer: document.referrer || '',
+      ...attribution
+    }
 
     try {
-      await sendContactEmail({
-        firstName: formData.name,
-        lastName: `(${formData.country})`,
-        email: formData.email,
-        inquiryType: `B2B Sourcing Quote: ${selectedProduct?.name}`,
-        message: `Company: ${formData.company}. Target Quantity: ${formData.quantity} kg. Packaging: ${formData.packaging}. Incoterm: ${formData.incoterm}. Additional Notes: ${formData.message}`,
-        phone: 'N/A',
-        company: formData.company
+      const res = await fetch('/api/save-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       })
-      
-      setLoading(false)
-      setSubmitted(true)
+
+      let data = null
+      try {
+        data = await res.json()
+      } catch (jsonErr) {
+        throw new Error('Server returned an unreadable response.')
+      }
+
+      if (res.ok && data.success && data.inquiryId) {
+        setSubmissionResult(data)
+        setSubmitted(true)
+        setSubmissionError(null)
+        trackRfqSubmitSuccess(selectedProduct?.name || 'Bulk Ingredient', `${formData.quantity} KG`, formData.country, 'Product_Catalog_Modal')
+      } else {
+        const errMsg = data?.error || 'Enquiry submission could not be confirmed by our central trade system. Your details are preserved below. Please retry or contact Trade Coordinator Sachin Shinde directly.'
+        setSubmissionError(errMsg)
+        setSubmitted(false)
+        setSubmissionResult(null)
+      }
     } catch (err) {
-      console.error(err)
-      alert('Error sending inquiry. Please reach us directly at sales@avaniagrofoods.com')
+      console.error('Catalogue inquiry error:', err)
+      setSubmissionError('A network communication issue occurred while submitting your enquiry. Your details are preserved below. Please retry or contact Trade Coordinator Sachin Shinde directly on WhatsApp or Email.')
+      setSubmitted(false)
+      setSubmissionResult(null)
+    } finally {
       setLoading(false)
     }
   }
@@ -130,6 +197,8 @@ export default function Products() {
   const openModal = (p) => {
     setSelectedProduct(p)
     setSubmitted(false)
+    setSubmissionResult(null)
+    setSubmissionError(null)
     setModalOpen(true)
   }
 
@@ -364,6 +433,70 @@ export default function Products() {
                   </p>
                 </div>
 
+                {submissionError && (
+                  <div 
+                    role="alert"
+                    style={{
+                      padding: '16px',
+                      background: '#fff5f5',
+                      border: '2px solid #ef4444',
+                      borderRadius: 12,
+                      color: '#991b1b',
+                      marginBottom: 16,
+                      fontSize: '0.85rem'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <AlertTriangle size={18} color="#dc2626" />
+                      <strong style={{ fontSize: '0.95rem', color: '#991b1b' }}>Submission Unconfirmed</strong>
+                    </div>
+                    <p style={{ margin: '0 0 8px 0', lineHeight: 1.45, color: '#4b5563' }}>
+                      {submissionError}
+                    </p>
+                    <p style={{ margin: '0 0 10px 0', fontSize: '0.8rem', color: '#6b7280' }}>
+                      Your form inputs are preserved below. You may retry or contact Trade Coordinator Sachin Shinde directly:
+                    </p>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <a
+                        href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Namaste Sachin, I tried submitting an RFQ on your website catalogue for ${selectedProduct?.name} (${formData.quantity} KG) to ${formData.country}, but encountered a connection error. Company: ${formData.company || 'N/A'}. Please advise on quote.`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          background: '#25D366',
+                          color: 'white',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          padding: '8px 14px',
+                          borderRadius: 6,
+                          textDecoration: 'none'
+                        }}
+                      >
+                        <Phone size={14} /> WhatsApp Desk
+                      </a>
+                      <a
+                        href={`mailto:${BUSINESS_INFO.email}?subject=${encodeURIComponent(`Urgent RFQ: ${selectedProduct?.name} - ${formData.company || formData.name}`)}&body=${encodeURIComponent(`Dear Sachin Shinde,\n\nI was attempting to submit an export inquiry on your website catalogue for ${selectedProduct?.name} (${formData.quantity} KG).\n\nBuyer: ${formData.name}\nCompany: ${formData.company}\nEmail: ${formData.email}\nPhone: ${formData.phone || 'N/A'}\nCountry: ${formData.country}\nIncoterm: ${formData.incoterm}\nPackaging: ${formData.packaging}\nNotes: ${formData.message || 'Commercial Sourcing Quote'}\n\nPlease confirm availability and FOB/CIF pricing.`)}`}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          background: '#1a4d2e',
+                          color: 'white',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          padding: '8px 14px',
+                          borderRadius: 6,
+                          textDecoration: 'none'
+                        }}
+                      >
+                        <Mail size={14} /> Direct Email
+                      </a>
+                    </div>
+                  </div>
+                )}
+
                 <form onSubmit={handleInquirySubmit} style={{ display: 'grid', gap: 16 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div>
@@ -409,7 +542,16 @@ export default function Products() {
                   </div>
 
                   <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: '0.95rem' }}>
-                    {loading ? 'Submitting Request...' : 'Send RFQ Inquiry'} <Send size={16} style={{ marginLeft: 8 }} />
+                    {loading ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" style={{ marginRight: 8 }} />
+                        Submitting RFQ to Trade Desk...
+                      </>
+                    ) : (
+                      <>
+                        Send RFQ Inquiry <Send size={16} style={{ marginLeft: 8 }} />
+                      </>
+                    )}
                   </button>
 
                   <p style={{ fontSize: '0.72rem', color: 'var(--color-text-light)', textAlign: 'center', margin: 0 }}>
@@ -419,21 +561,49 @@ export default function Products() {
               </>
             ) : (
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                  <Check size={32} color="white" />
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#16a34a' }}>
+                  <Check size={32} />
                 </div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 8, color: 'var(--color-primary)' }}>
-                  RFQ Request Received
+                <h2 style={{ fontSize: '1.45rem', fontWeight: 900, marginBottom: 8, color: 'var(--color-primary)' }}>
+                  RFQ Registered Successfully
                 </h2>
-                <p style={{ color: 'var(--color-text-light)', marginBottom: 24, fontSize: '0.92rem', lineHeight: 1.6 }}>
-                  Thank you, <strong>{formData.name}</strong>. Your requirement for {selectedProduct?.name} has been logged. Our export coordination team will review specifications and respond to <strong>{formData.email}</strong> within 24–48 business hours.
+                <p style={{ color: 'var(--color-text-light)', marginBottom: 16, fontSize: '0.92rem', lineHeight: 1.6 }}>
+                  Thank you, <strong>{formData.name}</strong>. Your commercial requirement for <strong>{selectedProduct?.name}</strong> ({formData.quantity} KG) has been permanently recorded in our trade management system.
                 </p>
-                <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+
+                {submissionResult?.inquiryId && (
+                  <div style={{
+                    background: '#f8fafc',
+                    border: '1px dashed #cbd5e1',
+                    borderRadius: 12,
+                    padding: '14px 20px',
+                    marginBottom: 24,
+                    display: 'inline-block',
+                    textAlign: 'left'
+                  }}>
+                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: 4 }}>
+                      Authoritative Inquiry Reference: <strong style={{ color: 'var(--color-primary)' }}>{submissionResult.inquiryId}</strong>
+                    </div>
+                    {submissionResult.quoteId && (
+                      <div style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                        Quotation Draft ID: <strong style={{ color: '#0f172a' }}>{submissionResult.quoteId}</strong>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
                   <button onClick={() => setModalOpen(false)} className="btn btn-primary">
                     Close Window
                   </button>
-                  <a href={`https://wa.me/${BUSINESS_INFO.whatsapp}?text=${encodeURIComponent(`Hi Sachin, I submitted an RFQ for ${selectedProduct?.name}.`)}`} target="_blank" rel="noopener noreferrer" className="btn" style={{ background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}>
-                    Follow Up on WhatsApp
+                  <a 
+                    href={`https://wa.me/${BUSINESS_INFO.whatsapp}?text=${encodeURIComponent(`Namaste Sachin, I submitted RFQ ref ${submissionResult?.inquiryId || 'Inquiry'} for ${selectedProduct?.name} (${formData.quantity} KG).`)}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="btn" 
+                    style={{ background: '#25D366', color: 'white', fontWeight: 700 }}
+                  >
+                    <Phone size={16} style={{ marginRight: 6 }} /> Track on WhatsApp
                   </a>
                 </div>
               </div>

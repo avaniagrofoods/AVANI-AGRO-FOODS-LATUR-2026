@@ -182,6 +182,15 @@ export async function saveLeadToSupabase(leadRecord) {
       notes: `Lead captured via ${leadRecord.source || 'Website'}. Mapped to inquiry ${leadRecord.inquiryId}.`
     });
 
+    // Record initial CRM activity event in public.crm_activities
+    await recordCrmActivity({
+      inquiryId: leadRecord.inquiryId,
+      activityType: 'INITIAL_INQUIRY',
+      summary: `Initial B2B lead captured via ${leadRecord.source || 'Website'}. Product: ${leadRecord.product}, Qty: ${leadRecord.quantityOriginal || leadRecord.quantityNormalizedKg || 'N/A'}.`,
+      outcome: 'AWAITING_INITIAL_REVIEW',
+      performedBy: 'Website Automation Engine'
+    });
+
     return {
       persisted: true,
       status: 'SUCCESS',
@@ -270,6 +279,37 @@ export async function recordAuditLog({ entityType, entityId, action, actor = 'Sy
   await supabaseFetch('lead_audit_logs', {
     method: 'POST',
     body: logEntry,
+    prefer: 'return=minimal'
+  });
+}
+
+/**
+ * Record a CRM activity or follow-up event in public.crm_activities
+ */
+export async function recordCrmActivity({
+  inquiryId,
+  activityType = 'INITIAL_INQUIRY',
+  summary,
+  outcome = 'NEW_LEAD_RECEIVED',
+  nextFollowUpDate = null,
+  performedBy = 'Website Automation Engine'
+}) {
+  if (!isSupabaseConfigured()) return { success: false, unconfigured: true };
+
+  const activityEntry = {
+    inquiry_id: inquiryId,
+    activity_type: activityType,
+    activity_date: new Date().toISOString(),
+    summary: summary || 'Initial B2B enquiry received and registered',
+    outcome,
+    next_follow_up_date: nextFollowUpDate,
+    performed_by: performedBy,
+    created_at: new Date().toISOString()
+  };
+
+  return await supabaseFetch('crm_activities', {
+    method: 'POST',
+    body: activityEntry,
     prefer: 'return=minimal'
   });
 }

@@ -29,6 +29,7 @@ import {
  */
 function timingSafeTokenCompare(provided, expected) {
   if (typeof provided !== 'string' || typeof expected !== 'string') return false;
+  if (provided.length === 0 || expected.length === 0) return false;
   const bufA = Buffer.from(provided);
   const bufB = Buffer.from(expected);
   if (bufA.length !== bufB.length) return false;
@@ -45,12 +46,69 @@ export default async function handler(req, res, testOptions = {}) {
     });
   }
 
-  // 2. Authentication: Enforce CRON_SECRET Bearer Token with timing-safe comparison
-  const configuredSecret = process.env.CRON_SECRET;
-  const authHeader = req.headers['authorization'] || '';
-  const providedToken = authHeader.startsWith('Bearer ')
-    ? authHeader.slice(7).trim()
-    : (req.headers['x-cron-secret'] ? String(req.headers['x-cron-secret']).trim() : '');
+  // 2. Authentication: Enforce CRON_SECRET with timing-safe comparison
+  // Canonical method: Authorization: Bearer <CRON_SECRET> (RFC 6750, Vercel Cron standard)
+  // Accepted alternate: x-cron-secret: <CRON_SECRET> (direct header, only when Authorization is absent)
+  const rawSecret = process.env.CRON_SECRET;
+  const configuredSecret = (typeof rawSecret === 'string') ? rawSecret.trim() : '';
+  const rawAuth = req.headers['authorization'];
+  const rawXCron = req.headers['x-cron-secret'];
+
+  // 2a. Detect duplicate or multi-valued headers
+  const isDuplicateAuth = Array.isArray(rawAuth) || (typeof rawAuth === 'string' && rawAuth.includes(','));
+  const isDuplicateXCron = Array.isArray(rawXCron) || (typeof rawXCron === 'string' && rawXCron.includes(','));
+  if (isDuplicateAuth || isDuplicateXCron) {
+    return res.status(401).json({
+      error: 'UNAUTHORIZED',
+      reason: 'DUPLICATE_AUTH_HEADER',
+      message: 'Multiple or duplicate authorization headers provided.'
+    });
+  }
+
+  // 2b. Reject ambiguous / conflicting credentials (both Authorization and x-cron-secret present)
+  const hasAuth = typeof rawAuth === 'string' && rawAuth.trim().length > 0;
+  const hasXCron = typeof rawXCron === 'string' && rawXCron.trim().length > 0;
+  if (hasAuth && hasXCron) {
+    return res.status(401).json({
+      error: 'UNAUTHORIZED',
+      reason: 'AMBIGUOUS_CREDENTIALS',
+      message: 'Ambiguous credentials: both Authorization and x-cron-secret headers provided.'
+    });
+  }
+
+  let providedToken = '';
+  if (hasAuth) {
+    const authString = rawAuth.trim();
+    if (!authString.startsWith('Bearer ')) {
+      return res.status(401).json({
+        error: 'UNAUTHORIZED',
+        reason: 'MALFORMED_AUTHORIZATION',
+        message: 'Malformed Authorization header. Bearer token required.'
+      });
+    }
+    providedToken = authString.slice(7).trim();
+    if (providedToken.length === 0) {
+      return res.status(401).json({
+        error: 'UNAUTHORIZED',
+        reason: 'EMPTY_BEARER_TOKEN',
+        message: 'Missing or empty Bearer token.'
+      });
+    }
+  } else if (hasXCron) {
+    providedToken = rawXCron.trim();
+    if (providedToken.length === 0) {
+      return res.status(401).json({
+        error: 'UNAUTHORIZED',
+        reason: 'EMPTY_AUTH_TOKEN',
+        message: 'Missing or empty x-cron-secret token.'
+      });
+    }
+  } else {
+    return res.status(401).json({
+      error: 'UNAUTHORIZED',
+      message: 'Missing or invalid CRON_SECRET authorization token.'
+    });
+  }
 
   if (!configuredSecret || !providedToken || !timingSafeTokenCompare(providedToken, configuredSecret)) {
     return res.status(401).json({
@@ -115,13 +173,24 @@ export default async function handler(req, res, testOptions = {}) {
   // isTestMode, trackTestQuota, safety gates) are strictly forbidden from request payloads and ignored.
   const rawOptions = (typeof options === 'object' && options !== null) ? options : {};
   const safeOperationalOptions = {};
-  if (typeof rawOptions.workerId === 'string' && rawOptions.workerId.trim().length > 0) {
-    safeOperationalOptions.workerId = rawOptions.workerId.trim();
+  if (rawOptions.workerId !== undefined) {
+    if (typeof rawOptions.workerId !== 'string') {
+      return res.status(400).json({
+        error: 'INVALID_WORKER_ID',
+        message: 'Supplied workerId must be a string matching /^[a-zA-Z0-9_-]{1,64}$/'
+      });
+    }
+    const trimmedWorker = rawOptions.workerId.trim();
+    if (trimmedWorker.length === 0 || !/^[a-zA-Z0-9_-]{1,64}$/.test(trimmedWorker)) {
+      return res.status(400).json({
+        error: 'INVALID_WORKER_ID',
+        message: 'Supplied workerId must be non-empty, max 64 characters, and contain only alphanumeric characters, underscores, and hyphens (/^[a-zA-Z0-9_-]{1,64}$/).'
+      });
+    }
+    safeOperationalOptions.workerId = trimmedWorker;
   }
   if (typeof testOptions?.transmitter === 'function') {
     safeOperationalOptions.transmitter = testOptions.transmitter;
-  } else if (typeof rawOptions.transmitter === 'function') {
-    safeOperationalOptions.transmitter = rawOptions.transmitter;
   }
   if (isIsolatedTest && testOptions) {
     if (testOptions.now) safeOperationalOptions.now = testOptions.now;

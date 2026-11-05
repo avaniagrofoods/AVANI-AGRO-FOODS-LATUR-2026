@@ -180,12 +180,8 @@ ${form.additionalMessage}
         derivedCurrency = 'EUR'
       }
 
-      // Generate a fallback client reference ID if needed
-      const clientGeneratedLeadId = `AAF-L-2026-${Math.floor(1000 + Math.random() * 9000)}`
-
       // 1. Authoritative Server-Side Lead Capture (/api/save-lead)
       const savePayload = {
-        inquiryId: clientGeneratedLeadId,
         name: form.fullName,
         email: form.email,
         phone: form.phone,
@@ -221,13 +217,13 @@ ${form.additionalMessage}
         throw new Error('Server returned an unreadable response. Please check your connection or contact us directly.')
       }
 
-      if (!saveRes.ok || !saveData || saveData.success !== true) {
+      if (!saveRes.ok || !saveData || saveData.success !== true || !saveData.inquiryId) {
         const errorMsg = saveData?.error || saveData?.message || `Server returned error (${saveRes.status})`
         throw new Error(errorMsg)
       }
 
       // Authoritative persistence confirmed!
-      const authoritativeLeadId = saveData.inquiryId || clientGeneratedLeadId
+      const authoritativeLeadId = saveData.inquiryId
       setSubmittedLeadId(authoritativeLeadId)
       setStatus('success')
       setIsSuccess(true)

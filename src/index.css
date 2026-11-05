@@ -963,3 +963,44 @@ article table {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ============================================================
+   MOBILE UX, ACCESSIBILITY & TOUCH TARGET STANDARDS (P1-02)
+   ============================================================ */
+
+/* 1. Prevent iOS Safari auto-zoom on input focus (requires >= 16px) */
+@media screen and (max-width: 768px) {
+  input,
+  select,
+  textarea,
+  .input,
+  .form-input,
+  .form-select,
+  .form-textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* 2. Standard 44x44px minimum touch targets for all interactive controls */
+.btn,
+button.btn,
+a.btn,
+.filter-tab,
+input[type="submit"],
+input[type="button"] {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 3. Floating WhatsApp bubble mobile safe area */
+@media screen and (max-width: 640px) {
+  #whatsapp-bubble {
+    bottom: 20px !important;
+    right: 16px !important;
+    width: 54px !important;
+    height: 54px !important;
+  }
+}
+
+

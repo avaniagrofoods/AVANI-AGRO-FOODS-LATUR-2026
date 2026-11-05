@@ -6,6 +6,8 @@ Allow: /about
 Allow: /products
 Allow: /catalog
 Allow: /catalog/
+Allow: /moringa-powder-bulk-supplier-india
+Allow: /red-onion-powder-bulk-supplier-india
 Allow: /trade-coordination
 Allow: /export-process
 Allow: /resources

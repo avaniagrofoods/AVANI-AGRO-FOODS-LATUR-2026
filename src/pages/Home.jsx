@@ -3,11 +3,11 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Globe, Package, ArrowRight, Leaf, Shield,
-  CheckCircle2, FileText, Send, ExternalLink, HelpCircle,
-  Truck, Award, Sparkles, Building2, FlaskConical, Info
+  CheckCircle2, FileText, Send, HelpCircle,
+  Truck, Award, Building2, FlaskConical
 } from 'lucide-react'
 import SEO from '../components/SEO'
-import { BUSINESS_INFO, RECOMMENDED_RESOURCES } from '../data/links'
+import { BUSINESS_INFO } from '../data/links'
 import { useLanguage } from '../context/LanguageContext'
 
 const STATS = [
@@ -99,8 +99,8 @@ const FAQS = [
     a: 'We coordinate FOB shipments (primarily from Nhava Sheva / JNPT Port, Mumbai) as well as CIF terms to your designated port of entry. Standard commercial payments utilize advance TT with balance against B/L or Irrevocable Letters of Credit (L/C) for qualifying high-volume orders.'
   },
   {
-    q: 'What is the "Resources & Recommended Products" section on your website?',
-    a: 'Separately from our core B2B export coordination, AVANI operates an independent educational content channel reviewing third-party consumer products, food tools, and equipment. We may receive referral compensation if you purchase via those third-party links, at no extra cost to you.'
+    q: 'How does AVANI AGRO FOODS coordinate with Indian processing facilities?',
+    a: 'We partner directly with vetted agricultural processors and dehydrators in Maharashtra and South India. We audit facility compliance, inspect pre-shipment batches, arrange independent third-party laboratory testing (heavy metals, microbiological, pesticide residues), oversee compliant export packaging, and handle export documentation directly to Nhava Sheva / JNPT port.'
   }
 ]
 
@@ -493,93 +493,150 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── RESOURCES & RECOMMENDED PRODUCTS (AFFILIATE & EDITORIAL SEPARATION) ── */}
+      {/* ── COMMERCIAL BUYER PERSONAS & EXPORT SOURCING ARCHITECTURE ── */}
       <section style={{ padding: '96px 0', background: 'white' }}>
         <div className="container">
-          <div className="section-header" style={{ textAlign: 'center', maxWidth: 740, margin: '0 auto 48px' }}>
-            <div className="section-tag" style={{ justifyContent: 'center', background: 'rgba(230,168,23,0.1)', color: '#b45309', border: '1px solid rgba(230,168,23,0.3)' }}>
-              <Sparkles size={12} /> Independent Educational Channel
+          <div className="section-header" style={{ textAlign: 'center', maxWidth: 760, margin: '0 auto 48px' }}>
+            <div className="section-tag" style={{ justifyContent: 'center' }}>
+              <Building2 size={12} /> B2B Commercial Supply
             </div>
-            <h2 className="section-title">AVANI Resources &amp; Recommended Products</h2>
+            <h2 className="section-title">Built for Global Food &amp; Nutraceutical Buyers</h2>
             <p className="section-desc">
-              Separately from our core B2B export coordination, AVANI publishes educational guides and reviews third-party products, kitchen machinery, packaging tools, and wellness items.
+              AVANI AGRO FOODS coordinates reliable ingredient sourcing from verified Indian agricultural processors to international manufacturers, importers, and brand owners.
             </p>
           </div>
 
-          {/* Affiliate Disclosure Box */}
+          {/* 4 Commercial Buyer Profiles */}
           <div style={{
-            background: '#fffbeb',
-            border: '1px solid #fde68a',
-            borderRadius: 'var(--radius-md)',
-            padding: '20px 24px',
-            marginBottom: 40,
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 16
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: 24,
+            marginBottom: 48
           }}>
-            <Info size={20} color="#b45309" style={{ flexShrink: 0, marginTop: 2 }} />
-            <div style={{ fontSize: '0.85rem', color: '#92400e', lineHeight: 1.6 }}>
-              <strong>Affiliate Transparency Notice:</strong> Links in our Resources section are third-party affiliate recommendations. If you choose to purchase through these links, AVANI AGRO FOODS may earn a referral commission at zero additional cost to you. Read our full{' '}
-              <Link to="/affiliate-disclosure" style={{ color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'underline' }}>
-                Affiliate Disclosure
-              </Link>.
+            <div className="card" style={{ padding: '28px 24px', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(26,71,42,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                <FlaskConical size={22} color="var(--color-primary)" />
+              </div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, marginBottom: 8, color: 'var(--color-text)' }}>
+                Food &amp; Seasoning Manufacturers
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', lineHeight: 1.6, marginBottom: 16 }}>
+                Snack seasoning, ready meals, dehydrated soups, instant noodles, and savory blends requiring consistent pungency, mesh fineness, and low moisture.
+              </p>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                ✓ Dehydrated Red Onion Powder (60–80 Mesh)
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: '28px 24px', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(26,71,42,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                <Leaf size={22} color="var(--color-primary)" />
+              </div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, marginBottom: 8, color: 'var(--color-text)' }}>
+                Nutraceutical &amp; Supplement Brands
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', lineHeight: 1.6, marginBottom: 16 }}>
+                Dietary supplements, capsule filling, superfood green powders, and herbal tea blends demanding verified batch COAs and microbiological purity.
+              </p>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                ✓ Moringa Leaf Powder (80–100 Mesh)
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: '28px 24px', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(26,71,42,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                <Globe size={22} color="var(--color-primary)" />
+              </div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, marginBottom: 8, color: 'var(--color-text)' }}>
+                Bulk Importers &amp; Distributors
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', lineHeight: 1.6, marginBottom: 16 }}>
+                Regional food ingredient importers across USA, UK, UAE, Europe, and Australia seeking steady containerized ocean freight and competitive FOB/CIF contracts.
+              </p>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                ✓ FCL &amp; LCL Freight Coordination
+              </div>
+            </div>
+
+            <div className="card" style={{ padding: '28px 24px', background: 'var(--color-bg-alt)', border: '1px solid var(--color-border)' }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(26,71,42,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                <Package size={22} color="var(--color-primary)" />
+              </div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, marginBottom: 8, color: 'var(--color-text)' }}>
+                Private-Label &amp; Foodservice
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', lineHeight: 1.6, marginBottom: 16 }}>
+                Commercial brands and catering ingredient suppliers requiring custom bulk export packaging (20 kg / 25 kg multi-wall paper bags or HDPE drums) and private labeling.
+              </p>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                ✓ Export Grade Multi-Wall Packaging
+              </div>
             </div>
           </div>
 
-          {/* Curated Recommendations Cards */}
+          {/* Sourcing & Documentation Architecture Banner */}
           <div style={{
+            background: 'linear-gradient(135deg, #0d2818 0%, #1a472a 100%)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '36px 32px',
+            color: 'white',
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: 24,
-            marginBottom: 40
+            gap: 32,
+            alignItems: 'center'
           }}>
-            {RECOMMENDED_RESOURCES.map((item) => (
-              <div
-                key={item.id}
-                className="card card-hover"
-                style={{
-                  padding: '28px 24px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  background: 'white'
-                }}
-              >
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <span className="badge" style={{ fontSize: '0.7rem' }}>{item.category}</span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-light)' }}>Platform: {item.platform}</span>
-                  </div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 8, color: 'var(--color-text)' }}>
-                    {item.name}
-                  </h3>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', lineHeight: 1.6, marginBottom: 16 }}>
-                    {item.description}
-                  </p>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--color-text-light)', marginBottom: 20 }}>
-                    <strong>Who it is for:</strong> {item.whoItsFor}
-                  </div>
-                </div>
-
-                <div>
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="nofollow noopener sponsored"
-                    className="btn btn-primary"
-                    style={{ width: '100%', justifyContent: 'center', gap: 6, fontSize: '0.85rem' }}
-                  >
-                    Check Current Price <ExternalLink size={14} />
-                  </a>
-                </div>
+            <div>
+              <span className="badge" style={{ background: 'rgba(255,255,255,0.15)', color: '#a3e635', border: '1px solid rgba(163,230,53,0.3)', marginBottom: 12 }}>
+                Export Quality Assurance
+              </span>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'white', marginBottom: 12 }}>
+                Direct Export Hub from Maharashtra to Global Ports
+              </h3>
+              <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, marginBottom: 20 }}>
+                Every consignment is audited at the processing facility, lab-tested with batch COA, and dispatched directly through JNPT / Nhava Sheva Seaport or Mumbai Air Cargo.
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                <Link
+                  to="/moringa-powder-bulk-supplier-india"
+                  className="btn"
+                  style={{ background: '#22c55e', color: 'white', fontWeight: 700, fontSize: '0.85rem', padding: '10px 18px' }}
+                >
+                  Moringa Bulk Sourcing <ArrowRight size={14} />
+                </Link>
+                <Link
+                  to="/red-onion-powder-bulk-supplier-india"
+                  className="btn"
+                  style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', fontWeight: 700, fontSize: '0.85rem', padding: '10px 18px' }}
+                >
+                  Red Onion Bulk Sourcing <ArrowRight size={14} />
+                </Link>
               </div>
-            ))}
-          </div>
+            </div>
 
-          <div style={{ textAlign: 'center' }}>
-            <Link to="/resources" className="btn" style={{ background: 'var(--color-bg-alt)', color: 'var(--color-text)', border: '1px solid var(--color-border)', gap: 8 }}>
-              Explore All Categories &amp; Buyer Guides <ArrowRight size={16} />
-            </Link>
+            <div style={{
+              background: 'rgba(255,255,255,0.08)',
+              borderRadius: 'var(--radius-md)',
+              padding: '24px',
+              border: '1px solid rgba(255,255,255,0.12)'
+            }}>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fef08a', marginBottom: 14 }}>
+                Commercial Export Guarantee
+              </h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: 'rgba(255,255,255,0.9)' }}>
+                  <CheckCircle2 size={16} color="#4ade80" style={{ flexShrink: 0 }} /> Batch Certificate of Analysis (COA) included
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: 'rgba(255,255,255,0.9)' }}>
+                  <CheckCircle2 size={16} color="#4ade80" style={{ flexShrink: 0 }} /> FOB Nhava Sheva / CIF Global Seaports
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: 'rgba(255,255,255,0.9)' }}>
+                  <CheckCircle2 size={16} color="#4ade80" style={{ flexShrink: 0 }} /> Phytosanitary &amp; Origin Documentation
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: 'rgba(255,255,255,0.9)' }}>
+                  <CheckCircle2 size={16} color="#4ade80" style={{ flexShrink: 0 }} /> Commercial Sample Dispatch prior to contract
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>

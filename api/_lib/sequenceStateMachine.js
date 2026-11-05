@@ -198,6 +198,27 @@ export function dispatchSequenceStep(state, campaignId, options = {}) {
     customStore = null
   } = opts;
 
+  // Worker ID validation if explicitly supplied
+  if (opts.workerId !== undefined) {
+    if (typeof opts.workerId !== 'string') {
+      return {
+        success: false,
+        blocked: true,
+        error: 'INVALID_WORKER_ID',
+        reason: 'Supplied workerId must be a string matching /^[a-zA-Z0-9_-]{1,64}$/'
+      };
+    }
+    const trimmedWorker = opts.workerId.trim();
+    if (trimmedWorker.length === 0 || !/^[a-zA-Z0-9_-]{1,64}$/.test(trimmedWorker)) {
+      return {
+        success: false,
+        blocked: true,
+        error: 'INVALID_WORKER_ID',
+        reason: 'Supplied workerId must be non-empty, max 64 characters, and match /^[a-zA-Z0-9_-]{1,64}$/'
+      };
+    }
+  }
+
   const nowIso = now instanceof Date ? now.toISOString() : new Date(now).toISOString();
   const nowMs = now instanceof Date ? now.getTime() : new Date(now).getTime();
 
@@ -697,6 +718,27 @@ export async function dispatchSequenceStepDistributed(state, campaignId = null, 
     trackTestQuota = false,
     customStore = null
   } = opts;
+
+  // Worker ID validation if explicitly supplied
+  if (opts.workerId !== undefined) {
+    if (typeof opts.workerId !== 'string') {
+      return {
+        success: false,
+        blocked: true,
+        error: 'INVALID_WORKER_ID',
+        reason: 'Supplied workerId must be a string matching /^[a-zA-Z0-9_-]{1,64}$/'
+      };
+    }
+    const trimmedWorker = opts.workerId.trim();
+    if (trimmedWorker.length === 0 || !/^[a-zA-Z0-9_-]{1,64}$/.test(trimmedWorker)) {
+      return {
+        success: false,
+        blocked: true,
+        error: 'INVALID_WORKER_ID',
+        reason: 'Supplied workerId must be non-empty, max 64 characters, and match /^[a-zA-Z0-9_-]{1,64}$/'
+      };
+    }
+  }
 
   const nowIso = now instanceof Date ? now.toISOString() : new Date(now).toISOString();
   const nowMs = now instanceof Date ? now.getTime() : new Date(now).getTime();

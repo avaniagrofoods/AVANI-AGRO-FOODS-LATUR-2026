@@ -299,9 +299,6 @@ export default async function handler(req, res) {
       updatedBy: 'Website Automation Engine'
     };
 
-    // Store in recent deduplication cache
-    recentSubmissions.set(dedupKey, { inquiryId, quoteId });
-
     // 8. Primary Durable Database Persistence (Supabase PostgreSQL)
     let supabaseLeadPersistence = 'NOT_CONFIGURED_MISSING_CREDENTIALS';
     let supabaseQuotePersistence = 'NOT_CONFIGURED_MISSING_CREDENTIALS';
@@ -324,7 +321,21 @@ export default async function handler(req, res) {
         console.error('[Supabase Primary Persistence Error - Quote]:', sqErr.message);
         supabaseQuotePersistence = 'FAILED';
       }
+
+      // If Supabase is configured and failed to persist the lead, fail explicitly to prevent false success
+      if (supabaseLeadPersistence !== 'SUCCESS') {
+        recentSubmissions.delete(dedupKey);
+        return res.status(500).json({
+          success: false,
+          error: 'Database persistence failed to confirm your enquiry. Your details were not permanently recorded. Please retry or contact Trade Coordinator Sachin Shinde directly on WhatsApp (+91 7219053645) or email sales@avaniagrofoods.com.',
+          persistenceStatus: 'FAILED',
+          inquiryId: null
+        });
+      }
     }
+
+    // Store in recent deduplication cache ONLY after persistence is confirmed
+    recentSubmissions.set(dedupKey, { inquiryId, quoteId });
 
     // 9. Integrations Status Tracking
     const integrations = {

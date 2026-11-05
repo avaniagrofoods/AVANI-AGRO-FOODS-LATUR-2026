@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Send, CheckCircle2, Shield, Loader2, Phone, Mail, Globe, Package, Building2, FileCheck, ArrowRight, Clock } from 'lucide-react'
+import { Send, CheckCircle2, Shield, Loader2, Phone, Mail, Globe, Package, Building2, FileCheck, ArrowRight, Clock, AlertTriangle } from 'lucide-react'
 import { getWhatsAppInquiryUrl } from '../data/links'
 import { getAttributionData } from '../lib/utmTracker'
 import { trackRfqStarted, trackRfqSubmitSuccess, trackRfqValidationFailure } from '../lib/analytics'
@@ -177,46 +177,37 @@ export default function B2BRFQForm({
         body: JSON.stringify(payload)
       })
 
-      const data = await res.json()
+      let data = null
+      try {
+        data = await res.json()
+      } catch (jsonErr) {
+        throw new Error('Server returned an unreadable response.')
+      }
 
-      if (res.ok && data.success) {
+      if (res.ok && data.success && data.inquiryId) {
         setSubmitted(true)
         setSubmissionResult({
-          inquiryId: data.inquiryId || `AAF-INQ-2026-${Math.floor(100000 + Math.random() * 900000)}`,
+          inquiryId: data.inquiryId,
           quoteId: data.quoteId || (data.quote ? data.quote.quoteId : `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`),
           product: formData.product,
           quantity: `${formData.quantity} ${formData.quantityUnit}`,
           country: formData.country,
           buyerName: formData.name
         })
+        setErrorMsg('')
         trackRfqSubmitSuccess(formData.product, `${formData.quantity} ${formData.quantityUnit}`, formData.country, sourcePage)
       } else {
-        // Controlled fallback with generated inquiry ID
-        const fallbackInq = `AAF-INQ-2026-${Math.floor(100000 + Math.random() * 900000)}`
-        setSubmitted(true)
-        setSubmissionResult({
-          inquiryId: fallbackInq,
-          quoteId: `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-          product: formData.product,
-          quantity: `${formData.quantity} ${formData.quantityUnit}`,
-          country: formData.country,
-          buyerName: formData.name
-        })
-        trackRfqSubmitSuccess(formData.product, `${formData.quantity} ${formData.quantityUnit}`, formData.country, sourcePage)
+        // Legitimate failure: Never claim success, preserve form data, and display actionable error
+        const serverError = data?.error || 'Your RFQ could not be registered in our central trade system. Your details are preserved below. Please retry or contact our Trade Coordinator directly.'
+        setErrorMsg(serverError)
+        setSubmitted(false)
+        setSubmissionResult(null)
       }
     } catch (err) {
-      console.warn('Network issue during RFQ submission, activating client confirmation:', err)
-      const fallbackInq = `AAF-INQ-2026-${Math.floor(100000 + Math.random() * 900000)}`
-      setSubmitted(true)
-      setSubmissionResult({
-        inquiryId: fallbackInq,
-        quoteId: `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-        product: formData.product,
-        quantity: `${formData.quantity} ${formData.quantityUnit}`,
-        country: formData.country,
-        buyerName: formData.name
-      })
-      trackRfqSubmitSuccess(formData.product, `${formData.quantity} ${formData.quantityUnit}`, formData.country, sourcePage)
+      console.error('Network or communication error during RFQ submission:', err)
+      setErrorMsg('A network communication issue occurred while submitting your RFQ. Your entered information has been preserved below. Please retry or contact Trade Coordinator Sachin Shinde directly.')
+      setSubmitted(false)
+      setSubmissionResult(null)
     } finally {
       setLoading(false)
     }
@@ -410,16 +401,66 @@ export default function B2BRFQForm({
       </div>
 
       {errorMsg && (
-        <div style={{
-          padding: '12px 16px',
-          background: '#fef2f2',
-          border: '1px solid #f87171',
-          borderRadius: 10,
-          color: '#b91c1c',
-          fontSize: '0.9rem',
-          marginBottom: 20
-        }}>
-          {errorMsg}
+        <div 
+          role="alert"
+          style={{
+            padding: '20px 24px',
+            background: '#fff5f5',
+            border: '2px solid #ef4444',
+            borderRadius: 16,
+            color: '#991b1b',
+            marginBottom: 24,
+            boxShadow: '0 8px 20px rgba(239, 68, 68, 0.12)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <AlertTriangle size={24} color="#dc2626" />
+            <strong style={{ fontSize: '1.05rem', color: '#991b1b' }}>Enquiry Submission Unconfirmed</strong>
+          </div>
+          <p style={{ margin: '0 0 12px 0', fontSize: '0.92rem', lineHeight: 1.5, color: '#4b5563' }}>
+            {errorMsg}
+          </p>
+          <p style={{ margin: '0 0 16px 0', fontSize: '0.88rem', color: '#6b7280' }}>
+            Your entered form details have been safely preserved below so you can retry. Alternatively, connect directly with our Export Trade Coordinator right now:
+          </p>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <a
+              href={`https://wa.me/917219053645?text=${encodeURIComponent(`Namaste Sachin, I tried submitting an RFQ on your website for ${formData.product} (${formData.quantity} ${formData.quantityUnit}) to ${formData.country}, but encountered a connection interruption. Company: ${formData.company || 'N/A'}. Please advise on quotation.`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: '#25D366',
+                color: 'white',
+                fontWeight: 700,
+                fontSize: '0.88rem',
+                padding: '10px 18px',
+                borderRadius: 8,
+                textDecoration: 'none'
+              }}
+            >
+              <Phone size={16} /> Instant WhatsApp (+91 7219053645)
+            </a>
+            <a
+              href={`mailto:sales@avaniagrofoods.com?subject=${encodeURIComponent(`Urgent RFQ: ${formData.product} - ${formData.company || formData.name}`)}&body=${encodeURIComponent(`Dear Sachin Shinde,\n\nI was attempting to submit an export inquiry on your website for ${formData.product} (${formData.quantity} ${formData.quantityUnit}) to ${formData.country}.\n\nBuyer: ${formData.name}\nCompany: ${formData.company}\nEmail: ${formData.email}\nPhone: ${formData.phone || 'N/A'}\nDestination: ${formData.destinationPort || formData.country}\nIncoterm: ${formData.incoterm}\nNotes: ${formData.notes || 'Please provide commercial quotation.'}\n\nPlease confirm availability and CIF/FOB pricing.\n\nThank you.`)}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: '#1a4d2e',
+                color: 'white',
+                fontWeight: 700,
+                fontSize: '0.88rem',
+                padding: '10px 18px',
+                borderRadius: 8,
+                textDecoration: 'none'
+              }}
+            >
+              <Mail size={16} /> Direct Email (sales@avaniagrofoods.com)
+            </a>
+          </div>
         </div>
       )}
 

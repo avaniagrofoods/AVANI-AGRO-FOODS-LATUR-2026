@@ -35,8 +35,16 @@ export function validateDailyLimitConfig(limitInput) {
     return { valid: true, limit: DEFAULT_DAILY_PILOT_LIMIT };
   }
 
+  if (typeof limitInput !== 'number' && typeof limitInput !== 'string') {
+    return { valid: false, error: 'DAILY_LIMIT_NON_NUMERIC', reason: 'Daily limit must be an integer or numeric string' };
+  }
+
+  if (typeof limitInput === 'string' && limitInput.trim() === '') {
+    return { valid: true, limit: DEFAULT_DAILY_PILOT_LIMIT };
+  }
+
   const num = Number(limitInput);
-  if (!Number.isInteger(num) || isNaN(num)) {
+  if (!Number.isInteger(num) || isNaN(num) || (typeof limitInput === 'string' && !/^\s*-?\d+\s*$/.test(limitInput))) {
     return { valid: false, error: 'DAILY_LIMIT_NON_NUMERIC', reason: 'Daily limit must be an integer' };
   }
 
@@ -67,8 +75,16 @@ export function validatePacingConfig(pacingInput) {
     return { valid: true, maxPerMinute: DEFAULT_MAX_SENDS_PER_MINUTE };
   }
 
+  if (typeof pacingInput !== 'number' && typeof pacingInput !== 'string') {
+    return { valid: false, error: 'PACING_NON_NUMERIC', reason: 'Pacing rate must be an integer or numeric string' };
+  }
+
+  if (typeof pacingInput === 'string' && pacingInput.trim() === '') {
+    return { valid: true, maxPerMinute: DEFAULT_MAX_SENDS_PER_MINUTE };
+  }
+
   const num = Number(pacingInput);
-  if (!Number.isInteger(num) || isNaN(num)) {
+  if (!Number.isInteger(num) || isNaN(num) || (typeof pacingInput === 'string' && !/^\s*-?\d+\s*$/.test(pacingInput))) {
     return { valid: false, error: 'PACING_NON_NUMERIC', reason: 'Pacing rate must be an integer' };
   }
 
@@ -123,6 +139,25 @@ export function reserveDailyThroughputSlot(options = {}) {
     ? options.configuredPacing
     : ((typeof process !== 'undefined' && process.env?.MAX_SENDS_PER_MINUTE !== undefined) ? process.env.MAX_SENDS_PER_MINUTE : DEFAULT_MAX_SENDS_PER_MINUTE);
 
+  if (options.workerId !== undefined) {
+    if (typeof options.workerId !== 'string') {
+      return {
+        allowed: false,
+        blocked: true,
+        error: 'INVALID_WORKER_ID',
+        reason: 'Supplied workerId must be a string matching /^[a-zA-Z0-9_-]{1,64}$/'
+      };
+    }
+    const trimmedWorker = options.workerId.trim();
+    if (trimmedWorker.length === 0 || !/^[a-zA-Z0-9_-]{1,64}$/.test(trimmedWorker)) {
+      return {
+        allowed: false,
+        blocked: true,
+        error: 'INVALID_WORKER_ID',
+        reason: 'Supplied workerId must be non-empty, max 64 characters, and match /^[a-zA-Z0-9_-]{1,64}$/'
+      };
+    }
+  }
 
   // 0. Production Runtime Guard: Local file-based governor forbidden in production
   if (isProductionOrVercelRuntime()) {
@@ -394,6 +429,26 @@ export async function reserveDailyThroughputSlotDistributed(options = {}) {
       error: 'CONFIG_FAIL_CLOSED',
       reason: `Fail-closed: Invalid pacing config (${pacingCheck.error}): ${pacingCheck.reason}`
     };
+  }
+
+  if (options.workerId !== undefined) {
+    if (typeof options.workerId !== 'string') {
+      return {
+        allowed: false,
+        blocked: true,
+        error: 'INVALID_WORKER_ID',
+        reason: 'Supplied workerId must be a string matching /^[a-zA-Z0-9_-]{1,64}$/'
+      };
+    }
+    const trimmedWorker = options.workerId.trim();
+    if (trimmedWorker.length === 0 || !/^[a-zA-Z0-9_-]{1,64}$/.test(trimmedWorker)) {
+      return {
+        allowed: false,
+        blocked: true,
+        error: 'INVALID_WORKER_ID',
+        reason: 'Supplied workerId must be non-empty, max 64 characters, and match /^[a-zA-Z0-9_-]{1,64}$/'
+      };
+    }
   }
 
   const isKvConfigured = getKvConfig().hasDistributedKV;
