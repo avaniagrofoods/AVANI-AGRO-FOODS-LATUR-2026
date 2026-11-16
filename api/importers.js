@@ -1,83 +1,71 @@
 // ============================================================
 // AVANI AGRO FOODS — Global Importers Database API
 // Vercel Serverless Function (Node.js runtime)
-// GET /api/importers | POST /api/importers
+// GET /api/importers
 //
-// Access Control:
-// - Protected by Master Password
-// - Requires valid signed session cookie (avani_gate_session)
-//   or Authorization: Bearer <MASTER_GATE_PASSWORD>
-//
-// Phase 8 Hardening:
-// - verificationStatus normalized: NEEDS REVIEW → UNVERIFIED
-// - contactabilityScore / Level computed per Phase 5
-// - emailAvailable / phoneAvailable / websiteAvailable / whatsappAvailable added
+// Access Control (Package 3F.106 Hardened — CC-01, CC-02, CC-03, CC-04, CC-08):
+// - Strictly requires verified server-side session cookie (avani_gate_session)
+// - Master password Bearer token bypass removed
+// - Read-only GET method enforced
+// - Distributed rate limiting and KV revocation checks enforced
 // ============================================================
 
 import { IMPORTERS } from './_data/importersData.js';
 import {
-  getSessionSecret,
-  parseAndVerifySignature,
-  parseCookies,
-  verifyPassword,
-  isAllowedOrigin,
+  getClientIp,
+  checkRateLimit,
+  verifyServerSession,
+  isAllowedOrigin
 } from './_lib/auth.js';
 import {
   normalizeCountry,
   normalizeImporterWithVerification,
-  getVerificationDashboardMetrics,
+  getVerificationDashboardMetrics
 } from './_lib/importerVerificationModel.js';
 
 // Export canonical country normalization for consumers & tests
 export { normalizeCountry };
 
-function verifyGateAccess(req) {
-  const sessionSecret = getSessionSecret();
-  const masterPassword = process.env.PRIVATE_PORTAL_PASSWORD || process.env.MASTER_GATE_PASSWORD;
-
-  // 1. Check Bearer token in Authorization header
-  const authHeader = req.headers['authorization'];
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7).trim();
-    if (masterPassword && verifyPassword(token, masterPassword)) {
-      return true;
-    }
-  }
-
-  // 2. Check signed session cookie (avani_gate_session)
-  if (sessionSecret) {
-    const cookies = parseCookies(req);
-    const sessionCookie = cookies['avani_gate_session'];
-    if (sessionCookie) {
-      const sessionId = parseAndVerifySignature(sessionCookie, sessionSecret);
-      if (sessionId) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+export async function verifyGateAccess(req) {
+  return await verifyServerSession(req, 'gate');
 }
 
 export default async function handler(req, res) {
-  // CORS & Security Headers
   if (!isAllowedOrigin(req)) {
-    return res.status(403).json({ error: 'Forbidden origin' });
+    return res.status(403).json({
+      error: 'Forbidden origin',
+      code: 'ORIGIN_FORBIDDEN'
+    });
   }
 
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate');
 
-  if (req.method !== 'GET' && req.method !== 'POST') {
-    res.setHeader('Allow', 'GET, POST');
+  // CC-04: Keep safe read-only methods separate from mutations
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (!verifyGateAccess(req)) {
-    return res.status(401).json({
-      error: 'Unauthorized: Master gate authentication required.',
-      authenticated: false,
+  // CC-08: Distributed rate limiting
+  const clientIp = getClientIp(req);
+  const rateLimit = await checkRateLimit(clientIp, 'importers_api', { maxAttempts: 60, windowSeconds: 900 });
+  if (rateLimit.limited) {
+    return res.status(rateLimit.statusCode || 429).json({
+      error: rateLimit.error || 'Too many requests. Please try again later.',
+      code: rateLimit.code,
+      authenticated: false
+    });
+  }
+
+  // CC-01 & CC-03: Async server-side session & revocation verification
+  const authResult = await verifyGateAccess(req);
+  if (!authResult.authenticated) {
+    return res.status(authResult.statusCode || 401).json({
+      error: authResult.error || 'Unauthorized: Master gate authentication required.',
+      code: authResult.code,
+      authenticated: false
     });
   }
 
@@ -95,8 +83,7 @@ export default async function handler(req, res) {
       contactabilityCalculated: true,
       verificationEngineVersion: '2.0',
       dataIntegrityVersion: '8.2',
-      auditTimestamp: new Date().toISOString(),
-    },
+      auditTimestamp: new Date().toISOString()
+    }
   });
 }
-

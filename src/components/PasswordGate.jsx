@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Lock, Unlock, ShieldAlert, Loader2 } from 'lucide-react'
+import { storeCsrfToken } from '../lib/csrf'
 
 export default function PasswordGate({
   children,
   title = "Protected Directory Access",
   description = "Please enter the authorized access password to view this directory.",
-  storageKey = null,
   onUnlock = null
 }) {
   const [authenticated, setAuthenticated] = useState(false)
@@ -27,10 +27,12 @@ export default function PasswordGate({
           body: JSON.stringify({ action: 'verify' }),
         })
         if (res.ok && isMounted) {
+          const data = await res.json().catch(() => ({}))
+          if (data?.csrfToken) storeCsrfToken(data.csrfToken, 'gate')
           setAuthenticated(true)
           if (onUnlock) onUnlock()
         }
-      } catch (err) {
+      } catch {
         // Fallback gracefully if API is unreachable
       } finally {
         if (isMounted) setCheckingSession(false)
@@ -39,7 +41,7 @@ export default function PasswordGate({
 
     checkAuth()
     return () => { isMounted = false }
-  }, [])
+  }, [onUnlock])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -57,6 +59,8 @@ export default function PasswordGate({
       })
 
       if (res.ok) {
+        const data = await res.json().catch(() => ({}))
+        if (data?.csrfToken) storeCsrfToken(data.csrfToken, 'gate')
         setAuthenticated(true)
         setError('')
         if (onUnlock) onUnlock()
@@ -68,7 +72,7 @@ export default function PasswordGate({
           setError(data.error || 'Incorrect password. Please try again.')
         }
       }
-    } catch (err) {
+    } catch {
       setError('Network connection error. Please try again.')
     } finally {
       setLoading(false)

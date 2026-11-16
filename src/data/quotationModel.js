@@ -539,7 +539,7 @@ export function evaluateProcessorConfirmation(pc = {}) {
 /**
  * Updates canonical processor confirmation structure and synchronizes legacy processorVerification
  */
-export function updateProcessorConfirmation(quotation, updates = {}, actor = 'Sachin Shinde') {
+export function updateProcessorConfirmation(quotation, updates = {}, actor = 'authenticated_operator') {
   if (!quotation || typeof quotation !== 'object') {
     throw new Error('Valid quotation object required');
   }
@@ -661,7 +661,7 @@ export function updateProcessorConfirmation(quotation, updates = {}, actor = 'Sa
 /**
  * Sets explicit Admin Override with required justification and item-level targeting
  */
-export function setAdminOverride(quotation, reasonOrOptions, actor = 'Sachin Shinde', bypassedChecks = []) {
+export function setAdminOverride(quotation, reasonOrOptions, actor = 'authenticated_operator', bypassedChecks = []) {
   if (!quotation || typeof quotation !== 'object') {
     throw new Error('Valid quotation object required for admin override');
   }
@@ -672,7 +672,7 @@ export function setAdminOverride(quotation, reasonOrOptions, actor = 'Sachin Shi
 
   if (typeof reasonOrOptions === 'object' && reasonOrOptions !== null) {
     cleanReason = String(reasonOrOptions.reason || '').trim();
-    effectiveActor = reasonOrOptions.actor || actor || 'Sachin Shinde';
+    effectiveActor = reasonOrOptions.actor || actor || 'authenticated_operator';
     if (reasonOrOptions.checkItem) {
       checksToBypass = [reasonOrOptions.checkItem];
     } else if (Array.isArray(reasonOrOptions.bypassedChecks)) {
@@ -680,7 +680,7 @@ export function setAdminOverride(quotation, reasonOrOptions, actor = 'Sachin Shi
     }
   } else {
     cleanReason = String(reasonOrOptions || '').trim();
-    effectiveActor = actor || 'Sachin Shinde';
+    effectiveActor = actor || 'authenticated_operator';
     checksToBypass = Array.isArray(bypassedChecks) ? bypassedChecks : (bypassedChecks ? [bypassedChecks] : []);
   }
 
@@ -771,7 +771,7 @@ export function evaluateBuyerReadyGate(quotation = {}) {
     (pv.adminOverride && String(pv.overrideReason || '').trim().length >= 5)
   );
   const overrideReason = (pc.adminOverride?.reason || pv.overrideReason || '').trim();
-  const overrideActor = pc.adminOverride?.actor || pv.verifiedBy || 'Sachin Shinde';
+  const overrideActor = pc.adminOverride?.actor || pv.verifiedBy || 'authenticated_operator';
   const overrideTimestamp = pc.adminOverride?.timestamp || pv.verifiedAt || new Date().toISOString();
 
   // 1. Buyer name present
@@ -1173,7 +1173,7 @@ export function createInitialFollowUpState() {
     nextFollowUpDate: null,
     followUpType: 'EMAIL',
     notes: '',
-    owner: 'Sachin Shinde',
+    owner: 'authenticated_operator',
     lastFollowUpAt: null,
     history: []
   };
@@ -1375,7 +1375,7 @@ export function generateSecureId(prefix = 'idemp') {
 /**
  * Records structured buyer response (P4.5)
  */
-export function recordBuyerResponse(quotation, responseData = {}, actor = 'Sachin Shinde') {
+export function recordBuyerResponse(quotation, responseData = {}, actor = 'authenticated_operator') {
   if (!quotation || typeof quotation !== 'object') {
     throw new Error('Valid quotation object required');
   }
@@ -1432,7 +1432,7 @@ export function recordBuyerResponse(quotation, responseData = {}, actor = 'Sachi
 /**
  * Updates commercial follow-up tracking (P4.5)
  */
-export function updateFollowUp(quotation, followupData = {}, actor = 'Sachin Shinde') {
+export function updateFollowUp(quotation, followupData = {}, actor = 'authenticated_operator') {
   if (!quotation || typeof quotation !== 'object') {
     throw new Error('Valid quotation object required');
   }
@@ -1667,7 +1667,7 @@ export function createQuotationFromLead(lead, overrides = {}) {
     },
 
     workflow: {
-      owner: overrides.owner || 'Sachin Shinde',
+      owner: overrides.actor || overrides.owner || 'system_lead_pipeline',
       nextAction: 'Review requirement with Indian processing partners and input unit rate.',
       buyerReviewDate: null,
       negotiationNotes: []
@@ -1677,7 +1677,7 @@ export function createQuotationFromLead(lead, overrides = {}) {
       revisionNumber: 0,
       previousRevisionId: null,
       createdAt: now,
-      changedBy: overrides.owner || 'Sachin Shinde',
+      changedBy: overrides.actor || overrides.owner || 'system_lead_pipeline',
       changeReason: 'Initial Draft Quotation created from Qualified Lead',
       changeSummary: `Draft created from lead ${lead.leadId}`,
       history: []
@@ -1707,7 +1707,7 @@ export function createQuotationFromLead(lead, overrides = {}) {
     activity: [
       {
         timestamp: now,
-        actor: overrides.owner || 'Sachin Shinde',
+        actor: overrides.actor || overrides.owner || 'system_lead_pipeline',
         event: 'LEAD_TO_QUOTATION',
         quotationId: quoteId,
         leadId: lead.leadId,
@@ -1715,7 +1715,7 @@ export function createQuotationFromLead(lead, overrides = {}) {
       },
       {
         timestamp: now,
-        actor: overrides.owner || 'Sachin Shinde',
+        actor: overrides.actor || overrides.owner || 'system_lead_pipeline',
         event: 'QUOTATION_CREATED',
         quotationId: quoteId,
         leadId: lead.leadId,
@@ -1875,7 +1875,7 @@ export function validateStatusTransition(currentStatus, targetStatus, quotation 
 /**
  * Transitions Quotation Status with Audit Event Logging
  */
-export function transitionQuotationStatus(quotation, targetStatus, actor = 'Sachin Shinde', details = {}) {
+export function transitionQuotationStatus(quotation, targetStatus, actor = 'authenticated_operator', details = {}) {
   const check = validateStatusTransition(quotation.status, targetStatus, quotation, details);
   if (!check.allowed) {
     throw new Error(`Status transition rejected: ${check.reason}`);
@@ -1940,13 +1940,13 @@ export function transitionQuotationStatus(quotation, targetStatus, actor = 'Sach
 /**
  * Creates a new Revision of an existing quotation without destroying previous records.
  */
-export function reviseQuotation(quotation, changes = {}, changeReason = '', changedBy = 'Sachin Shinde') {
+export function reviseQuotation(quotation, changes = {}, changeReason = '', changedBy = 'authenticated_operator') {
   if (!quotation || typeof quotation !== 'object') {
     throw new Error('Valid quotation object required for revision');
   }
 
   if (typeof changes === 'string') {
-    changedBy = changeReason || 'Sachin Shinde';
+    changedBy = changeReason || 'authenticated_operator';
     changeReason = changes;
     changes = {};
   }
@@ -1961,7 +1961,7 @@ export function reviseQuotation(quotation, changes = {}, changeReason = '', chan
     previousRevisionId: quotation.revision?.previousRevisionId || `${quotation.quotationId}-R${currentRevisionNumber}`,
     savedAt: now,
     timestamp: now,
-    actor: changedBy || quotation.revision?.changedBy || 'Sachin Shinde',
+    actor: changedBy || quotation.revision?.changedBy || 'authenticated_operator',
     reason: changeReason || quotation.revision?.changeReason || 'Previous revision',
     changedBy: quotation.revision?.changedBy || changedBy,
     changeReason: quotation.revision?.changeReason || 'Previous revision',
@@ -2061,7 +2061,7 @@ export function reviseQuotation(quotation, changes = {}, changeReason = '', chan
 /**
  * Updates negotiation parameters without overwriting the original buyer inquiry
  */
-export function updateNegotiation(quotation, negotiationData = {}, actor = 'Sachin Shinde') {
+export function updateNegotiation(quotation, negotiationData = {}, actor = 'authenticated_operator') {
   if (!quotation || typeof quotation !== 'object') {
     throw new Error('Valid quotation object required');
   }
@@ -2110,7 +2110,7 @@ export function updateNegotiation(quotation, negotiationData = {}, actor = 'Sach
 /**
  * Records PO Receipt administrative details
  */
-export function recordPoReceipt(quotation, poData = {}, actor = 'Sachin Shinde') {
+export function recordPoReceipt(quotation, poData = {}, actor = 'authenticated_operator') {
   if (!quotation || typeof quotation !== 'object') {
     throw new Error('Valid quotation object required');
   }
@@ -2152,7 +2152,7 @@ export function recordPoReceipt(quotation, poData = {}, actor = 'Sachin Shinde')
 /**
  * Updates processor verification checklist items and records audit event
  */
-export function updateProcessorChecklist(quotation, updates = {}, actor = 'Sachin Shinde') {
+export function updateProcessorChecklist(quotation, updates = {}, actor = 'authenticated_operator') {
   if (!quotation || typeof quotation !== 'object') {
     throw new Error('Valid quotation object required');
   }

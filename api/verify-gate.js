@@ -1,150 +1,176 @@
 // ============================================================
-// AVANI AGRO FOODS — Master Password Gate Authentication API
-// Vercel Serverless Function (Node.js runtime)
-// POST /api/verify-gate
-//
-// Protects:
-//   - /manufacturers
-//   - /importers
-//   - /admin/quotations (Master Gate view)
-//   - /quotation-sheet
-//
-// Environment variables:
-//   MASTER_GATE_PASSWORD — Master password for protected portals
-//   SESSION_SECRET       — Cryptographic secret for HMAC session signing
+// AVANI AGRO FOODS — Serverless Password Verification Gate
+// Endpoint: /api/verify-gate
+// Package 3F.106 Hardened (CC-01, CC-02, CC-03, CC-04, CC-07, CC-08)
 // ============================================================
 
-import crypto from 'crypto';
 import {
-  getSessionSecret,
-  signSessionId,
-  parseAndVerifySignature,
-  verifyPassword,
-  parseCookies,
-  createSessionCookie,
-  createClearCookie,
   getClientIp,
   checkRateLimit,
   resetRateLimit,
+  resolveMasterGatePassword,
+  verifyPassword,
+  createServerSession,
+  verifyServerSession,
+  revokeServerSession,
+  createCsrfCookie,
   isAllowedOrigin,
-  SESSION_TTL_SECONDS,
-  hasDistributedKV,
-  execKVCommand,
+  validateMutationOrigin,
+  verifyCsrfRequest
 } from './_lib/auth.js';
 
 export default async function handler(req, res) {
-  // CORS & Security Headers
-  if (!isAllowedOrigin(req)) {
-    return res.status(403).json({ error: 'Forbidden origin' });
-  }
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
 
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
+  if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const sessionSecret = getSessionSecret();
-  const masterPassword = process.env.PRIVATE_PORTAL_PASSWORD || process.env.MASTER_GATE_PASSWORD;
-  const body = req.body || {};
-  const { action, password } = body;
-
-  // 1. ACTION: LOGOUT
-  if (action === 'logout') {
-    const cookies = parseCookies(req);
-    const sessionCookie = cookies['avani_gate_session'];
-    const sessionId = parseAndVerifySignature(sessionCookie, sessionSecret);
-
-    if (sessionId && hasDistributedKV) {
-      await execKVCommand('DEL', `session:gate:${sessionId}`);
-    }
-
-    res.setHeader('Set-Cookie', createClearCookie('avani_gate_session'));
-    return res.status(200).json({ success: true, message: 'Logged out successfully' });
+  if (!isAllowedOrigin(req)) {
+    return res.status(403).json({
+      authenticated: false,
+      code: 'ORIGIN_FORBIDDEN',
+      error: 'Forbidden: Invalid request origin.'
+    });
   }
 
-  // 2. ACTION: VERIFY EXISTING SESSION
+  const clientIp = getClientIp(req);
+  const action = req.method === 'GET' ? 'verify' : (req.body?.action || 'login');
+
+  // 1. Verify active session (Read-only session check)
   if (action === 'verify') {
-    const cookies = parseCookies(req);
-    const sessionCookie = cookies['avani_gate_session'];
-    const sessionId = parseAndVerifySignature(sessionCookie, sessionSecret);
-
-    if (!sessionId) {
-      return res.status(401).json({ authenticated: false });
+    const verifyLimit = await checkRateLimit(clientIp, 'gate_verify', { maxAttempts: 60, windowSeconds: 900 });
+    if (verifyLimit.limited) {
+      return res.status(verifyLimit.statusCode || 429).json({
+        authenticated: false,
+        code: verifyLimit.code,
+        error: verifyLimit.error || 'Too many verification requests.'
+      });
     }
 
-    if (hasDistributedKV) {
-      const sessionData = await execKVCommand('GET', `session:gate:${sessionId}`);
-      if (!sessionData) {
-        return res.status(401).json({ authenticated: false, message: 'Session revoked or expired' });
-      }
+    const session = await verifyServerSession(req, 'gate');
+    if (!session.authenticated) {
+      return res.status(session.statusCode || 401).json({
+        authenticated: false,
+        code: session.code,
+        error: session.error
+      });
     }
 
-    return res.status(200).json({ authenticated: true });
-  }
-
-  // 3. ACTION: LOGIN (Password Verification & Session Creation)
-  const ip = getClientIp(req);
-  const rateCheck = await checkRateLimit(ip, 'gate');
-
-  if (rateCheck.limited) {
-    return res.status(429).json({
-      error: `Too many failed attempts. Access is temporarily locked. Please wait ${rateCheck.minutesLeft} minute(s).`,
-      retryAfterMinutes: rateCheck.minutesLeft,
+    res.setHeader('Set-Cookie', createCsrfCookie(session.csrfToken, undefined, 'gate'));
+    return res.status(200).json({
+      authenticated: true,
+      role: session.actorRole,
+      actor: session.actor,
+      csrfToken: session.csrfToken
     });
   }
 
-  if (!masterPassword) {
-    console.error('[SECURITY CRITICAL] MASTER_GATE_PASSWORD is not configured on server.');
-    return res.status(500).json({ error: 'Server authentication configuration is missing.' });
+  // 2. Logout (State-changing session revocation — requires valid session, Origin & CSRF token)
+  if (action === 'logout') {
+    const session = await verifyServerSession(req, 'gate');
+    if (!session.authenticated) {
+      return res.status(session.statusCode || 401).json({
+        success: false,
+        authenticated: false,
+        code: session.code,
+        error: session.error
+      });
+    }
+
+    const csrfCheck = verifyCsrfRequest(req, session);
+    if (!csrfCheck.valid) {
+      return res.status(csrfCheck.statusCode || 403).json({
+        success: false,
+        code: csrfCheck.code,
+        error: csrfCheck.error
+      });
+    }
+
+    const revokeResult = await revokeServerSession(req, 'gate');
+    if (revokeResult.cookies) {
+      res.setHeader('Set-Cookie', revokeResult.cookies);
+    }
+
+    if (!revokeResult.revoked) {
+      return res.status(revokeResult.statusCode || 503).json({
+        success: false,
+        code: revokeResult.code,
+        error: revokeResult.error
+      });
+    }
+
+    return res.status(200).json({ success: true, loggedOut: true });
   }
 
-  if (!sessionSecret) {
-    console.error('[SECURITY CRITICAL] SESSION_SECRET is not configured on server.');
-    return res.status(500).json({ error: 'Server session signing configuration is missing.' });
+  // 3. Login (State-changing session issuance)
+  const originCheck = validateMutationOrigin(req);
+  if (!originCheck.valid) {
+    return res.status(originCheck.statusCode || 403).json({
+      authenticated: false,
+      code: originCheck.code,
+      error: originCheck.error
+    });
   }
 
-  if (!password || typeof password !== 'string' || !password.trim() || password.length > 256) {
-    return res.status(400).json({ error: 'Valid password is required.' });
+  // CC-02: Enforce single canonical master credential (MASTER_GATE_PASSWORD) and fail closed on conflicts or legacy-only
+  const cred = resolveMasterGatePassword();
+  if (!cred.valid) {
+    return res.status(cred.statusCode || 503).json({
+      authenticated: false,
+      code: cred.code,
+      error: cred.error
+    });
   }
 
-  const match = verifyPassword(password, masterPassword);
+  // CC-08: Distributed rate limiting
+  const rateLimit = await checkRateLimit(clientIp, 'gate');
+  if (rateLimit.limited) {
+    const status = rateLimit.statusCode || 429;
+    return res.status(status).json({
+      authenticated: false,
+      code: rateLimit.code,
+      error: rateLimit.backendUnavailable
+        ? rateLimit.error
+        : `Too many failed attempts. Please wait ${rateLimit.minutesLeft} minute(s) before trying again.`
+    });
+  }
 
-  if (!match) {
+  const { password } = req.body || {};
+  if (!password || typeof password !== 'string') {
+    return res.status(400).json({
+      authenticated: false,
+      code: 'PASSWORD_REQUIRED',
+      error: 'Password is required.'
+    });
+  }
+
+  const isMatch = verifyPassword(password, cred.password);
+  if (!isMatch) {
     return res.status(401).json({
-      error: 'Incorrect password. Please try again.',
-      remainingAttempts: rateCheck.remaining,
+      authenticated: false,
+      code: 'INVALID_CREDENTIALS',
+      error: `Invalid master password. ${rateLimit.remaining ?? 0} attempt(s) remaining.`
     });
   }
 
-  // Reset rate limiting on successful password match
-  await resetRateLimit(ip, 'gate');
-
-  // Generate cryptographically random session ID and sign with SESSION_SECRET
-  const rawSessionId = `avani_gate_sess_${crypto.randomUUID()}_${Date.now()}`;
-  const signedCookieValue = signSessionId(rawSessionId, sessionSecret);
-
-  if (hasDistributedKV) {
-    await execKVCommand('SET', `session:gate:${rawSessionId}`, JSON.stringify({
-      created: Date.now(),
-      ip,
-      role: 'master_gate',
-    }));
-    await execKVCommand('EXPIRE', `session:gate:${rawSessionId}`, String(SESSION_TTL_SECONDS));
+  // CC-03: Issue server-side session in KV before setting cookies
+  const session = await createServerSession('gate');
+  if (!session.ok) {
+    return res.status(session.statusCode || 503).json({
+      authenticated: false,
+      code: session.code,
+      error: session.error
+    });
   }
 
-  // Set secure cookie: avani_gate_session
-  res.setHeader(
-    'Set-Cookie',
-    createSessionCookie('avani_gate_session', signedCookieValue, SESSION_TTL_SECONDS)
-  );
+  await resetRateLimit(clientIp, 'gate');
+  res.setHeader('Set-Cookie', session.cookies);
 
   return res.status(200).json({
-    success: true,
-    message: 'Authenticated successfully',
-    cookieName: 'avani_gate_session',
+    authenticated: true,
+    role: session.actorRole,
+    actor: session.actor,
+    csrfToken: session.csrfToken
   });
 }

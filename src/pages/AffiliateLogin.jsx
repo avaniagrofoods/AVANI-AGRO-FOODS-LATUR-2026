@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import SEO from '../components/SEO'
 import { Lock, ShieldCheck, LogIn, AlertCircle } from 'lucide-react'
 import { trackAffiliateLogin } from '../lib/analytics'
+import { storeCsrfToken } from '../lib/csrf'
 
 export default function AffiliateLogin() {
   const [password, setPassword] = useState('')
@@ -29,6 +30,8 @@ export default function AffiliateLogin() {
       })
 
       if (res.ok) {
+        const data = await res.json().catch(() => ({}))
+        if (data?.csrfToken) storeCsrfToken(data.csrfToken, 'affiliate')
         trackAffiliateLogin()
         // Session cookie set by server — navigate to affiliate page
         navigate(redirectTo, { replace: true })

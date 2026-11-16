@@ -220,17 +220,35 @@ export async function saveQuotationToSupabase(quoteRecord) {
     };
   }
 
+  const qId = quoteRecord.quoteId || quoteRecord.quotationId;
+
+  // Safe Upsert Semantics (FIND-111-07): Check for existing delivery tracking metadata
+  // to avoid clobbering active provider status or timestamps during routine draft updates
+  let existingDelivery = null;
+  if (qId) {
+    try {
+      const existingRes = await getQuotationByIdFromSupabase(qId);
+      if (existingRes.success && existingRes.quotation) {
+        existingDelivery = existingRes.quotation;
+      }
+    } catch (_) {}
+  }
+
+  // Pure quotations without genuine pre-existing lead set inquiry_id to NULL (Owner Decision 1)
+  const rawInquiryId = quoteRecord.inquiryId || quoteRecord.leadId || null;
+  const safeInquiryId = (rawInquiryId && !rawInquiryId.startsWith('AAF-INQ-2026-')) ? rawInquiryId : (existingDelivery?.inquiry_id || null);
+
   const row = {
-    quotation_id: quoteRecord.quoteId || quoteRecord.quotationId,
-    inquiry_id: quoteRecord.inquiryId || null,
+    quotation_id: qId,
+    inquiry_id: safeInquiryId,
     date: quoteRecord.date || new Date().toISOString().split('T')[0],
     valid_until: quoteRecord.validUntil || '12 Oct 2026',
-    buyer_name: quoteRecord.buyerName || quoteRecord.customerName,
-    company_name: quoteRecord.companyName,
-    country: quoteRecord.country,
-    currency: quoteRecord.currency || 'USD',
-    incoterm: quoteRecord.incoterm,
-    destination_port: quoteRecord.destinationPort,
+    buyer_name: (quoteRecord.buyerName || quoteRecord.customerName || quoteRecord.buyer?.name || quoteRecord.name || 'Direct Buyer').trim(),
+    company_name: (quoteRecord.companyName || quoteRecord.buyer?.company || quoteRecord.company || 'B2B Importer').trim(),
+    country: (quoteRecord.country || quoteRecord.buyer?.country || 'India').trim(),
+    currency: (quoteRecord.currency || 'USD').toUpperCase().trim(),
+    incoterm: (quoteRecord.incoterm || quoteRecord.inquiry?.incoterm || 'FOB NHAVA SHEVA (JNPT MUMBAI)').trim(),
+    destination_port: (quoteRecord.destinationPort || quoteRecord.destination || quoteRecord.port || 'NHAVA SHEVA (JNPT MUMBAI)').trim(),
     items: quoteRecord.items || [],
     subtotal: Number(quoteRecord.subtotal || 0),
     freight: Number(quoteRecord.freight || quoteRecord.freightCharges || 0),
@@ -240,9 +258,20 @@ export async function saveQuotationToSupabase(quoteRecord) {
     grand_total: Number(quoteRecord.grandTotal || 0),
     payment_terms: quoteRecord.paymentTerms,
     delivery_timeline: quoteRecord.deliveryTimeline,
-    status: quoteRecord.status || 'DRAFT',
+    status: quoteRecord.status || existingDelivery?.status || 'DRAFT',
     document_hash: quoteRecord.documentHash || null,
-    raw_quotation: quoteRecord
+    raw_quotation: quoteRecord,
+    
+    // Delivery tracking and provider metadata with preservation of existing records
+    buyer_email: quoteRecord.buyerEmail || quoteRecord.buyer?.email || quoteRecord.email || existingDelivery?.buyer_email || null,
+    provider_message_id: quoteRecord.providerMessageId || quoteRecord.dispatch?.messageId || quoteRecord.messageId || existingDelivery?.provider_message_id || null,
+    provider_name: quoteRecord.providerName || quoteRecord.dispatch?.provider || existingDelivery?.provider_name || 'resend',
+    sent_at: quoteRecord.sentAt || quoteRecord.dispatch?.sentAt || existingDelivery?.sent_at || (['SENT', 'SENT_TO_BUYER'].includes(quoteRecord.status) ? new Date().toISOString() : null),
+    delivered_at: quoteRecord.deliveredAt || quoteRecord.dispatch?.deliveredAt || existingDelivery?.delivered_at || null,
+    bounced_at: quoteRecord.bouncedAt || quoteRecord.dispatch?.bouncedAt || existingDelivery?.bounced_at || null,
+    delivery_status: quoteRecord.deliveryStatus || quoteRecord.dispatch?.deliveryStatus || existingDelivery?.delivery_status || (['SENT', 'SENT_TO_BUYER'].includes(quoteRecord.status) ? 'sent' : 'pending'),
+    created_by: existingDelivery?.created_by || quoteRecord.createdBy || 'authenticated_operator',
+    updated_by: quoteRecord.updatedBy || 'authenticated_operator'
   };
 
   const result = await supabaseFetch('quotations', {
@@ -251,11 +280,173 @@ export async function saveQuotationToSupabase(quoteRecord) {
     prefer: 'resolution=merge-duplicates,return=representation'
   });
 
+  if (result.success) {
+    await recordAuditLog({
+      entityType: 'QUOTATION',
+      entityId: row.quotation_id,
+      action: 'QUOTATION_SAVED',
+      actor: row.updated_by,
+      newState: { status: row.status, deliveryStatus: row.delivery_status },
+      notes: `Quotation saved/updated in Supabase (status: ${row.status})`
+    }).catch(() => {});
+  }
+
   return {
     persisted: result.success,
     status: result.success ? 'SUCCESS' : 'FAILED',
     error: result.error || null,
-    quoteId: row.quotation_id
+    quoteId: row.quotation_id,
+    record: result.data?.[0] || row
+  };
+}
+
+/**
+ * Get quotation by quotation_id from Supabase
+ */
+export async function getQuotationByIdFromSupabase(quotationId) {
+  if (!isSupabaseConfigured() || !quotationId) {
+    return { success: false, quotation: null, error: 'UNCONFIGURED_OR_EMPTY_ID' };
+  }
+  const result = await supabaseFetch(`quotations?quotation_id=eq.${encodeURIComponent(quotationId)}&select=*`, {
+    method: 'GET'
+  });
+  if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+    return { success: true, quotation: result.data[0] };
+  }
+  return { success: false, quotation: null, error: result.error || 'NOT_FOUND' };
+}
+
+/**
+ * Get quotation by provider_message_id from Supabase
+ */
+export async function getQuotationByMessageIdFromSupabase(messageId) {
+  if (!isSupabaseConfigured() || !messageId) {
+    return { success: false, quotation: null, error: 'UNCONFIGURED_OR_EMPTY_MESSAGE_ID' };
+  }
+  const result = await supabaseFetch(`quotations?provider_message_id=eq.${encodeURIComponent(messageId)}&select=*`, {
+    method: 'GET'
+  });
+  if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+    return { success: true, quotation: result.data[0] };
+  }
+  return { success: false, quotation: null, error: result.error || 'NOT_FOUND' };
+}
+
+/**
+ * Converts PostgREST snake_case database quotation row into canonical camelCase model
+ */
+export function mapSupabaseQuotationToModel(row) {
+  if (!row || typeof row !== 'object') return row;
+  return {
+    ...row,
+    quoteId: row.quotation_id || row.quoteId,
+    quotationId: row.quotation_id || row.quotationId,
+    inquiryId: row.inquiry_id || row.inquiryId || null,
+    leadId: row.inquiry_id || row.leadId || null,
+    date: row.date,
+    validUntil: row.valid_until || row.validUntil || '12 Oct 2026',
+    buyerName: row.buyer_name || row.buyerName || 'Direct Buyer',
+    customerName: row.buyer_name || row.customerName || 'Direct Buyer',
+    companyName: row.company_name || row.companyName || 'B2B Importer',
+    country: row.country || 'India',
+    email: row.buyer_email || row.email || null,
+    buyerEmail: row.buyer_email || row.email || null,
+    currency: row.currency || 'USD',
+    incoterm: row.incoterm,
+    destinationPort: row.destination_port || row.destinationPort,
+    destination: row.destination_port || row.destination,
+    items: Array.isArray(row.items) ? row.items : [],
+    subtotal: Number(row.subtotal || 0),
+    freight: Number(row.freight || 0),
+    freightCharges: Number(row.freight || 0),
+    insurance: Number(row.insurance || 0),
+    insuranceCharges: Number(row.insurance || 0),
+    documentation: Number(row.documentation || 0),
+    documentationCharges: Number(row.documentation || 0),
+    otherCharges: Number(row.other_charges || 0),
+    grandTotal: Number(row.grand_total || 0),
+    paymentTerms: row.payment_terms || row.paymentTerms,
+    deliveryTimeline: row.delivery_timeline || row.deliveryTimeline,
+    status: row.status || 'DRAFT',
+    documentHash: row.document_hash || row.documentHash || null,
+    providerMessageId: row.provider_message_id || row.providerMessageId || null,
+    providerName: row.provider_name || row.providerName || 'resend',
+    sentAt: row.sent_at || row.sentAt || null,
+    deliveredAt: row.delivered_at || row.deliveredAt || null,
+    bouncedAt: row.bounced_at || row.bouncedAt || null,
+    deliveryStatus: row.delivery_status || row.deliveryStatus || 'pending',
+    createdBy: row.created_by || row.createdBy || 'authenticated_operator',
+    updatedBy: row.updated_by || row.updatedBy || 'authenticated_operator',
+    createdAt: row.created_at || row.createdAt,
+    updatedAt: row.updated_at || row.updatedAt
+  };
+}
+
+/**
+ * Update quotation delivery status and provider tracking in Supabase
+ */
+export async function updateQuotationDeliveryStatusInSupabase(quotationId, updateData = {}) {
+  if (!isSupabaseConfigured() || !quotationId) {
+    return { success: false, error: 'UNCONFIGURED_OR_EMPTY_ID' };
+  }
+  const patchBody = {
+    updated_at: new Date().toISOString()
+  };
+  if (updateData.status) {
+    patchBody.status = updateData.status === 'SENT' ? 'SENT_TO_BUYER' : updateData.status;
+  }
+  if (updateData.deliveryStatus) patchBody.delivery_status = updateData.deliveryStatus;
+  if (updateData.sentAt) patchBody.sent_at = updateData.sentAt;
+  if (updateData.deliveredAt) patchBody.delivered_at = updateData.deliveredAt;
+  if (updateData.bouncedAt) patchBody.bounced_at = updateData.bouncedAt;
+  if (updateData.providerMessageId) patchBody.provider_message_id = updateData.providerMessageId;
+  if (updateData.providerName) patchBody.provider_name = updateData.providerName;
+  if (updateData.updatedBy) patchBody.updated_by = updateData.updatedBy;
+
+  const result = await supabaseFetch(`quotations?quotation_id=eq.${encodeURIComponent(quotationId)}`, {
+    method: 'PATCH',
+    body: patchBody,
+    prefer: 'return=representation'
+  });
+
+  if (result.success) {
+    await recordAuditLog({
+      entityType: 'QUOTATION',
+      entityId: quotationId,
+      action: 'DELIVERY_STATUS_UPDATED',
+      actor: updateData.updatedBy || 'webhook_delivery_processor',
+      newState: patchBody,
+      notes: `Quotation delivery status updated to ${patchBody.delivery_status || patchBody.status || 'UPDATED'}`
+    }).catch(() => {});
+  }
+
+  return result;
+}
+
+/**
+ * Retrieve quotations with pagination, status filter and search
+ */
+export async function fetchQuotationsFromSupabase({ limit = 50, offset = 0, status = null, search = null } = {}) {
+  if (!isSupabaseConfigured()) {
+    return { success: false, count: 0, quotations: [], unconfigured: true };
+  }
+
+  let query = `quotations?select=*&order=date.desc&limit=${limit}&offset=${offset}`;
+  if (status && status !== 'ALL') {
+    query += `&status=eq.${encodeURIComponent(status)}`;
+  }
+  if (search) {
+    query += `&or=(buyer_name.ilike.*${encodeURIComponent(search)}*,company_name.ilike.*${encodeURIComponent(search)}*,quotation_id.ilike.*${encodeURIComponent(search)}*,country.ilike.*${encodeURIComponent(search)}*)`;
+  }
+
+  const result = await supabaseFetch(query, { method: 'GET' });
+  const rawRows = Array.isArray(result.data) ? result.data : [];
+  return {
+    success: result.success,
+    quotations: rawRows.map(mapSupabaseQuotationToModel),
+    rawQuotations: rawRows,
+    count: rawRows.length,
+    error: result.error || null
   };
 }
 
@@ -317,7 +508,7 @@ export async function recordCrmActivity({
 /**
  * Update a lead status with audit trail tracking
  */
-export async function updateLeadStatusInSupabase(inquiryId, newStatus, actor = 'Sachin Shinde', notes = '', nextFollowUpDate = null) {
+export async function updateLeadStatusInSupabase(inquiryId, newStatus, actor = 'authenticated_operator', notes = '', nextFollowUpDate = null) {
   if (!isSupabaseConfigured()) {
     return { success: false, error: 'Supabase unconfigured' };
   }

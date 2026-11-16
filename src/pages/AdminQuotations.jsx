@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import SEO from '../components/SEO'
 import PasswordGate from '../components/PasswordGate'
 import PrivateNav from '../components/PrivateNav'
+import { getCsrfHeaders } from '../lib/csrf'
 import {
   FileText, Plus, Printer, Download, Trash2, Mail,
   Phone, Building2, MapPin, CheckCircle2, Clock,
@@ -150,7 +151,7 @@ export default function AdminQuotations() {
     nextFollowUpDate: '',
     followUpType: 'EMAIL',
     notes: '',
-    owner: 'Sachin Shinde'
+    owner: 'authenticated_operator'
   })
 
   // Builder / Editor Form State
@@ -224,7 +225,7 @@ export default function AdminQuotations() {
       revisionNumber: 0,
       previousRevisionId: null,
       createdAt: new Date().toISOString(),
-      changedBy: 'Sachin Shinde',
+      changedBy: 'authenticated_operator',
       changeReason: 'Initial Commercial Draft',
       changeSummary: 'Standard 18 MT export draft'
     },
@@ -254,8 +255,8 @@ export default function AdminQuotations() {
       let serverQuotes = []
       try {
         const res = await fetch('/api/admin-quotations', {
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin'
+          headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'same-origin'
         })
         if (res.ok) {
           const json = await res.json()
@@ -352,7 +353,7 @@ export default function AdminQuotations() {
       }
 
       const combined = [defaultVikramQuote, ...serverQuotes, ...enquiryQuotes, ...localQuotes]
-      const unique = Array.from(new Map(combined.map(q => [q.quotationId || q.quoteId, q])).values())
+      const unique = Array.from(new Map(combined.filter(Boolean).map(q => [q.quotationId || q.quoteId || q.quotation_id || q.id || `quote_${Math.random()}`, q])).values())
       setQuotations(unique)
 
       // Also load custom product master overrides from localStorage
@@ -736,7 +737,7 @@ export default function AdminQuotations() {
       updatedPC.adminOverride = {
         active: Boolean(override),
         reason: reason !== undefined ? reason : (prev.processorVerification?.overrideReason || ''),
-        actor: 'Sachin Shinde',
+        actor: 'authenticated_operator',
         timestamp: new Date().toISOString(),
         bypassedChecks: []
       }
@@ -808,7 +809,7 @@ export default function AdminQuotations() {
         ...(builderForm.activity || []),
         {
           timestamp: now,
-          actor: 'Sachin Shinde',
+          actor: 'authenticated_operator',
           event: targetStatus === 'PROCESSOR_CHECK' ? 'PROCESSOR_CHECK_STARTED'
             : targetStatus === 'PROCESSOR_CONFIRMED' ? 'PROCESSOR_REQUIREMENT_CONFIRMED'
             : targetStatus === 'COMMERCIAL_REVIEW' ? 'COMMERCIAL_REVIEW_STARTED'
@@ -847,7 +848,7 @@ export default function AdminQuotations() {
       revisionNumber: currentRev,
       previousRevisionId: builderForm.revision?.previousRevisionId || null,
       savedAt: now,
-      changedBy: 'Sachin Shinde',
+      changedBy: 'authenticated_operator',
       changeReason: builderForm.revision?.changeReason || 'Previous Revision',
       changeSummary: `Revision ${currentRev}`,
       items: JSON.parse(JSON.stringify(builderForm.items)),
@@ -861,7 +862,7 @@ export default function AdminQuotations() {
         revisionNumber: newRev,
         previousRevisionId: `${builderForm.quoteId}-R${currentRev}`,
         createdAt: now,
-        changedBy: 'Sachin Shinde',
+        changedBy: 'authenticated_operator',
         changeReason: revisionReasonInput.trim(),
         changeSummary: `Commercial Rev ${newRev}`
       },
@@ -870,7 +871,7 @@ export default function AdminQuotations() {
         ...(builderForm.activity || []),
         {
           timestamp: now,
-          actor: 'Sachin Shinde',
+          actor: 'authenticated_operator',
           event: 'QUOTATION_REVISED',
           quotationId: builderForm.quoteId,
           details: `Revision ${newRev} created: ${revisionReasonInput.trim()}`
@@ -902,13 +903,13 @@ export default function AdminQuotations() {
         poNumber: poForm.poNumber.trim(),
         poDate: poForm.poDate || now.split('T')[0],
         poNotes: poForm.poNotes.trim(),
-        receivedBy: 'Sachin Shinde'
+        receivedBy: 'authenticated_operator'
       },
       activity: [
         ...(builderForm.activity || []),
         {
           timestamp: now,
-          actor: 'Sachin Shinde',
+          actor: 'authenticated_operator',
           event: 'PO_RECEIVED',
           quotationId: builderForm.quoteId,
           details: `PO ${poForm.poNumber.trim()} received`
@@ -938,14 +939,14 @@ export default function AdminQuotations() {
         counterOfferDate: negotiationForm.internalCounterOffer ? now : builderForm.negotiation?.counterOfferDate,
         negotiationNotes: negotiationForm.note ? [
           ...(builderForm.negotiation?.negotiationNotes || []),
-          { date: now, author: 'Sachin Shinde', note: negotiationForm.note.trim() }
+          { date: now, author: 'authenticated_operator', note: negotiationForm.note.trim() }
         ] : (builderForm.negotiation?.negotiationNotes || [])
       },
       activity: [
         ...(builderForm.activity || []),
         {
           timestamp: now,
-          actor: 'Sachin Shinde',
+          actor: 'authenticated_operator',
           event: 'NEGOTIATION_UPDATED',
           quotationId: builderForm.quoteId,
           details: negotiationForm.note || 'Updated negotiation terms'
@@ -974,7 +975,7 @@ export default function AdminQuotations() {
       processorVerification: builderForm.processorVerification || createInitialProcessorVerification(),
       activity: builderForm.activity || []
     }
-    const updated = setAdminOverride(currentQuote, overrideReasonInput.trim(), 'Sachin Shinde')
+    const updated = setAdminOverride(currentQuote, overrideReasonInput.trim(), 'authenticated_operator')
     setBuilderForm(prev => ({
       ...prev,
       processorConfirmation: updated.processorConfirmation,
@@ -1057,7 +1058,7 @@ export default function AdminQuotations() {
       const response = await fetch('/api/admin-quotations', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          ...( getCsrfHeaders({ 'Content-Type': 'application/json' }) )
         },
         credentials: 'same-origin',
         body: JSON.stringify({
@@ -1065,7 +1066,7 @@ export default function AdminQuotations() {
           quotation: currentQuote,
           options: {
             adminReviewed: true,
-            actor: 'Sachin Shinde',
+            actor: 'authenticated_operator',
             recipient: builderForm.email,
             isResend: alreadySent,
             resendReason: resendReasonInput.trim()
@@ -1133,7 +1134,7 @@ export default function AdminQuotations() {
       quotationId: builderForm.quoteId || builderForm.quotationId,
       activity: builderForm.activity || []
     }
-    const updated = recordBuyerResponse(currentQuote, buyerResponseForm, 'Sachin Shinde')
+    const updated = recordBuyerResponse(currentQuote, buyerResponseForm, 'authenticated_operator')
     setBuilderForm(prev => ({
       ...prev,
       status: updated.status || prev.status,
@@ -1157,7 +1158,7 @@ export default function AdminQuotations() {
       quotationId: builderForm.quoteId || builderForm.quotationId,
       activity: builderForm.activity || []
     }
-    const updated = updateFollowUp(currentQuote, followUpForm, 'Sachin Shinde')
+    const updated = updateFollowUp(currentQuote, followUpForm, 'authenticated_operator')
     setBuilderForm(prev => ({
       ...prev,
       followup: updated.followup,
@@ -1215,7 +1216,7 @@ export default function AdminQuotations() {
       po: builderForm.po,
       activity: builderForm.activity,
       updatedAt: new Date().toISOString(),
-      updatedBy: 'Admin (Sachin Shinde)'
+      updatedBy: 'authenticated_operator'
     })
 
     // Save locally
@@ -1230,7 +1231,8 @@ export default function AdminQuotations() {
     try {
       await fetch('/api/admin-quotations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'same-origin',
         body: JSON.stringify({
           action: 'save',
           quoteData: record
@@ -1265,7 +1267,8 @@ export default function AdminQuotations() {
       const payload = sanitizeQuote(quote)
       const res = await fetch('/api/quotation?action=download-pdf', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'same-origin',
         body: JSON.stringify(payload)
       })
       if (res.ok) {
@@ -1300,7 +1303,8 @@ export default function AdminQuotations() {
       const payload = sanitizeQuote(quote)
       const res = await fetch('/api/quotation?action=download-docx', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'same-origin',
         body: JSON.stringify(payload)
       })
       if (res.ok) {

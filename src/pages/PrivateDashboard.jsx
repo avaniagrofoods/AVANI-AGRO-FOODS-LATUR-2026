@@ -36,6 +36,7 @@ export default function PrivateDashboard() {
   const [filterStatus, setFilterStatus] = useState('ALL')
   const [sortBy, setSortBy] = useState('NEWEST')
   const [adminNote, setAdminNote] = useState('')
+  const [ecosystemOps, setEcosystemOps] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const loadData = async () => {
@@ -77,6 +78,17 @@ export default function PrivateDashboard() {
         if (quoteRes.ok) {
           const qData = await quoteRes.json()
           serverQuotes = qData.quotations || []
+        }
+      } catch {}
+
+      try {
+        const ecoRes = await fetch('/api/admin-quotations?action=ecosystem-operations', {
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin'
+        })
+        if (ecoRes.ok) {
+          const ecoData = await ecoRes.json()
+          if (ecoData.operations) setEcosystemOps(ecoData.operations)
         }
       } catch {}
 
@@ -176,7 +188,7 @@ export default function PrivateDashboard() {
           additionalRequirements: e.message || ''
         },
         qualification: { status: 'NEW', buyerType: e.businessType || 'Importer' },
-        workflow: { status: 'NEW', nextAction: 'Review requirement & coordinate with Indian processors', owner: 'Sachin Shinde' }
+        workflow: { status: 'NEW', nextAction: 'Review requirement & coordinate with Indian processors', owner: 'authenticated_operator' }
       }))
       const allLeads = Array.from(new Map([...savedLeads, ...synthesizedLeads].map(l => [l.leadId, l])).values())
       setLeads(allLeads)
@@ -229,7 +241,7 @@ export default function PrivateDashboard() {
             note: note || undefined
           }
         ],
-        notes: note ? [...(l.notes || []), { text: note, date: now, author: 'Sachin Shinde' }] : (l.notes || [])
+        notes: note ? [...(l.notes || []), { text: note, date: now, author: 'authenticated_operator' }] : (l.notes || [])
       }
     })
 
@@ -243,7 +255,7 @@ export default function PrivateDashboard() {
           ...(selectedLead.activity || []),
           { type: 'QUALIFICATION_UPDATED', timestamp: now, actor: 'ADMIN', fromStatus: selectedLead.workflow?.status || 'NEW', toStatus: newStatus, note: note || undefined }
         ],
-        notes: note ? [...(selectedLead.notes || []), { text: note, date: now, author: 'Sachin Shinde' }] : (selectedLead.notes || [])
+        notes: note ? [...(selectedLead.notes || []), { text: note, date: now, author: 'authenticated_operator' }] : (selectedLead.notes || [])
       }
       updated.push(updatedLead)
     }
@@ -288,7 +300,7 @@ export default function PrivateDashboard() {
             {
               type: 'LEAD_TO_QUOTATION',
               timestamp: new Date().toISOString(),
-              actor: 'Sachin Shinde',
+              actor: 'authenticated_operator',
               quotationId: quote.quotationId,
               details: `Draft Quotation ${quote.quotationId} created from Qualified Lead`
             }
@@ -306,7 +318,7 @@ export default function PrivateDashboard() {
             {
               type: 'LEAD_TO_QUOTATION',
               timestamp: new Date().toISOString(),
-              actor: 'Sachin Shinde',
+              actor: 'authenticated_operator',
               quotationId: quote.quotationId,
               details: `Draft Quotation ${quote.quotationId} created from Qualified Lead`
             }
@@ -1513,6 +1525,63 @@ export default function PrivateDashboard() {
               </div>
             )}
           </div>
+
+          {ecosystemOps && (
+            <div style={{
+              marginTop: 28,
+              background: '#fff',
+              borderRadius: 12,
+              border: '1px solid var(--color-border)',
+              padding: 20
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+                <div>
+                  <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-primary-dark)', margin: 0 }}>
+                    Unified Ecosystem Operations &amp; Infrastructure Health
+                  </h2>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--color-text-light)', margin: '4px 0 0' }}>
+                    Live source telemetry across Website, Intelligence Bridge, 13-Stage Pipeline, SEQ-01..SEQ-05 Outreach, and Cloud Providers
+                  </p>
+                </div>
+                <span className="badge" style={{
+                  background: ecosystemOps.outreach?.globalOutreachStop === '0' && ecosystemOps.outreach?.outreachAuthorized === '1' ? '#f0fdf4' : '#fff7ed',
+                  color: ecosystemOps.outreach?.globalOutreachStop === '0' && ecosystemOps.outreach?.outreachAuthorized === '1' ? '#166534' : '#9a3412',
+                  fontWeight: 700,
+                  fontSize: '0.72rem'
+                }}>
+                  {ecosystemOps.outreach?.globalOutreachStop === '0' && ecosystemOps.outreach?.outreachAuthorized === '1'
+                    ? 'OUTREACH ACTIVE (GATED)'
+                    : `OUTREACH LOCKED (STOP=${ecosystemOps.outreach?.globalOutreachStop ?? '1'})`}
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                <div style={{ padding: 12, background: 'var(--color-bg-alt)', borderRadius: 8 }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)' }}>CLOUD INFRASTRUCTURE</div>
+                  <div style={{ fontSize: '0.82rem', marginTop: 6 }}>
+                    Supabase: <strong>{ecosystemOps.infrastructure?.supabaseConfigured ? 'CONFIGURED' : 'UNCONFIGURED'}</strong><br />
+                    Upstash KV: <strong>{ecosystemOps.infrastructure?.upstashKvConfigured ? 'CONFIGURED' : 'LOCAL_FALLBACK'}</strong><br />
+                    Resend: <strong>{ecosystemOps.infrastructure?.resendConfigured ? 'CONFIGURED' : 'UNCONFIGURED'}</strong>
+                  </div>
+                </div>
+                <div style={{ padding: 12, background: 'var(--color-bg-alt)', borderRadius: 8 }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)' }}>OUTREACH TELEMETRY</div>
+                  <div style={{ fontSize: '0.82rem', marginTop: 6 }}>
+                    Sequences: <strong>{(ecosystemOps.outreach?.sequencesConfigured || []).length} (SEQ-01..05)</strong><br />
+                    Delivered: <strong>{ecosystemOps.outreach?.delivered || 0}</strong> | Bounced: <strong>{ecosystemOps.outreach?.bounced || 0}</strong><br />
+                    Positioning: <strong>{ecosystemOps.outreach?.positioningCompliant ? 'COMPLIANT' : 'REVIEW'}</strong>
+                  </div>
+                </div>
+                <div style={{ padding: 12, background: 'var(--color-bg-alt)', borderRadius: 8 }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-light)' }}>SALES &amp; WEBSITE</div>
+                  <div style={{ fontSize: '0.82rem', marginTop: 6 }}>
+                    Workflow Stages: <strong>{(ecosystemOps.sales?.workflowStages || []).length}</strong><br />
+                    Server Quotations: <strong>{ecosystemOps.website?.quotationCount || 0}</strong><br />
+                    Lead Owner: <strong>{ecosystemOps.sales?.leadOwner || 'Sachin Shinde'}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
       </div>

@@ -18,6 +18,9 @@
 // SEQ-05: Polite Close / Thank-You Message (+72h) -> COMPLETED
 // ============================================================
 
+export const REQUIRED_POSITIONING_STATEMENT =
+  'AVANI AGRO FOODS coordinates sourcing of Moringa Powder and Red Onion Powder through manufacturing and processing partners, subject to specification and supplier verification.';
+
 export const SENDER_IDENTITY = {
   name: 'AVANI AGRO FOODS',
   email: 'sales@avaniagrofoods.com',
@@ -51,6 +54,8 @@ Our core coordinated ingredients include:
 - Dehydrated Red Onion Powder (high pungency, low moisture, processed for industrial food blending)
 
 Specification, capacity, and documentation are subject to confirmation with the manufacturing/processing partner for each production lot.
+
+AVANI AGRO FOODS coordinates sourcing of Moringa Powder and Red Onion Powder through manufacturing and processing partners, subject to specification and supplier verification.
 
 If you are currently reviewing origin sources or open to comparing lot specifications, we would be glad to share:
 - Certificate of Analysis (COA) and microbiological parameters
@@ -93,6 +98,8 @@ To ensure any proposal aligns with {{company_name}}'s standards:
 
 Specification, capacity, and documentation are subject to confirmation with the manufacturing/processing partner.
 
+AVANI AGRO FOODS coordinates sourcing of Moringa Powder and Red Onion Powder through manufacturing and processing partners, subject to specification and supplier verification.
+
 If helpful, we can forward a representative Certificate of Analysis (COA) from recent partner production runs.
 
 Best regards,
@@ -127,6 +134,8 @@ As an Indian sourcing and export coordination partner, Avani Agro Foods coordina
 
 Specification, capacity, and documentation are subject to confirmation with the manufacturing/processing partner.
 
+AVANI AGRO FOODS coordinates sourcing of Moringa Powder and Red Onion Powder through manufacturing and processing partners, subject to specification and supplier verification.
+
 If you would like to test a representative sample, simply reply with your preferred shipping address and contact details, and we will coordinate courier dispatch.
 
 Sincerely,
@@ -159,6 +168,8 @@ As an Export Trade Co-Ordinator connecting global importers with qualified India
 If you have existing contract commitments or are not currently reviewing suppliers for {{product_focus}}, please feel free to let us know. We are happy to align with your seasonal review calendar.
 
 Specification, capacity, and documentation are subject to confirmation with the manufacturing/processing partner.
+
+AVANI AGRO FOODS coordinates sourcing of Moringa Powder and Red Onion Powder through manufacturing and processing partners, subject to specification and supplier verification.
 
 Would it be better to reconnect next quarter, or is there another department head we should address regarding commercial specifications?
 
@@ -194,6 +205,8 @@ We will pause our outreach and will not send further automated follow-ups.
 Should your sourcing requirements evolve, or if you ever need origin pricing benchmarks, technical specifications, or sample lots for Moringa Oleifera leaf powder or Dehydrated Red Onion powder from India, our door remains open.
 
 Specification, capacity, and documentation are subject to confirmation with the manufacturing/processing partner.
+
+AVANI AGRO FOODS coordinates sourcing of Moringa Powder and Red Onion Powder through manufacturing and processing partners, subject to specification and supplier verification.
 
 You can reach me directly at sales@avaniagrofoods.com or visit www.avaniagrofoods.com whenever convenient.
 
@@ -242,6 +255,13 @@ export function renderSequenceEmail(sequenceId, variables = {}) {
     .replace(/\{\{contact_name\}\}/g, contactName)
     .replace(/\{\{company_name\}\}/g, companyName)
     .replace(/\{\{product_focus\}\}/g, productFocus);
+
+  if (!body.includes(REQUIRED_POSITIONING_STATEMENT)) {
+    body = body.replace(
+      'Specification, capacity, and documentation are subject to confirmation with the manufacturing/processing partner',
+      `${REQUIRED_POSITIONING_STATEMENT}\n\nSpecification, capacity, and documentation are subject to confirmation with the manufacturing/processing partner`
+    );
+  }
 
   return {
     sequenceId: seq.sequenceId,

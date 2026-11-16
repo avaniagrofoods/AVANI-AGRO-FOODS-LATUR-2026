@@ -277,7 +277,7 @@ ${form.additionalMessage}
           source: { channel: 'website', page: location.pathname + location.search },
           buyer: { name: form.fullName, company: form.companyName, country: form.country, email: form.email, phone: form.phone },
           inquiry: { product: form.product, quantity: form.quantity, destination: form.destinationPort || form.country, incoterm: form.incoterm },
-          workflow: { status: 'NEW', nextAction: 'Review requirement & coordinate with Indian processors', owner: 'Sachin Shinde' }
+          workflow: { status: 'NEW', nextAction: 'Review requirement & coordinate with Indian processors', owner: 'authenticated_operator' }
         }
         const existingLeads = JSON.parse(localStorage.getItem('avani_leads') || '[]')
         localStorage.setItem('avani_leads', JSON.stringify([canonicalLead, ...existingLeads.filter(l => l.leadId !== authoritativeLeadId)]))

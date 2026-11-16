@@ -33,10 +33,13 @@ export default async function handler(req, res) {
     const ip = getClientIp(req);
     const rateCheck = await checkRateLimit(ip, 'lead_qualification');
     if (rateCheck.limited) {
-      return res.status(429).json({
+      return res.status(rateCheck.statusCode || 429).json({
         success: false,
-        error: 'Too Many Requests',
-        message: `Too many qualification requests from this IP. Please wait ${rateCheck.minutesLeft} minute(s).`
+        code: rateCheck.code,
+        error: rateCheck.backendUnavailable ? 'Service Unavailable' : 'Too Many Requests',
+        message: rateCheck.backendUnavailable
+          ? rateCheck.error
+          : `Too many qualification requests from this IP. Please wait ${rateCheck.minutesLeft} minute(s).`
       });
     }
 

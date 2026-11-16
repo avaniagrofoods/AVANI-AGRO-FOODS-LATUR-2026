@@ -310,7 +310,7 @@ export function createLeadRecord(validatedData) {
     workflow: {
       status: 'NEW',
       nextAction: 'Review requirement & coordinate with Indian processors for batch specs',
-      owner: 'Sachin Shinde'
+      owner: 'authenticated_operator'
     },
 
     activity: [

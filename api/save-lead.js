@@ -17,6 +17,15 @@ import { saveLeadToSupabase, saveQuotationToSupabase, isSupabaseConfigured } fro
 // In-memory cache for recent submissions to prevent double clicks (1 min window)
 const recentSubmissions = new Map();
 
+function escapeHtml(val) {
+  return String(val == null ? '' : val)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function cleanOldSubmissions() {
   const now = Date.now();
   for (const [key, timestamp] of recentSubmissions.entries()) {
@@ -67,7 +76,8 @@ export default async function handler(req, res) {
     const ip = getClientIp(req);
     const rateCheck = await checkRateLimit(ip, 'lead_submission');
     if (rateCheck.limited) {
-      return res.status(429).json({
+      return res.status(rateCheck.statusCode || 429).json({
+        code: rateCheck.code,
         error: `Too many submissions. Please wait ${rateCheck.minutesLeft} minute(s) before trying again.`
       });
     }
@@ -399,7 +409,7 @@ export default async function handler(req, res) {
         const internalResult = await sendResendEmailWithRetry({
           from: 'AVANI AGRO FOODS <notifications@avaniagrofoods.com>',
           to: ['sales@avaniagrofoods.com'],
-          subject: `New International B2B Enquiry – ${pm.productName} – ${country}`,
+          subject: `New International B2B Enquiry – ${escapeHtml(pm.productName)} – ${escapeHtml(country)}`,
           html: `
             <h2>New International B2B Enquiry</h2>
             <p><strong>Inquiry ID:</strong> ${inquiryId}</p>
@@ -407,13 +417,13 @@ export default async function handler(req, res) {
             <p><strong>Date:</strong> ${timestamp}</p>
             <hr/>
             <h3>Buyer Profile</h3>
-            <p><strong>Name:</strong> ${name}</p>
-            <p><strong>Company:</strong> ${company}</p>
-            <p><strong>Buyer Role:</strong> ${buyerRole}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Phone / WhatsApp:</strong> ${phone || 'Not provided'}</p>
-            <p><strong>Country:</strong> ${country}</p>
-            <p><strong>Destination Port:</strong> ${destinationPort}</p>
+            <p><strong>Name:</strong> ${escapeHtml(name)}</p>
+            <p><strong>Company:</strong> ${escapeHtml(company)}</p>
+            <p><strong>Buyer Role:</strong> ${escapeHtml(buyerRole)}</p>
+            <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+            <p><strong>Phone / WhatsApp:</strong> ${escapeHtml(phone || 'Not provided')}</p>
+            <p><strong>Country:</strong> ${escapeHtml(country)}</p>
+            <p><strong>Destination Port:</strong> ${escapeHtml(destinationPort)}</p>
             <hr/>
             <h3>Commercial Requirements</h3>
             <p><strong>Product:</strong> ${pm.productName} (HS: ${pm.hsCode})</p>
@@ -421,16 +431,16 @@ export default async function handler(req, res) {
             <p><strong>Incoterm:</strong> ${incoterm}</p>
             <p><strong>Indicative Rate:</strong> ${currency} ${rate} / KG</p>
             <p><strong>Estimated Grand Total:</strong> ${currency} ${quote.grandTotal}</p>
-            <p><strong>Timeline:</strong> ${purchaseTimeline || leadTime}</p>
-            <p><strong>Application:</strong> ${intendedApplication || 'Food Processing'}</p>
-            <p><strong>Packaging:</strong> ${packagingPreference || parsedReq.packaging}</p>
-            <p><strong>Documents Requested:</strong> ${documentsRequested || 'Standard COA'}</p>
-            <p><strong>Notes:</strong> ${rawRequirement || 'None'}</p>
+            <p><strong>Timeline:</strong> ${escapeHtml(purchaseTimeline || leadTime)}</p>
+            <p><strong>Application:</strong> ${escapeHtml(intendedApplication || 'Food Processing')}</p>
+            <p><strong>Packaging:</strong> ${escapeHtml(packagingPreference || parsedReq.packaging)}</p>
+            <p><strong>Documents Requested:</strong> ${escapeHtml(documentsRequested || 'Standard COA')}</p>
+            <p><strong>Notes:</strong> ${escapeHtml(rawRequirement || 'None')}</p>
             <hr/>
             <h3>Attribution</h3>
-            <p><strong>Source:</strong> ${source}</p>
-            <p><strong>Landing Page:</strong> ${landingPage || 'Direct'}</p>
-            <p><strong>UTM:</strong> source=${utmSource || '-'}, medium=${utmMedium || '-'}, campaign=${utmCampaign || '-'}</p>
+            <p><strong>Source:</strong> ${escapeHtml(source)}</p>
+            <p><strong>Landing Page:</strong> ${escapeHtml(landingPage || 'Direct')}</p>
+            <p><strong>UTM:</strong> source=${escapeHtml(utmSource || '-')}, medium=${escapeHtml(utmMedium || '-')}, campaign=${escapeHtml(utmCampaign || '-')}</p>
           `
         });
 
@@ -441,7 +451,7 @@ export default async function handler(req, res) {
           subject: 'We Have Received Your Enquiry – AVANI AGRO FOODS',
           html: `
             <h2>Thank you for contacting AVANI AGRO FOODS</h2>
-            <p>Dear ${name},</p>
+            <p>Dear ${escapeHtml(name)},</p>
             <p>We have successfully received your commercial enquiry for <strong>${pm.productName}</strong>.</p>
             <p><strong>Inquiry Reference:</strong> ${inquiryId}</p>
             <p><strong>Indicative Quotation Reference:</strong> ${quote.quoteId}</p>
@@ -450,7 +460,7 @@ export default async function handler(req, res) {
             <ul>
               <li><strong>Product:</strong> ${pm.productName}</li>
               <li><strong>Quantity:</strong> ${rawQuantity} ${quantityUnit} (${normalizedQuantity} KG)</li>
-              <li><strong>Incoterm & Destination:</strong> ${incoterm} - ${destinationPort}</li>
+              <li><strong>Incoterm & Destination:</strong> ${escapeHtml(incoterm)} - ${escapeHtml(destinationPort)}</li>
               <li><strong>Indicative Pricing Basis:</strong> ${currency} ${rate}/KG (${currency} ${quote.grandTotal})</li>
             </ul>
             <p>If you have urgent questions or wish to expedite batch samples, you may reach our trade desk directly on WhatsApp at <a href="https://wa.me/917219053645">+91 7219053645</a>.</p>

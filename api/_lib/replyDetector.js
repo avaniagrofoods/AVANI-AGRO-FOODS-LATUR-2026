@@ -152,10 +152,31 @@ export function matchInboundReply(inbound) {
 }
 
 /**
+ * Classify inbound buyer reply intent for automated compliance stop controls
+ */
+export function classifyReplyIntent(text = '', subject = '') {
+  const combined = `${subject}\n${text}`.toLowerCase();
+  if (/\b(unsubscribe|opt[\s-]?out|remove me|stop emailing|do not contact)\b/i.test(combined)) {
+    return 'UNSUBSCRIBE';
+  }
+  if (/\b(address not found|user unknown|mailbox unavailable|undeliverable|invalid address|550 5\.1\.1)\b/i.test(combined)) {
+    return 'INVALID_ADDRESS';
+  }
+  if (/\b(not interested|no thank|no thanks|wrong person|already have a supplier|stop following up)\b/i.test(combined)) {
+    return 'NEGATIVE_RESPONSE';
+  }
+  if (/\b(too expensive|price too high|cannot proceed|objection|decline)\b/i.test(combined)) {
+    return 'OBJECTION';
+  }
+  return 'INQUIRY_REPLY';
+}
+
+/**
  * Complete pipeline: Ingest, Validate, Match, and Cancel Future Follow-Ups
  */
 export function processInboundReply(eventPayload) {
   const inbound = normalizeInboundPayload(eventPayload);
+  const replyIntent = classifyReplyIntent(inbound.textBody, inbound.subject);
 
   // Match reply
   const matchResult = matchInboundReply(inbound);
@@ -165,6 +186,7 @@ export function processInboundReply(eventPayload) {
       success: false,
       action: matchResult.ambiguous ? 'FLAGGED_MANUAL_REVIEW' : 'IGNORED_UNMATCHED',
       reason: matchResult.reason,
+      replyIntent,
       inbound
     };
   }
@@ -176,6 +198,7 @@ export function processInboundReply(eventPayload) {
     subject: inbound.subject,
     inReplyTo: inbound.inReplyTo,
     messageId: inbound.messageId,
+    replyIntent,
     timestamp: inbound.timestamp
   });
 
@@ -185,6 +208,7 @@ export function processInboundReply(eventPayload) {
     campaignId: matchResult.campaignId,
     recipientId: matchResult.recipientId,
     confidence: matchResult.confidence,
+    replyIntent,
     state: updatedState,
     inbound
   };
@@ -258,6 +282,7 @@ export async function matchInboundReplyAsync(inbound) {
  */
 export async function processInboundReplyAsync(eventPayload) {
   const inbound = normalizeInboundPayload(eventPayload);
+  const replyIntent = classifyReplyIntent(inbound.textBody, inbound.subject);
 
   // Match reply
   const matchResult = await matchInboundReplyAsync(inbound);
@@ -267,6 +292,7 @@ export async function processInboundReplyAsync(eventPayload) {
       success: false,
       action: matchResult.ambiguous ? 'FLAGGED_MANUAL_REVIEW' : 'IGNORED_UNMATCHED',
       reason: matchResult.reason,
+      replyIntent,
       inbound
     };
   }
@@ -278,6 +304,7 @@ export async function processInboundReplyAsync(eventPayload) {
     subject: inbound.subject,
     inReplyTo: inbound.inReplyTo,
     messageId: inbound.messageId,
+    replyIntent,
     timestamp: inbound.timestamp
   });
 
@@ -287,6 +314,7 @@ export async function processInboundReplyAsync(eventPayload) {
     campaignId: matchResult.campaignId,
     recipientId: matchResult.recipientId,
     confidence: matchResult.confidence,
+    replyIntent,
     state: updatedState,
     inbound
   };

@@ -45,7 +45,8 @@ export default async function handler(req, res) {
     const ip = getClientIp(req);
     const rateCheck = await checkRateLimit(ip, 'rfq_lead_submission');
     if (rateCheck.limited) {
-      return res.status(429).json({
+      return res.status(rateCheck.statusCode || 429).json({
+        code: rateCheck.code,
         success: false,
         error: 'Too Many Requests',
         message: `Too many submissions from this IP. Please wait ${rateCheck.minutesLeft} minute(s) before trying again.`

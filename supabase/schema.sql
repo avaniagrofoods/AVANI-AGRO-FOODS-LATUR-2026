@@ -103,6 +103,16 @@ CREATE TABLE IF NOT EXISTS public.quotations (
     document_hash VARCHAR(64),
     raw_quotation JSONB,
     
+    buyer_email VARCHAR(255),
+    provider_message_id VARCHAR(255),
+    provider_name VARCHAR(50) DEFAULT 'resend',
+    sent_at TIMESTAMPTZ,
+    delivered_at TIMESTAMPTZ,
+    bounced_at TIMESTAMPTZ,
+    delivery_status VARCHAR(50) DEFAULT 'pending',
+    created_by VARCHAR(100) DEFAULT 'authenticated_operator',
+    updated_by VARCHAR(100) DEFAULT 'authenticated_operator',
+    
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -110,7 +120,10 @@ CREATE TABLE IF NOT EXISTS public.quotations (
 CREATE INDEX IF NOT EXISTS idx_quotations_quotation_id ON public.quotations (quotation_id);
 CREATE INDEX IF NOT EXISTS idx_quotations_inquiry_id ON public.quotations (inquiry_id);
 CREATE INDEX IF NOT EXISTS idx_quotations_status ON public.quotations (status);
+CREATE INDEX IF NOT EXISTS idx_quotations_delivery_status ON public.quotations (delivery_status);
+CREATE INDEX IF NOT EXISTS idx_quotations_provider_message_id ON public.quotations (provider_message_id);
 CREATE INDEX IF NOT EXISTS idx_quotations_date ON public.quotations (date DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_quotations_unique_provider_msg ON public.quotations (provider_message_id) WHERE provider_message_id IS NOT NULL;
 
 -- ── 3. IMMUTABLE AUDIT TRAIL ────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.lead_audit_logs (
@@ -137,7 +150,7 @@ CREATE TABLE IF NOT EXISTS public.crm_activities (
     summary TEXT NOT NULL,
     outcome VARCHAR(100),
     next_follow_up_date DATE,
-    performed_by VARCHAR(100) NOT NULL DEFAULT 'Sachin Shinde',
+    performed_by VARCHAR(100) NOT NULL DEFAULT 'authenticated_operator',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

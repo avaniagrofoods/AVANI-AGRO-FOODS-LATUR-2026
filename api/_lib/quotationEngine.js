@@ -835,7 +835,21 @@ export async function generateDocxQuotation(quoteInput) {
 /**
  * Generates protected Excel (.xlsx) Quotation File Buffer
  */
-export async function generateExcelQuotation(quoteInput, password = process.env.MASTER_GATE_PASSWORD || '') {
+export async function generateExcelQuotation(quoteInput, worksheetLockPassword = process.env.XLSX_WORKSHEET_LOCK_PASSWORD || '') {
+  // CC-05: Worksheet protection (sheet.protect) is UI cell-edit locking only, NOT file encryption or confidentiality.
+  // Never couple the portal master credential to generated Excel workbooks.
+  const rawLockOption = typeof worksheetLockPassword === 'object' && worksheetLockPassword !== null
+    ? (worksheetLockPassword.worksheetProtectionPassword || worksheetLockPassword.password || '')
+    : worksheetLockPassword;
+  const cleanPassword = typeof rawLockOption === 'string' ? rawLockOption.trim() : '';
+  const portalMaster = typeof process.env.MASTER_GATE_PASSWORD === 'string' ? process.env.MASTER_GATE_PASSWORD.trim() : '';
+  const legacyMaster = typeof process.env.PRIVATE_PORTAL_PASSWORD === 'string' ? process.env.PRIVATE_PORTAL_PASSWORD.trim() : '';
+  if (cleanPassword && ((portalMaster && cleanPassword === portalMaster) || (legacyMaster && cleanPassword === legacyMaster))) {
+    const err = new Error('SECURITY_VIOLATION: Portal master credential must never be used for Excel worksheet protection.');
+    err.code = 'CREDENTIAL_COUPLING_FORBIDDEN';
+    throw err;
+  }
+  const password = cleanPassword;
   const quote = calculateQuotation(quoteInput);
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'AVANI AGRO FOODS';

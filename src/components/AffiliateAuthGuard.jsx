@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
+import { storeCsrfToken } from '../lib/csrf'
 
 export default function AffiliateAuthGuard({ children }) {
   const [checking, setChecking] = useState(true)
@@ -21,6 +22,8 @@ export default function AffiliateAuthGuard({ children }) {
         })
 
         if (res.ok) {
+          const data = await res.json().catch(() => ({}))
+          if (data?.csrfToken) storeCsrfToken(data.csrfToken, 'affiliate')
           if (isMounted) {
             setAuthenticated(true)
             setChecking(false)
@@ -30,7 +33,7 @@ export default function AffiliateAuthGuard({ children }) {
             navigate(`/affiliate-login?redirect=${encodeURIComponent(location.pathname)}`, { replace: true })
           }
         }
-      } catch (err) {
+      } catch {
         // In local development or if offline, handle gracefully
         if (isMounted) {
           navigate(`/affiliate-login?redirect=${encodeURIComponent(location.pathname)}`, { replace: true })

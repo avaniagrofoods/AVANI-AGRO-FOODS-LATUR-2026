@@ -1,152 +1,184 @@
 // ============================================================
 // AVANI AGRO FOODS — Affiliate Portal Authentication API
-// Vercel Serverless Function (Node.js runtime)
-// POST /api/affiliate-auth
-//
-// Supports:
-//   1. Distributed Server-Side Session Store & Revocation (via Upstash Redis / Vercel KV)
-//   2. Distributed Rate Limiting (via Upstash Redis / Vercel KV)
-//   3. High-Security HMAC Signing using SESSION_SECRET
-//
-// Environment variables:
-//   AFFILIATE_PASSWORD — Password for affiliate portal
-//   SESSION_SECRET     — Cryptographic secret for HMAC session signing
+// Endpoint: /api/affiliate-auth
+// Package 3F.106 Hardened (CC-03, CC-04, CC-08)
 // ============================================================
 
-import crypto from 'crypto';
 import {
-  getSessionSecret,
-  signSessionId,
-  parseAndVerifySignature,
-  verifyPassword,
-  parseCookies,
-  createSessionCookie,
-  createClearCookie,
   getClientIp,
   checkRateLimit,
   resetRateLimit,
+  verifyPassword,
+  createServerSession,
+  verifyServerSession,
+  revokeServerSession,
+  createCsrfCookie,
   isAllowedOrigin,
-  SESSION_TTL_SECONDS,
-  hasDistributedKV,
-  execKVCommand,
+  validateMutationOrigin,
+  verifyCsrfRequest
 } from './_lib/auth.js';
 
 export default async function handler(req, res) {
-  // CORS & Security Headers
-  if (!isAllowedOrigin(req)) {
-    return res.status(403).json({ error: 'Forbidden origin' });
-  }
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
 
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
+  if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const sessionSecret = getSessionSecret();
-  const correctPassword = process.env.AFFILIATE_PASSWORD;
-  const body = req.body || {};
-  const { action, password } = body;
-
-  // 1. ACTION: LOGOUT
-  if (action === 'logout') {
-    const cookies = parseCookies(req);
-    const sessionCookie = cookies['avani_affiliate_session'] || cookies['affiliate_session'];
-    const sessionId = parseAndVerifySignature(sessionCookie, sessionSecret);
-
-    if (sessionId && hasDistributedKV) {
-      await execKVCommand('DEL', `session:affiliate:${sessionId}`);
-    }
-
-    res.setHeader('Set-Cookie', [
-      createClearCookie('avani_affiliate_session'),
-      createClearCookie('affiliate_session'),
-    ]);
-    return res.status(200).json({ success: true, message: 'Logged out successfully' });
+  if (!isAllowedOrigin(req)) {
+    return res.status(403).json({
+      success: false,
+      authenticated: false,
+      code: 'ORIGIN_FORBIDDEN',
+      error: 'Forbidden: Invalid request origin.'
+    });
   }
 
-  // 2. ACTION: VERIFY EXISTING SESSION
+  const clientIp = getClientIp(req);
+  const action = req.method === 'GET' ? 'verify' : (req.body?.action || 'login');
+
+  // 1. Verify active affiliate session
   if (action === 'verify') {
-    const cookies = parseCookies(req);
-    const sessionCookie = cookies['avani_affiliate_session'] || cookies['affiliate_session'];
-    const sessionId = parseAndVerifySignature(sessionCookie, sessionSecret);
-
-    if (!sessionId) {
-      return res.status(401).json({ authenticated: false });
+    const verifyLimit = await checkRateLimit(clientIp, 'affiliate_verify', { maxAttempts: 60, windowSeconds: 900 });
+    if (verifyLimit.limited) {
+      return res.status(verifyLimit.statusCode || 429).json({
+        authenticated: false,
+        code: verifyLimit.code,
+        error: verifyLimit.error || 'Too many verification requests.'
+      });
     }
 
-    if (hasDistributedKV) {
-      const sessionData = await execKVCommand('GET', `session:affiliate:${sessionId}`);
-      if (!sessionData) {
-        return res.status(401).json({ authenticated: false, message: 'Session revoked or expired' });
-      }
+    const session = await verifyServerSession(req, 'affiliate');
+    if (!session.authenticated) {
+      return res.status(session.statusCode || 401).json({
+        authenticated: false,
+        code: session.code,
+        error: session.error
+      });
     }
 
-    return res.status(200).json({ authenticated: true });
-  }
-
-  // 3. ACTION: LOGIN (Password Verification & Session Creation)
-  const ip = getClientIp(req);
-  const rateCheck = await checkRateLimit(ip, 'affiliate');
-
-  if (rateCheck.limited) {
-    return res.status(429).json({
-      error: `Too many failed attempts. Access is temporarily locked. Please wait ${rateCheck.minutesLeft} minute(s).`,
-      retryAfterMinutes: rateCheck.minutesLeft,
+    res.setHeader('Set-Cookie', createCsrfCookie(session.csrfToken, undefined, 'affiliate'));
+    return res.status(200).json({
+      authenticated: true,
+      role: session.actorRole,
+      actor: session.actor,
+      csrfToken: session.csrfToken
     });
   }
 
-  if (!correctPassword) {
-    console.error('[SECURITY CRITICAL] AFFILIATE_PASSWORD is not configured on server.');
-    return res.status(500).json({ error: 'Server authentication configuration is missing.' });
+  // 2. Logout (State-changing session revocation — requires valid session, Origin & CSRF token)
+  if (action === 'logout') {
+    const session = await verifyServerSession(req, 'affiliate');
+    if (!session.authenticated) {
+      return res.status(session.statusCode || 401).json({
+        success: false,
+        authenticated: false,
+        code: session.code,
+        error: session.error
+      });
+    }
+
+    const csrfCheck = verifyCsrfRequest(req, session);
+    if (!csrfCheck.valid) {
+      return res.status(csrfCheck.statusCode || 403).json({
+        success: false,
+        code: csrfCheck.code,
+        error: csrfCheck.error
+      });
+    }
+
+    const revokeResult = await revokeServerSession(req, 'affiliate');
+    if (revokeResult.cookies) {
+      res.setHeader('Set-Cookie', revokeResult.cookies);
+    }
+
+    if (!revokeResult.revoked) {
+      return res.status(revokeResult.statusCode || 503).json({
+        success: false,
+        code: revokeResult.code,
+        error: revokeResult.error
+      });
+    }
+
+    return res.status(200).json({ success: true, loggedOut: true });
   }
 
-  if (!sessionSecret) {
-    console.error('[SECURITY CRITICAL] SESSION_SECRET is not configured on server.');
-    return res.status(500).json({ error: 'Server session signing configuration is missing.' });
+  // 3. Login (State-changing session issuance)
+  const originCheck = validateMutationOrigin(req);
+  if (!originCheck.valid) {
+    return res.status(originCheck.statusCode || 403).json({
+      success: false,
+      authenticated: false,
+      code: originCheck.code,
+      error: originCheck.error
+    });
   }
 
-  if (!password || typeof password !== 'string' || !password.trim() || password.length > 256) {
-    return res.status(400).json({ error: 'Valid password is required.' });
+  const rawAffiliatePassword = process.env.AFFILIATE_PORTAL_PASSWORD || process.env.AFFILIATE_GATE_PASSWORD || process.env.AFFILIATE_PASSWORD;
+  const masterPassword = typeof rawAffiliatePassword === 'string' && rawAffiliatePassword.trim()
+    ? rawAffiliatePassword.trim()
+    : null;
+
+  if (!masterPassword) {
+    return res.status(503).json({
+      success: false,
+      authenticated: false,
+      code: 'AFFILIATE_CREDENTIAL_MISSING',
+      error: 'Affiliate authentication service is not configured on the server.'
+    });
   }
 
-  const match = verifyPassword(password, correctPassword);
+  const rateLimit = await checkRateLimit(clientIp, 'affiliate');
+  if (rateLimit.limited) {
+    const status = rateLimit.statusCode || 429;
+    return res.status(status).json({
+      success: false,
+      authenticated: false,
+      code: rateLimit.code,
+      error: rateLimit.backendUnavailable
+        ? rateLimit.error
+        : `Too many failed attempts. Please wait ${rateLimit.minutesLeft} minute(s) before trying again.`
+    });
+  }
 
-  if (!match) {
+  const { password } = req.body || {};
+  if (!password || typeof password !== 'string') {
+    return res.status(400).json({
+      success: false,
+      authenticated: false,
+      code: 'PASSWORD_REQUIRED',
+      error: 'Password is required.'
+    });
+  }
+
+  const isMatch = verifyPassword(password, masterPassword);
+  if (!isMatch) {
     return res.status(401).json({
-      error: 'Incorrect password. Please try again.',
-      remainingAttempts: rateCheck.remaining,
+      success: false,
+      authenticated: false,
+      code: 'INVALID_CREDENTIALS',
+      error: `Invalid access password. ${rateLimit.remaining ?? 0} attempt(s) remaining.`
     });
   }
 
-  // Reset rate limiting on successful login
-  await resetRateLimit(ip, 'affiliate');
-
-  // Generate cryptographically random session identifier
-  const rawSessionId = `avani_affiliate_sess_${crypto.randomUUID()}_${Date.now()}`;
-  const signedCookieValue = signSessionId(rawSessionId, sessionSecret);
-
-  if (hasDistributedKV) {
-    await execKVCommand('SET', `session:affiliate:${rawSessionId}`, JSON.stringify({
-      created: Date.now(),
-      ip,
-      role: 'affiliate',
-    }));
-    await execKVCommand('EXPIRE', `session:affiliate:${rawSessionId}`, String(SESSION_TTL_SECONDS));
+  const session = await createServerSession('affiliate');
+  if (!session.ok) {
+    return res.status(session.statusCode || 503).json({
+      success: false,
+      authenticated: false,
+      code: session.code,
+      error: session.error
+    });
   }
 
-  // Set secure cookies: avani_affiliate_session (and affiliate_session for backwards compatibility)
-  res.setHeader('Set-Cookie', [
-    createSessionCookie('avani_affiliate_session', signedCookieValue, SESSION_TTL_SECONDS),
-    createSessionCookie('affiliate_session', signedCookieValue, SESSION_TTL_SECONDS),
-  ]);
+  await resetRateLimit(clientIp, 'affiliate');
+  res.setHeader('Set-Cookie', session.cookies);
 
   return res.status(200).json({
     success: true,
-    message: 'Authenticated successfully',
-    sessionType: hasDistributedKV ? 'distributed_kv_revocable' : 'stateless_hmac_signed',
+    authenticated: true,
+    role: session.actorRole,
+    actor: session.actor,
+    csrfToken: session.csrfToken
   });
 }

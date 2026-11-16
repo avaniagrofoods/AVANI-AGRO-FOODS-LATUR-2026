@@ -11,6 +11,7 @@ import {
   generateSecureId
 } from '../../src/data/quotationModel.js';
 
+import crypto from 'crypto';
 // Re-export all client-safe models and constants for server-side callers
 export * from '../../src/data/quotationModel.js';
 
@@ -282,8 +283,6 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
 
   // Pre-dispatch safety gates: Fail closed on emergency stop or unconfirmed authorization
   // SEC-03: Fail-safe GLOBAL_OUTREACH_STOP gate
-  // Default to STOPPED unless server-side configuration explicitly represents an approved non-stop value ('0' or 'false').
-  // Missing, empty, malformed, and unexpected values must STOP.
   const rawStop = (typeof process !== 'undefined' && process.env && process.env.GLOBAL_OUTREACH_STOP != null)
     ? String(process.env.GLOBAL_OUTREACH_STOP).trim().toLowerCase()
     : '';
@@ -358,14 +357,14 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
       previousSentAt: quotation.dispatch.sentAt,
       resendReason,
       reason: resendReason,
-      resendRequestedBy: options.actor || 'Sachin Shinde',
+      resendRequestedBy: options.verifiedActor || options.actor || 'authenticated_operator',
       timestamp: now
     });
 
     quotation.activity = quotation.activity || [];
     quotation.activity.push({
       timestamp: now,
-      actor: options.actor || 'Sachin Shinde',
+      actor: options.verifiedActor || options.actor || 'authenticated_operator',
       event: 'RESEND_REQUESTED',
       quotationId: quotation.quotationId,
       leadId: quotation.leadId,
@@ -387,7 +386,7 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
   quotation.dispatch.recipientValidated = true;
   quotation.dispatch.reviewedByAdmin = true;
   quotation.dispatch.reviewedAt = now;
-  quotation.dispatch.authorizedBy = options.actor || 'Sachin Shinde';
+  quotation.dispatch.authorizedBy = options.verifiedActor || options.actor || 'authenticated_operator';
   quotation.dispatch.dispatchAttemptId = attemptId;
   quotation.dispatch.idempotencyKey = idempotencyKey;
 
@@ -412,7 +411,7 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
     quotation.activity = quotation.activity || [];
     quotation.activity.push({
       timestamp: now,
-      actor: options.actor || 'Sachin Shinde',
+      actor: options.verifiedActor || options.actor || 'authenticated_operator',
       event: 'DISPATCH_SAFETY_BLOCKED',
       quotationId: quotation.quotationId,
       leadId: quotation.leadId,
@@ -436,7 +435,7 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
     quotation.activity = quotation.activity || [];
     quotation.activity.push({
       timestamp: now,
-      actor: options.actor || 'Sachin Shinde',
+      actor: options.verifiedActor || options.actor || 'authenticated_operator',
       event: 'SEND_TO_BUYER_REQUESTED',
       quotationId: quotation.quotationId,
       leadId: quotation.leadId,
@@ -461,7 +460,7 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
     quotation.activity = quotation.activity || [];
     quotation.activity.push({
       timestamp: now,
-      actor: options.actor || 'Sachin Shinde',
+      actor: options.verifiedActor || options.actor || 'authenticated_operator',
       event: 'SEND_FAILED',
       quotationId: quotation.quotationId,
       leadId: quotation.leadId,
@@ -481,7 +480,7 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
   const msgId = emailRes.messageId;
   quotation.dispatch.status = 'SENT';
   quotation.dispatch.sentAt = now;
-  quotation.dispatch.sentBy = options.actor || 'Sachin Shinde';
+  quotation.dispatch.sentBy = options.verifiedActor || options.actor || 'authenticated_operator';
   quotation.dispatch.messageId = msgId;
   quotation.dispatch.provider = emailRes.provider || 'configured';
   quotation.dispatch.providerReference = msgId;
@@ -495,7 +494,7 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
   if (isResend) {
     quotation.activity.push({
       timestamp: now,
-      actor: options.actor || 'Sachin Shinde',
+      actor: options.verifiedActor || options.actor || 'authenticated_operator',
       event: 'RESEND_EXECUTED',
       quotationId: quotation.quotationId,
       leadId: quotation.leadId,
@@ -504,7 +503,7 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
   } else {
     quotation.activity.push({
       timestamp: now,
-      actor: options.actor || 'Sachin Shinde',
+      actor: options.verifiedActor || options.actor || 'authenticated_operator',
       event: 'QUOTATION_SENT',
       quotationId: quotation.quotationId,
       leadId: quotation.leadId,
@@ -522,7 +521,526 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
   };
 }
 
+// In-memory bounded cache for replay protection fallback when distributed KV is unconfigured
 const seenWebhookEventIds = new Set();
+const localWebhookClaims = new Map();
+const localWebhookGenerations = new Map();
+
+const ATOMIC_WEBHOOK_COMPLETE_LUA = `
+local current = redis.call("GET", KEYS[1])
+local reqWorker = ARGV[1]
+local reqToken = ARGV[2]
+local newPayload = ARGV[3]
+local ttl = tonumber(ARGV[4])
+if reqWorker ~= "" then
+  if not current then
+    return {0, "LEASE_EXPIRED_OR_MISSING"}
+  end
+  local ok, data = pcall(cjson.decode, current)
+  if not ok or type(data) ~= "table" then
+    return {0, "CORRUPT_LEASE_STATE"}
+  end
+  if data.status == "CLAIMED" and data.workerId and data.workerId ~= reqWorker then
+    return {0, "WORKER_OWNERSHIP_MISMATCH", tostring(data.workerId)}
+  end
+  if reqToken ~= "" and data.leaseToken and data.leaseToken ~= reqToken then
+    return {0, "LEASE_TOKEN_MISMATCH"}
+  end
+end
+redis.call("SET", KEYS[1], newPayload, "EX", ttl)
+return {1, "COMPLETED"}
+`;
+
+const ATOMIC_WEBHOOK_RELEASE_LUA = `
+local current = redis.call("GET", KEYS[1])
+if not current then
+  return {0, "LEASE_NOT_FOUND"}
+end
+local ok, data = pcall(cjson.decode, current)
+if not ok or type(data) ~= "table" then
+  return {0, "CORRUPT_LEASE_STATE"}
+end
+if data.status ~= "CLAIMED" then
+  return {0, "NOT_IN_CLAIMED_STATE"}
+end
+if ARGV[1] ~= "" and data.workerId and data.workerId ~= ARGV[1] then
+  return {0, "WORKER_OWNERSHIP_MISMATCH"}
+end
+if ARGV[2] ~= "" and data.leaseToken and data.leaseToken ~= ARGV[2] then
+  return {0, "LEASE_TOKEN_MISMATCH"}
+end
+redis.call("DEL", KEYS[1])
+return {1, "RELEASED"}
+`;
+
+const ATOMIC_WEBHOOK_RENEW_LUA = `
+local current = redis.call("GET", KEYS[1])
+if not current then
+  return {0, "LEASE_EXPIRED_OR_MISSING"}
+end
+local ok, data = pcall(cjson.decode, current)
+if not ok or type(data) ~= "table" then
+  return {0, "CORRUPT_LEASE_STATE"}
+end
+if data.status ~= "CLAIMED" then
+  return {0, "NOT_IN_CLAIMED_STATE"}
+end
+if ARGV[1] ~= "" and data.workerId and data.workerId ~= ARGV[1] then
+  return {0, "WORKER_OWNERSHIP_MISMATCH"}
+end
+if ARGV[2] ~= "" and data.leaseToken and data.leaseToken ~= ARGV[2] then
+  return {0, "LEASE_TOKEN_MISMATCH"}
+end
+redis.call("EXPIRE", KEYS[1], tonumber(ARGV[3]))
+return {1, "RENEWED"}
+`;
+
+export function _testExpireLocalWebhookClaim(eventId) {
+  if (!eventId) return false;
+  const cleanId = String(eventId).trim();
+  const existing = localWebhookClaims.get(cleanId);
+  if (existing) {
+    existing.expiresAt = Date.now() - 5000;
+    localWebhookClaims.set(cleanId, existing);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Distributed Webhook Atomic Claim for Quotation Delivery Webhooks
+ * Atomically reserves the event lease with workerId, leaseToken, and monotonic leaseGeneration
+ * in Upstash KV or falls back to bounded in-memory store in dev/test.
+ * In production or strict mode, fails closed if distributed KV is unavailable.
+ */
+export async function claimQuotationWebhookDistributed(eventId, workerId = 'worker-default', leaseSeconds = 60) {
+  if (!eventId) throw new Error('eventId is required for claimQuotationWebhookDistributed');
+  const cleanId = String(eventId).trim();
+  const claimKey = `quote_event_claim:${cleanId}`;
+  const genKey = `quote_event_gen:${cleanId}`;
+
+  let hasKv = false;
+  let execKVStrict = null;
+  let isStrictKv = false;
+  try {
+    const authModule = await import('./auth.js');
+    hasKv = Boolean(authModule.getKvCredentials && authModule.getKvCredentials().configured);
+    execKVStrict = authModule.execKVCommandStrict;
+    isStrictKv = Boolean(authModule.isDistributedKvRequired && authModule.isDistributedKvRequired());
+  } catch (_) {}
+
+  if (isStrictKv && !hasKv) {
+    const err = new Error('Distributed state backend unavailable. Failing closed under mandatory distributed KV policy.');
+    err.code = 'DISTRIBUTED_KV_UNAVAILABLE';
+    throw err;
+  }
+
+  const leaseToken = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+
+  if (hasKv && execKVStrict) {
+    let leaseGeneration = 1;
+    try {
+      const genRes = await execKVStrict('INCR', genKey);
+      if (Number.isInteger(Number(genRes)) && Number(genRes) > 0) {
+        leaseGeneration = Number(genRes);
+        await execKVStrict('EXPIRE', genKey, '604800').catch(() => {});
+      }
+    } catch (_) {}
+
+    const claimData = JSON.stringify({
+      status: 'CLAIMED',
+      workerId,
+      leaseToken,
+      leaseGeneration,
+      claimedAt: new Date().toISOString()
+    });
+
+    const claimResult = await execKVStrict('SET', claimKey, claimData, 'EX', String(leaseSeconds), 'NX');
+    if (claimResult === 'OK') {
+      return {
+        claimed: true,
+        duplicate: false,
+        status: 'CLAIMED',
+        workerId,
+        leaseToken,
+        leaseGeneration,
+        storage: 'distributed_kv'
+      };
+    }
+
+    const existingRaw = await execKVStrict('GET', claimKey);
+    let existing = null;
+    try {
+      existing = typeof existingRaw === 'string' ? JSON.parse(existingRaw) : existingRaw;
+    } catch {}
+
+    const status = existing?.status || 'CLAIMED';
+    return {
+      claimed: false,
+      duplicate: true,
+      status,
+      details: existing,
+      storage: 'distributed_kv'
+    };
+  }
+
+  // Fallback to local memory store when KV is unconfigured (test/local dev)
+  const now = Date.now();
+  const existingClaim = localWebhookClaims.get(cleanId);
+  if (existingClaim) {
+    if (existingClaim.status === 'PROCESSED' || existingClaim.expiresAt > now) {
+      return {
+        claimed: false,
+        duplicate: true,
+        status: existingClaim.status || 'CLAIMED',
+        details: existingClaim,
+        storage: 'local_memory'
+      };
+    }
+  }
+
+  const nextGen = (localWebhookGenerations.get(cleanId) || 0) + 1;
+  localWebhookGenerations.set(cleanId, nextGen);
+
+  localWebhookClaims.set(cleanId, {
+    status: 'CLAIMED',
+    workerId,
+    leaseToken,
+    leaseGeneration: nextGen,
+    claimedAt: new Date().toISOString(),
+    expiresAt: now + (leaseSeconds * 1000)
+  });
+
+  if (localWebhookClaims.size > 2000) {
+    const firstKey = localWebhookClaims.keys().next().value;
+    localWebhookClaims.delete(firstKey);
+  }
+
+  return {
+    claimed: true,
+    duplicate: false,
+    status: 'CLAIMED',
+    workerId,
+    leaseToken,
+    leaseGeneration: nextGen,
+    storage: 'local_memory'
+  };
+}
+
+/**
+ * Atomically renews an active IN_FLIGHT webhook lease via Lua compare-and-extend (FIND-111-03 / OPT-ARCH-01).
+ */
+export async function renewQuotationWebhookLeaseDistributed(eventId, workerId, leaseSeconds = 60, leaseToken = null) {
+  if (!eventId || !workerId) return { renewed: false, reason: 'MISSING_EVENT_OR_WORKER_ID' };
+  const cleanId = String(eventId).trim();
+  const claimKey = `quote_event_claim:${cleanId}`;
+
+  let hasKv = false;
+  let execKVStrict = null;
+  let isStrictKv = false;
+  try {
+    const authModule = await import('./auth.js');
+    hasKv = Boolean(authModule.getKvCredentials && authModule.getKvCredentials().configured);
+    execKVStrict = authModule.execKVCommandStrict;
+    isStrictKv = Boolean(authModule.isDistributedKvRequired && authModule.isDistributedKvRequired());
+  } catch (_) {}
+
+  if (isStrictKv && !hasKv) {
+    const err = new Error('Distributed state backend unavailable. Failing closed under mandatory distributed KV policy.');
+    err.code = 'DISTRIBUTED_KV_UNAVAILABLE';
+    throw err;
+  }
+
+  if (hasKv && execKVStrict) {
+    const evalRes = await execKVStrict(
+      'EVAL',
+      ATOMIC_WEBHOOK_RENEW_LUA,
+      '1',
+      claimKey,
+      String(workerId),
+      String(leaseToken || ''),
+      String(leaseSeconds)
+    );
+    if (Array.isArray(evalRes)) {
+      if (Number(evalRes[0]) === 1) {
+        return { renewed: true, storage: 'distributed_kv' };
+      }
+      return { renewed: false, reason: String(evalRes[1] || 'LEASE_RENEWAL_REJECTED'), storage: 'distributed_kv' };
+    }
+    return { renewed: false, reason: 'KV_EVAL_UNSUPPORTED', storage: 'distributed_kv' };
+  }
+
+  const now = Date.now();
+  const existing = localWebhookClaims.get(cleanId);
+  if (!existing || existing.status !== 'CLAIMED' || existing.expiresAt <= now) {
+    if (existing && existing.status === 'CLAIMED' && existing.expiresAt <= now) {
+      localWebhookClaims.delete(cleanId);
+    }
+    return { renewed: false, reason: 'LEASE_EXPIRED_OR_MISSING', storage: 'local_memory' };
+  }
+  if (existing.workerId && existing.workerId !== workerId) {
+    return { renewed: false, reason: 'WORKER_OWNERSHIP_MISMATCH', storage: 'local_memory' };
+  }
+  if (leaseToken && existing.leaseToken && existing.leaseToken !== leaseToken) {
+    return { renewed: false, reason: 'LEASE_TOKEN_MISMATCH', storage: 'local_memory' };
+  }
+  existing.expiresAt = now + (leaseSeconds * 1000);
+  localWebhookClaims.set(cleanId, existing);
+  return { renewed: true, storage: 'local_memory' };
+}
+
+/**
+ * Atomically releases an IN_FLIGHT webhook claim on transient DB failure via Lua compare-and-delete.
+ */
+export async function releaseQuotationWebhookDistributed(eventId, workerId, leaseToken = null) {
+  if (!eventId || !workerId) return { released: false, reason: 'MISSING_EVENT_OR_WORKER_ID' };
+  const cleanId = String(eventId).trim();
+  const claimKey = `quote_event_claim:${cleanId}`;
+
+  let hasKv = false;
+  let execKVStrict = null;
+  let isStrictKv = false;
+  try {
+    const authModule = await import('./auth.js');
+    hasKv = Boolean(authModule.getKvCredentials && authModule.getKvCredentials().configured);
+    execKVStrict = authModule.execKVCommandStrict;
+    isStrictKv = Boolean(authModule.isDistributedKvRequired && authModule.isDistributedKvRequired());
+  } catch (_) {}
+
+  if (isStrictKv && !hasKv) {
+    const err = new Error('Distributed state backend unavailable. Failing closed under mandatory distributed KV policy.');
+    err.code = 'DISTRIBUTED_KV_UNAVAILABLE';
+    throw err;
+  }
+
+  if (hasKv && execKVStrict) {
+    const evalRes = await execKVStrict(
+      'EVAL',
+      ATOMIC_WEBHOOK_RELEASE_LUA,
+      '1',
+      claimKey,
+      String(workerId),
+      String(leaseToken || '')
+    );
+    if (Array.isArray(evalRes)) {
+      if (Number(evalRes[0]) === 1) {
+        return { released: true, storage: 'distributed_kv' };
+      }
+      return { released: false, reason: String(evalRes[1] || 'LEASE_RELEASE_REJECTED'), storage: 'distributed_kv' };
+    }
+    return { released: false, reason: 'KV_EVAL_UNSUPPORTED', storage: 'distributed_kv' };
+  }
+
+  const existing = localWebhookClaims.get(cleanId);
+  if (!existing || existing.status !== 'CLAIMED') {
+    return { released: false, reason: 'LEASE_NOT_FOUND', storage: 'local_memory' };
+  }
+  if (existing.workerId && existing.workerId !== workerId) {
+    return { released: false, reason: 'WORKER_OWNERSHIP_MISMATCH', storage: 'local_memory' };
+  }
+  if (leaseToken && existing.leaseToken && existing.leaseToken !== leaseToken) {
+    return { released: false, reason: 'LEASE_TOKEN_MISMATCH', storage: 'local_memory' };
+  }
+  localWebhookClaims.delete(cleanId);
+  return { released: true, storage: 'local_memory' };
+}
+
+/**
+ * Distributed Webhook Completion for Quotation Delivery Webhooks
+ * Atomically marks event as PROCESSED with 7-day retention TTL using Redis Lua CAS (FIND-111-03 / OPT-ARCH-01).
+ */
+export async function completeQuotationWebhookDistributed(eventId, details = {}, retentionSeconds = 604800, workerId = null, leaseToken = null) {
+  if (!eventId) return { completed: false, reason: 'MISSING_EVENT_ID' };
+  const cleanId = String(eventId).trim();
+  const claimKey = `quote_event_claim:${cleanId}`;
+
+  let hasKv = false;
+  let execKVStrict = null;
+  let isStrictKv = false;
+  try {
+    const authModule = await import('./auth.js');
+    hasKv = Boolean(authModule.getKvCredentials && authModule.getKvCredentials().configured);
+    execKVStrict = authModule.execKVCommandStrict;
+    isStrictKv = Boolean(authModule.isDistributedKvRequired && authModule.isDistributedKvRequired());
+  } catch (_) {}
+
+  if (isStrictKv && !hasKv) {
+    const err = new Error('Distributed state backend unavailable. Failing closed under mandatory distributed KV policy.');
+    err.code = 'DISTRIBUTED_KV_UNAVAILABLE';
+    throw err;
+  }
+
+  const completionData = JSON.stringify({
+    status: 'PROCESSED',
+    workerId: workerId || 'worker-default',
+    leaseToken: leaseToken || null,
+    completedAt: new Date().toISOString(),
+    details
+  });
+
+  if (hasKv && execKVStrict) {
+    let evalHandled = false;
+    try {
+      const evalRes = await execKVStrict(
+        'EVAL',
+        ATOMIC_WEBHOOK_COMPLETE_LUA,
+        '1',
+        claimKey,
+        workerId ? String(workerId) : '',
+        leaseToken ? String(leaseToken) : '',
+        completionData,
+        String(retentionSeconds)
+      );
+      if (Array.isArray(evalRes) && evalRes.length >= 2) {
+        evalHandled = true;
+        if (Number(evalRes[0]) === 1) {
+          return { completed: true, atomicLua: true, storage: 'distributed_kv' };
+        }
+        const reason = String(evalRes[1] || 'LEASE_OWNERSHIP_REJECTED');
+        return {
+          completed: false,
+          atomicLua: true,
+          reason,
+          error: `Atomic Lua lease guard rejected completion for ${cleanId}: ${reason}`
+        };
+      }
+    } catch (evalErr) {
+      // Only fall back when KV mock/emulator lacks Lua EVAL support; rethrow genuine network/backend errors
+      if (evalErr.code && evalErr.code !== 'KV_COMMAND_ERROR') {
+        throw evalErr;
+      }
+    }
+
+    if (!evalHandled) {
+      // Fallback for mocked KV environments without Lua runtime
+      const existingRaw = await execKVStrict('GET', claimKey);
+      let existing = null;
+      try {
+        existing = typeof existingRaw === 'string' ? JSON.parse(existingRaw) : existingRaw;
+      } catch {}
+
+      if (workerId && !existing) {
+        return {
+          completed: false,
+          reason: 'LEASE_EXPIRED_OR_MISSING',
+          error: `Lease for event ${cleanId} is missing or expired for worker ${workerId}`
+        };
+      }
+      if (existing && existing.status === 'CLAIMED' && workerId && existing.workerId && existing.workerId !== workerId) {
+        return {
+          completed: false,
+          reason: 'WORKER_OWNERSHIP_MISMATCH',
+          error: `Claim for event ${cleanId} is owned by worker ${existing.workerId}, not ${workerId}`
+        };
+      }
+      if (leaseToken && existing && existing.leaseToken && existing.leaseToken !== leaseToken) {
+        return {
+          completed: false,
+          reason: 'LEASE_TOKEN_MISMATCH',
+          error: `Lease token mismatch for event ${cleanId}`
+        };
+      }
+
+      await execKVStrict('SET', claimKey, completionData, 'EX', String(retentionSeconds));
+      return { completed: true, atomicLua: false, storage: 'distributed_kv' };
+    }
+  }
+
+  // Local memory store atomic check-and-complete
+  const now = Date.now();
+  let existingClaim = localWebhookClaims.get(cleanId);
+  if (existingClaim && existingClaim.status === 'CLAIMED' && existingClaim.expiresAt <= now) {
+    localWebhookClaims.delete(cleanId);
+    existingClaim = undefined;
+  }
+
+  if (workerId && !existingClaim) {
+    return {
+      completed: false,
+      reason: 'LEASE_EXPIRED_OR_MISSING',
+      error: `Lease for event ${cleanId} expired or missing for worker ${workerId}`
+    };
+  }
+
+  if (existingClaim && existingClaim.status === 'CLAIMED' && workerId && existingClaim.workerId && existingClaim.workerId !== workerId) {
+    return {
+      completed: false,
+      reason: 'WORKER_OWNERSHIP_MISMATCH',
+      error: `Claim for event ${cleanId} is owned by worker ${existingClaim.workerId}, not ${workerId}`
+    };
+  }
+
+  if (leaseToken && existingClaim && existingClaim.leaseToken && existingClaim.leaseToken !== leaseToken) {
+    return {
+      completed: false,
+      reason: 'LEASE_TOKEN_MISMATCH',
+      error: `Lease token mismatch for event ${cleanId}`
+    };
+  }
+
+  localWebhookClaims.set(cleanId, {
+    status: 'PROCESSED',
+    workerId: workerId || existingClaim?.workerId || 'worker-default',
+    leaseToken: leaseToken || existingClaim?.leaseToken || null,
+    leaseGeneration: existingClaim?.leaseGeneration || 1,
+    completedAt: new Date().toISOString(),
+    expiresAt: now + (retentionSeconds * 1000),
+    details
+  });
+
+  return { completed: true, storage: 'local_memory' };
+}
+
+/**
+ * Asynchronous delivery webhook processing with durable distributed claim, lease fencing, and completion
+ */
+export async function processDeliveryWebhookAsync(quotation, eventPayload = {}, webhookSecret = '', options = {}) {
+  const rawEventId = eventPayload.id || eventPayload.eventId || eventPayload.data?.id;
+  const eventId = typeof rawEventId === 'string' ? rawEventId.trim() : '';
+  let claim = null;
+  let workerId = null;
+
+  if (eventId) {
+    workerId = options.workerId || `worker_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    claim = await claimQuotationWebhookDistributed(eventId, workerId, options.leaseSeconds || 60);
+    if (claim.duplicate) {
+      const err = new Error(`Duplicate webhook event rejected (distributed replay protection): ${eventId}`);
+      err.code = 'DUPLICATE_WEBHOOK_EVENT';
+      err.status = claim.status;
+      throw err;
+    }
+  }
+
+  let updatedQuotation;
+  try {
+    updatedQuotation = processDeliveryWebhook(quotation, eventPayload, webhookSecret, {
+      ...options,
+      requireEventId: false, // Already validated above
+      deferClaimCompletion: true
+    });
+  } catch (procErr) {
+    if (eventId && workerId && claim?.leaseToken) {
+      await releaseQuotationWebhookDistributed(eventId, workerId, claim.leaseToken).catch(() => {});
+    }
+    throw procErr;
+  }
+
+  if (eventId) {
+    await completeQuotationWebhookDistributed(
+      eventId,
+      {
+        type: eventPayload.type || eventPayload.event,
+        quotationId: updatedQuotation?.quotationId,
+        status: updatedQuotation?.status
+      },
+      604800,
+      workerId,
+      claim?.leaseToken || null
+    ).catch(() => {});
+  }
+
+  return updatedQuotation;
+}
 
 /**
  * Processes incoming delivery webhook events (P4.5) with fail-closed authentication and replay protection
@@ -531,30 +1049,45 @@ export function processDeliveryWebhook(quotation, eventPayload = {}, webhookSecr
   if (!quotation || typeof quotation !== 'object') {
     throw new Error('Valid quotation object required for webhook processing');
   }
-
   if (!eventPayload || typeof eventPayload !== 'object') {
     throw new Error('Invalid webhook payload');
   }
-
+  if (eventPayload.webhookSecret !== undefined || eventPayload.secret !== undefined) {
+    const err = new Error('Webhook authentication failed: Untrusted secret in request body is forbidden.');
+    err.code = 'UNTRUSTED_BODY_SECRET_FORBIDDEN';
+    throw err;
+  }
   const envSecret = (typeof process !== 'undefined' && process.env)
-    ? (process.env.CRM_WEBHOOK_SECRET || process.env.WEBHOOK_SECRET || process.env.RESEND_WEBHOOK_SECRET || '')
+    ? String(process.env.RESEND_WEBHOOK_SECRET || process.env.CRM_WEBHOOK_SECRET || process.env.WEBHOOK_SECRET || '').trim()
     : '';
-
-  if (options.requireSecret || envSecret) {
-    if (!envSecret && !webhookSecret) {
-      throw new Error('Webhook processing failed: No webhook secret configured. Failing closed to protect quotation status.');
+  const requireSecret = options.requireSecret !== false;
+  if (!options.verifiedSignature && requireSecret) {
+    const cleanProvided = typeof webhookSecret === 'string' ? webhookSecret.trim() : '';
+    if (!envSecret || !cleanProvided) {
+      const err = new Error('Webhook processing failed: No webhook secret configured. Failing closed to protect quotation status.');
+      err.code = 'WEBHOOK_SECRET_MISSING';
+      throw err;
     }
-    if (webhookSecret !== envSecret) {
-      throw new Error('Invalid webhook signature / secret');
-    }
-  } else if (webhookSecret) {
-    if (envSecret && webhookSecret !== envSecret) {
-      throw new Error('Invalid webhook signature / secret');
+    const bufA = Buffer.from(cleanProvided, 'utf8');
+    const bufB = Buffer.from(envSecret, 'utf8');
+    if (bufA.length !== bufB.length || !crypto.timingSafeEqual(bufA, bufB)) {
+      const err = new Error('Invalid webhook signature / secret');
+      err.code = 'INVALID_WEBHOOK_SECRET';
+      throw err;
     }
   }
+  return _applyValidatedDeliveryWebhook(quotation, eventPayload, options);
+}
 
+function _applyValidatedDeliveryWebhook(quotation, eventPayload = {}, options = {}) {
   // Replay protection: reject duplicate event IDs
-  const eventId = eventPayload.id || eventPayload.eventId || eventPayload.data?.id;
+  const rawEventId = eventPayload.id || eventPayload.eventId || eventPayload.data?.id;
+  const eventId = typeof rawEventId === 'string' ? rawEventId.trim() : '';
+  if (options.requireEventId !== false && !eventId) {
+    const err = new Error('MISSING_EVENT_ID: Webhook event ID is required for replay protection.');
+    err.code = 'MISSING_EVENT_ID';
+    throw err;
+  }
   if (eventId) {
     if (seenWebhookEventIds.has(eventId)) {
       throw new Error(`Duplicate webhook event rejected (replay protection): ${eventId}`);
@@ -563,6 +1096,17 @@ export function processDeliveryWebhook(quotation, eventPayload = {}, webhookSecr
     if (seenWebhookEventIds.size > 1000) {
       const first = seenWebhookEventIds.values().next().value;
       seenWebhookEventIds.delete(first);
+    }
+    if (!options.deferClaimCompletion) {
+      const prior = localWebhookClaims.get(eventId);
+      localWebhookClaims.set(eventId, {
+        status: 'PROCESSED',
+        workerId: prior?.workerId || null,
+        leaseToken: prior?.leaseToken || null,
+        leaseGeneration: prior?.leaseGeneration || 1,
+        completedAt: new Date().toISOString(),
+        expiresAt: Date.now() + 604800000
+      });
     }
   }
 
@@ -628,7 +1172,7 @@ export function processDeliveryWebhook(quotation, eventPayload = {}, webhookSecr
     });
   } else if (eventType.includes('click')) {
     quotation.activity.push({
-      timestamp: eventTime,
+      timestamp: nowTimestampOr(eventTime),
       actor: 'Email Provider Webhook',
       event: 'EMAIL_CLICKED',
       quotationId: quotation.quotationId,
@@ -638,4 +1182,8 @@ export function processDeliveryWebhook(quotation, eventPayload = {}, webhookSecr
 
   quotation.updatedAt = eventTime;
   return quotation;
+}
+
+function nowTimestampOr(eventTime) {
+  return eventTime || new Date().toISOString();
 }

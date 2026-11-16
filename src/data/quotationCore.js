@@ -26,7 +26,7 @@ export const DEFAULT_COMMERCIAL_TERMS = [
  */
 export function calculateQuotation(input = {}) {
   const quoteId = input.quoteId || input.id || `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-  const inquiryId = input.inquiryId || input.leadId || `AAF-INQ-2026-${String(Math.floor(100000 + Math.random() * 900000))}`;
+  const inquiryId = input.inquiryId || input.leadId || null;
   const date = input.date || new Date().toISOString().split('T')[0];
   const validUntil = input.validUntil || '12 Oct 2026';
 
@@ -174,6 +174,6 @@ export function calculateQuotation(input = {}) {
     status: input.status || 'DRAFT',
     createdAt: input.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    updatedBy: input.updatedBy || 'Admin (Sachin Shinde)'
+    updatedBy: input.updatedBy || 'authenticated_operator'
   };
 }

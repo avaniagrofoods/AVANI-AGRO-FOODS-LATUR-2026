@@ -1,22 +1,23 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { LayoutDashboard, Users, Building2, FileText, LogOut, ShieldCheck } from 'lucide-react'
-import { BUSINESS_INFO } from '../data/links'
+import { getCsrfHeaders, clearCsrfToken } from '../lib/csrf'
 
 export default function PrivateNav({ onLogout }) {
   const location = useLocation()
-  const navigate = useNavigate()
   const path = location.pathname
 
   const handleLogoutClick = async () => {
     try {
       await fetch('/api/verify-gate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getCsrfHeaders({ 'Content-Type': 'application/json' }, 'gate'),
         credentials: 'same-origin',
         body: JSON.stringify({ action: 'logout' }),
       })
     } catch (e) {
       console.warn('Logout request error', e)
+    } finally {
+      clearCsrfToken('gate')
     }
     if (onLogout) {
       onLogout()
