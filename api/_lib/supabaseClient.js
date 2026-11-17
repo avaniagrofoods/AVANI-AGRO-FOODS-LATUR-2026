@@ -11,7 +11,14 @@
 export function isSupabaseConfigured() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-  return Boolean(url && key && url.trim().length > 0 && key.trim().length > 0 && !url.includes('YOUR_SUPABASE'));
+  return Boolean(
+    url && 
+    key && 
+    url.trim().length > 0 && 
+    key.trim().length > 0 && 
+    !url.includes('YOUR_SUPABASE') &&
+    !key.includes('[SENSITIVE]')
+  );
 }
 
 /**
@@ -115,7 +122,7 @@ async function supabaseFetch(endpoint, options = {}, retries = 2) {
 /**
  * Save a canonical Lead record into the primary Supabase database
  */
-export async function saveLeadToSupabase(leadRecord) {
+export async function saveLeadToSupabase(leadRecord, options = {}) {
   if (!isSupabaseConfigured()) {
     return {
       persisted: false,
@@ -165,10 +172,11 @@ export async function saveLeadToSupabase(leadRecord) {
     raw_payload: leadRecord
   };
 
+  const allowUpsert = options.upsert === true && options.insertOnly !== true;
   const result = await supabaseFetch('leads', {
     method: 'POST',
     body: row,
-    prefer: 'resolution=merge-duplicates,return=representation'
+    prefer: allowUpsert ? 'resolution=merge-duplicates,return=representation' : 'return=representation'
   });
 
   if (result.success) {
@@ -200,9 +208,12 @@ export async function saveLeadToSupabase(leadRecord) {
   }
 
   console.error('[Supabase Client] Failed to persist lead:', result.error);
+  const isConflict = String(result.error || '').includes('23505');
+  const code = isConflict ? '23505' : (result.status || 'ERROR');
   return {
     persisted: false,
-    status: 'PERSISTENCE_FAILED',
+    status: isConflict ? 'CONFLICT' : 'PERSISTENCE_FAILED',
+    code,
     error: result.error,
     inquiryId: leadRecord.inquiryId
   };
@@ -211,7 +222,7 @@ export async function saveLeadToSupabase(leadRecord) {
 /**
  * Save an export quotation record to Supabase
  */
-export async function saveQuotationToSupabase(quoteRecord) {
+export async function saveQuotationToSupabase(quoteRecord, options = {}) {
   if (!isSupabaseConfigured()) {
     return {
       persisted: false,
@@ -235,8 +246,9 @@ export async function saveQuotationToSupabase(quoteRecord) {
   }
 
   // Pure quotations without genuine pre-existing lead set inquiry_id to NULL (Owner Decision 1)
-  const rawInquiryId = quoteRecord.inquiryId || quoteRecord.leadId || null;
-  const safeInquiryId = (rawInquiryId && !rawInquiryId.startsWith('AAF-INQ-2026-')) ? rawInquiryId : (existingDelivery?.inquiry_id || null);
+  const rawInquiryId = typeof quoteRecord.inquiryId === 'string' ? quoteRecord.inquiryId.trim() : (quoteRecord.leadId || null);
+  const isValidInquiryId = Boolean(rawInquiryId && /^AAF-(INQ|L)-\d{4}-[A-Za-z0-9-]+$/.test(rawInquiryId) && rawInquiryId.length <= 50);
+  const safeInquiryId = isValidInquiryId ? rawInquiryId : (existingDelivery?.inquiry_id || null);
 
   const row = {
     quotation_id: qId,
@@ -274,10 +286,12 @@ export async function saveQuotationToSupabase(quoteRecord) {
     updated_by: quoteRecord.updatedBy || 'authenticated_operator'
   };
 
+  const isInsertOnly = options.insertOnly === true;
+  const allowUpsert = !isInsertOnly && (options.upsert === true || Boolean(existingDelivery));
   const result = await supabaseFetch('quotations', {
     method: 'POST',
     body: row,
-    prefer: 'resolution=merge-duplicates,return=representation'
+    prefer: allowUpsert ? 'resolution=merge-duplicates,return=representation' : 'return=representation'
   });
 
   if (result.success) {
@@ -291,9 +305,14 @@ export async function saveQuotationToSupabase(quoteRecord) {
     }).catch(() => {});
   }
 
+  const isConflict = String(result.error || '').includes('23505');
+  const isFkViolation = String(result.error || '').includes('23503');
+  const code = isConflict ? '23505' : (isFkViolation ? '23503' : (result.status || 'ERROR'));
+
   return {
     persisted: result.success,
-    status: result.success ? 'SUCCESS' : 'FAILED',
+    status: result.success ? 'SUCCESS' : (isConflict ? 'CONFLICT' : (isFkViolation ? 'FK_VIOLATION' : 'FAILED')),
+    code,
     error: result.error || null,
     quoteId: row.quotation_id,
     record: result.data?.[0] || row
@@ -564,3 +583,87 @@ export async function fetchLeadsFromSupabase({ limit = 50, offset = 0, status = 
     error: result.error || null
   };
 }
+
+// ============================================================
+// DURABLE IDEMPOTENCY LEDGER HELPERS (Priority 2 / Package 3F.136)
+// Backed by public.inquiry_idempotency_ledger and reserve_idempotency_lock RPC
+// ============================================================
+
+/**
+ * Atomically reserve an idempotency lock in PostgreSQL via stored procedure
+ */
+export async function reserveIdempotencyLock(idempotencyKey, requestHash) {
+  if (!isSupabaseConfigured()) {
+    return {
+      success: false,
+      status: 'SUPABASE_UNCONFIGURED',
+      error: 'Supabase credentials not configured'
+    };
+  }
+
+  const result = await supabaseFetch('rpc/reserve_idempotency_lock', {
+    method: 'POST',
+    body: {
+      p_key: String(idempotencyKey),
+      p_hash: String(requestHash)
+    }
+  });
+
+  if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+    const row = result.data[0];
+    return {
+      success: true,
+      reserved: Boolean(row.reserved),
+      existingStatus: row.existing_status,
+      cachedResponse: row.cached_response,
+      inquiryId: row.inquiry_id,
+      quoteId: row.quote_id
+    };
+  }
+
+  return {
+    success: false,
+    status: 'RPC_FAILED',
+    error: result.error || 'Failed to execute reserve_idempotency_lock RPC'
+  };
+}
+
+/**
+ * Mark a durable idempotency ledger entry as COMPLETED with its authoritative response
+ */
+export async function completeIdempotencyRecord(idempotencyKey, { inquiryId, quoteId, responsePayload }) {
+  if (!isSupabaseConfigured()) {
+    return { success: false, error: 'Supabase unconfigured' };
+  }
+
+  return await supabaseFetch(`inquiry_idempotency_ledger?idempotency_key=eq.${encodeURIComponent(idempotencyKey)}`, {
+    method: 'PATCH',
+    body: {
+      status: 'COMPLETED',
+      inquiry_id: inquiryId || null,
+      quote_id: quoteId || null,
+      response_payload: responsePayload || null,
+      updated_at: new Date().toISOString()
+    },
+    prefer: 'return=representation'
+  });
+}
+
+/**
+ * Mark an in-progress idempotency reservation as FAILED or release it on transient error
+ */
+export async function failIdempotencyRecord(idempotencyKey) {
+  if (!isSupabaseConfigured()) {
+    return { success: false, error: 'Supabase unconfigured' };
+  }
+
+  return await supabaseFetch(`inquiry_idempotency_ledger?idempotency_key=eq.${encodeURIComponent(idempotencyKey)}`, {
+    method: 'PATCH',
+    body: {
+      status: 'FAILED',
+      updated_at: new Date().toISOString()
+    },
+    prefer: 'return=representation'
+  });
+}
+

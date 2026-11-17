@@ -48,6 +48,7 @@ function createMockReqRes({ method = 'POST', body = {}, headers = {}, ip = null 
       'host': 'www.avaniagrofoods.com',
       'user-agent': 'P0-Remediation-Test-Agent/1.0',
       'x-forwarded-for': clientIp,
+      'x-vercel-forwarded-for': clientIp,
       ...headers
     },
     body

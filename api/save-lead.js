@@ -9,10 +9,18 @@
 // 6. External integrations (Zapier, HubSpot, WhatsApp Picky Assist)
 // ============================================================
 
+import crypto from 'crypto';
 import { calculateQuotation, parseQuantityKg, COMPANY_INFO } from './_lib/quotationEngine.js';
 import { matchProductMaster } from './_lib/productMaster.js';
 import { getClientIp, checkRateLimit, isAllowedOrigin } from './_lib/auth.js';
-import { saveLeadToSupabase, saveQuotationToSupabase, isSupabaseConfigured } from './_lib/supabaseClient.js';
+import { 
+  saveLeadToSupabase, 
+  saveQuotationToSupabase, 
+  isSupabaseConfigured,
+  reserveIdempotencyLock,
+  completeIdempotencyRecord,
+  failIdempotencyRecord
+} from './_lib/supabaseClient.js';
 
 // In-memory cache for recent submissions to prevent double clicks (1 min window)
 const recentSubmissions = new Map();
@@ -142,30 +150,76 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Requirement text exceeds maximum allowed length.' });
     }
 
-    // 2. Deduplication check
-    const dedupKey = `${email}_${rawProduct}_${rawQuantity}`;
-    if (recentSubmissions.has(dedupKey)) {
-      const existing = recentSubmissions.get(dedupKey);
-      return res.status(200).json({
-        success: true,
-        message: 'Duplicate enquiry detected within 60s. Your enquiry has already been queued.',
-        inquiryId: existing.inquiryId,
-        quoteId: existing.quoteId
-      });
-    }
-
-    // 3. ID Generation
+    // 2. Normalized Quantity & Product Matching
     const timestamp = new Date().toISOString();
     const dateStr = timestamp.split('T')[0];
-    const randSuffix = Math.floor(100000 + Math.random() * 900000);
-    const randQuoteSuffix = Math.floor(1000 + Math.random() * 9000);
-    const inquiryId = body.inquiryId || `AAF-INQ-2026-${randSuffix}`;
-    const quoteId = body.quoteId || `AAF-Q-2026-${randQuoteSuffix}`;
-
-    // 4. Normalized Quantity & Product Matching
     const normalizedQuantity = parseQuantityKg(rawQuantity, rawRequirement);
     const pm = matchProductMaster(rawProduct);
     const parsedReq = parseRequirementText(rawRequirement);
+
+    // 3. Durable Idempotency Check & Atomic Reservation (Priority 2)
+    const deterministicKey = crypto.createHash('sha256')
+      .update(`${email}:${pm.productId || rawProduct}:${normalizedQuantity}:${dateStr}`)
+      .digest('hex');
+    const idempotencyKey = String(
+      req.headers['idempotency-key'] || 
+      req.headers['x-idempotency-key'] || 
+      body.idempotencyKey || 
+      deterministicKey
+    ).substring(0, 128);
+
+    const requestHash = crypto.createHash('sha256')
+      .update(JSON.stringify({ name, email, phone, company, country, product: rawProduct, quantity: rawQuantity, requirement: rawRequirement }))
+      .digest('hex');
+
+    const dedupKey = `${email}_${rawProduct}_${rawQuantity}`;
+
+    if (isSupabaseConfigured()) {
+      const lockRes = await reserveIdempotencyLock(idempotencyKey, requestHash);
+      if (!lockRes.success) {
+        console.warn(`[SaveLead] Durable idempotency reservation call failed: ${lockRes.error}`);
+        if (process.env.SEQUENCE_TEST_ISOLATION !== '1') {
+          return res.status(503).json({
+            success: false,
+            code: 'IDEMPOTENCY_UNAVAILABLE',
+            error: 'Durable idempotency reservation service is currently unavailable. Please retry shortly.'
+          });
+        }
+      } else if (lockRes.reserved === false) {
+        if (lockRes.existingStatus === 'COMPLETED') {
+          return res.status(200).json(lockRes.cachedResponse || {
+            success: true,
+            message: 'Duplicate enquiry detected. Authoritative confirmation retransmitted.',
+            inquiryId: lockRes.inquiryId,
+            quoteId: lockRes.quoteId
+          });
+        }
+        if (lockRes.existingStatus === 'IN_PROGRESS') {
+          return res.status(409).json({
+            success: false,
+            code: 'CONCURRENT_REQUEST_IN_PROGRESS',
+            error: 'An identical enquiry is currently being processed. Please wait a few seconds before retrying.'
+          });
+        }
+      }
+    } else {
+      // In-memory fallback for offline test isolation
+      if (recentSubmissions.has(dedupKey)) {
+        const existing = recentSubmissions.get(dedupKey);
+        return res.status(200).json({
+          success: true,
+          message: 'Duplicate enquiry detected within 60s. Your enquiry has already been queued.',
+          inquiryId: existing.inquiryId,
+          quoteId: existing.quoteId
+        });
+      }
+    }
+
+    // 4. ID Generation (CSPRNG UUIDv4, Dynamic UTC Year, Strictly Server-Enforced)
+    const now = new Date();
+    const currentYear = now.getUTCFullYear();
+    let inquiryId = `AAF-INQ-${currentYear}-${crypto.randomUUID()}`;
+    let quoteId = `AAF-Q-${currentYear}-${crypto.randomUUID()}`;
 
     // Determine Currency: INR if country is India or currency explicitly requested as INR
     const currency = (body.currency || (country.toUpperCase().includes('IND') ? 'INR' : 'USD')).toUpperCase();
@@ -316,8 +370,26 @@ export default async function handler(req, res) {
 
     if (isSupabaseConfigured()) {
       try {
-        const sLead = await saveLeadToSupabase(inquiryRecord);
-        supabaseLeadPersistence = sLead.persisted ? 'SUCCESS' : 'FAILED';
+        let attempts = 0;
+        let sLead = null;
+        while (attempts < 2) {
+          attempts++;
+          sLead = await saveLeadToSupabase(inquiryRecord, { insertOnly: true });
+          if (sLead.persisted) {
+            break;
+          }
+          const errDetail = String(sLead.error || '');
+          if (sLead.code === '23505' && (errDetail.includes('inquiry_id') || errDetail.includes('leads_inquiry_id_key'))) {
+            console.warn(`[SaveLead] Inquiry ID collision detected (${inquiryId}). Regenerating fresh UUIDv4...`);
+            inquiryId = `AAF-INQ-${currentYear}-${crypto.randomUUID()}`;
+            inquiryRecord.inquiryId = inquiryId;
+            quotationRecord.inquiryId = inquiryId;
+            quote.inquiryId = inquiryId;
+            continue;
+          }
+          break;
+        }
+        supabaseLeadPersistence = sLead?.persisted ? 'SUCCESS' : 'FAILED';
         supabaseLeadDetails = sLead;
       } catch (sErr) {
         console.error('[Supabase Primary Persistence Error - Lead]:', sErr.message);
@@ -325,8 +397,27 @@ export default async function handler(req, res) {
       }
 
       try {
-        const sQuote = await saveQuotationToSupabase(quotationRecord);
-        supabaseQuotePersistence = sQuote.persisted ? 'SUCCESS' : 'FAILED';
+        let qAttempts = 0;
+        let sQuote = null;
+        while (qAttempts < 2) {
+          qAttempts++;
+          sQuote = await saveQuotationToSupabase(quotationRecord, { insertOnly: true });
+          if (sQuote.persisted) {
+            break;
+          }
+          const qErrDetail = String(sQuote.error || '');
+          if (sQuote.code === '23505' && (qErrDetail.includes('quotation_id') || qErrDetail.includes('quotations_quotation_id_key'))) {
+            console.warn(`[SaveLead] Quotation ID collision detected (${quoteId}). Regenerating fresh UUIDv4...`);
+            quoteId = `AAF-Q-${currentYear}-${crypto.randomUUID()}`;
+            quotationRecord.quoteId = quoteId;
+            quote.quoteId = quoteId;
+            quotationRecord.pdfLink = `/api/quotation?action=download-pdf&id=${quoteId}`;
+            quotationRecord.docxLink = `/api/quotation?action=download-docx&id=${quoteId}`;
+            continue;
+          }
+          break;
+        }
+        supabaseQuotePersistence = sQuote?.persisted ? 'SUCCESS' : 'FAILED';
       } catch (sqErr) {
         console.error('[Supabase Primary Persistence Error - Quote]:', sqErr.message);
         supabaseQuotePersistence = 'FAILED';
@@ -335,6 +426,9 @@ export default async function handler(req, res) {
       // If Supabase is configured and failed to persist the lead, fail explicitly to prevent false success
       if (supabaseLeadPersistence !== 'SUCCESS') {
         recentSubmissions.delete(dedupKey);
+        if (isSupabaseConfigured()) {
+          await failIdempotencyRecord(idempotencyKey).catch(() => {});
+        }
         return res.status(500).json({
           success: false,
           error: 'Database persistence failed to confirm your enquiry. Your details were not permanently recorded. Please retry or contact Trade Coordinator Sachin Shinde directly on WhatsApp (+91 7219053645) or email sales@avaniagrofoods.com.',
@@ -565,7 +659,7 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.status(200).json({
+    const finalResponse = {
       success: true,
       leadPersistence: 'PERSISTED',
       message: 'Inquiry registered and quotation draft created successfully.',
@@ -588,7 +682,17 @@ export default async function handler(req, res) {
         }
       },
       integrations
-    });
+    };
+
+    if (isSupabaseConfigured()) {
+      await completeIdempotencyRecord(idempotencyKey, {
+        inquiryId,
+        quoteId: quote.quoteId,
+        responsePayload: finalResponse
+      }).catch(err => console.error('[SaveLead] Failed to update idempotency ledger:', err.message));
+    }
+
+    return res.status(200).json(finalResponse);
 
   } catch (err) {
     console.error('[Save Lead API] Critical error:', err.message);

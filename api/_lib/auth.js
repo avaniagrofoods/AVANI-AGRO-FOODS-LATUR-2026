@@ -29,10 +29,11 @@ const revokedSessions = new Set();
 export function getKvCredentials() {
   const url = (process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '').trim();
   const token = (process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
+  const isInvalid = !token || token.includes('[SENSITIVE]') || token.includes('placeholder') || token.includes('YOUR_');
   return {
-    url: url || null,
-    token: token || null,
-    configured: Boolean(url && token)
+    url: (!isInvalid && url) ? url : null,
+    token: (!isInvalid && token) ? token : null,
+    configured: Boolean(url && token && !isInvalid)
   };
 }
 
