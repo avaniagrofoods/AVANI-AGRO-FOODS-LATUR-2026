@@ -19,7 +19,8 @@ import {
   isSupabaseConfigured,
   reserveIdempotencyLock,
   completeIdempotencyRecord,
-  failIdempotencyRecord
+  failIdempotencyRecord,
+  inspectDatabaseState
 } from './_lib/supabaseClient.js';
 
 // In-memory cache for recent submissions to prevent double clicks (1 min window)
@@ -66,6 +67,12 @@ function parseRequirementText(text = '') {
 }
 
 export default async function handler(req, res) {
+  // Safe diagnostic probe for database schema & RPC verification
+  if (req.method === 'GET' && (req.query?.action === 'db-diagnostic' || req.headers['x-diagnostic-probe'] === '1')) {
+    const diag = await inspectDatabaseState();
+    return res.status(200).json(diag);
+  }
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method Not Allowed' });

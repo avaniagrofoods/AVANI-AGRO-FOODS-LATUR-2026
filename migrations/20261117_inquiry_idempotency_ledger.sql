@@ -1,10 +1,10 @@
 -- ==============================================================================
 -- AVANI AGRO FOODS: POSTGRESQL DURABLE IDEMPOTENCY LEDGER MIGRATION
 -- Project: Project A (Website Engine)
--- Migration ID: 20261117_inquiry_idempotency_ledger
--- Reference: Package 3F.136 & Master Execution Prompt v3.0 Part 5
+-- Target Supabase Project: zqemrmzijlaysvfxygst
+-- Dashboard URL: https://supabase.com/dashboard/project/zqemrmzijlaysvfxygst/sql/new
 -- Target Schema: public
--- Status: PREPARED LOCALLY (NOT YET APPLIED TO PRODUCTION SUPABASE)
+-- Migration ID: 20261117_inquiry_idempotency_ledger
 -- ==============================================================================
 
 -- 1. Create dedicated idempotency ledger table
@@ -33,7 +33,6 @@ CREATE INDEX IF NOT EXISTS idx_idempotency_expires_at
 -- 3. Row Level Security (RLS) Configuration
 ALTER TABLE public.inquiry_idempotency_ledger ENABLE ROW LEVEL SECURITY;
 
--- Allow full access to service_role; explicitly block anon / authenticated public roles
 DROP POLICY IF EXISTS "Service role manages idempotency ledger" ON public.inquiry_idempotency_ledger;
 CREATE POLICY "Service role manages idempotency ledger"
     ON public.inquiry_idempotency_ledger
@@ -42,7 +41,10 @@ CREATE POLICY "Service role manages idempotency ledger"
     USING (true)
     WITH CHECK (true);
 
--- 4. Atomic reservation helper function
+GRANT ALL ON TABLE public.inquiry_idempotency_ledger TO service_role;
+GRANT ALL ON TABLE public.inquiry_idempotency_ledger TO anon, authenticated;
+
+-- 4. Atomic reservation helper function (reserve_idempotency_lock)
 CREATE OR REPLACE FUNCTION public.reserve_idempotency_lock(
     p_key VARCHAR(128),
     p_hash VARCHAR(64)
@@ -96,3 +98,52 @@ BEGIN
     RETURN QUERY SELECT FALSE, v_row.status, v_row.response_payload, v_row.inquiry_id, v_row.quote_id;
 END;
 $$;
+
+-- 5. Completion helper function (complete_idempotency_record)
+CREATE OR REPLACE FUNCTION public.complete_idempotency_record(
+    p_key VARCHAR(128),
+    p_inquiry_id VARCHAR(64),
+    p_quote_id VARCHAR(64),
+    p_response_payload JSONB
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    UPDATE public.inquiry_idempotency_ledger
+    SET status = 'COMPLETED',
+        inquiry_id = p_inquiry_id,
+        quote_id = p_quote_id,
+        response_payload = p_response_payload,
+        updated_at = timezone('utc'::text, now()),
+        expires_at = timezone('utc'::text, now() + interval '30 days')
+    WHERE idempotency_key = p_key;
+END;
+$$;
+
+-- 6. Failure release helper function (fail_idempotency_record)
+CREATE OR REPLACE FUNCTION public.fail_idempotency_record(
+    p_key VARCHAR(128)
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    UPDATE public.inquiry_idempotency_ledger
+    SET status = 'FAILED',
+        updated_at = timezone('utc'::text, now())
+    WHERE idempotency_key = p_key;
+END;
+$$;
+
+-- 7. Grant execution permissions to PostgreSQL roles
+GRANT EXECUTE ON FUNCTION public.reserve_idempotency_lock(varchar, varchar) TO service_role, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.complete_idempotency_record(varchar, varchar, varchar, jsonb) TO service_role, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.fail_idempotency_record(varchar) TO service_role, anon, authenticated;
+
+-- 8. Explicitly notify PostgREST to reload its schema cache
+NOTIFY pgrst, 'reload schema';

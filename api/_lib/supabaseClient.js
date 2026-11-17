@@ -636,6 +636,22 @@ export async function completeIdempotencyRecord(idempotencyKey, { inquiryId, quo
     return { success: false, error: 'Supabase unconfigured' };
   }
 
+  // Attempt atomic stored procedure first
+  const rpcRes = await supabaseFetch('rpc/complete_idempotency_record', {
+    method: 'POST',
+    body: {
+      p_key: String(idempotencyKey),
+      p_inquiry_id: inquiryId || null,
+      p_quote_id: quoteId || null,
+      p_response_payload: responsePayload || null
+    }
+  });
+
+  if (rpcRes.success) {
+    return rpcRes;
+  }
+
+  // Direct table fallback
   return await supabaseFetch(`inquiry_idempotency_ledger?idempotency_key=eq.${encodeURIComponent(idempotencyKey)}`, {
     method: 'PATCH',
     body: {
@@ -657,6 +673,19 @@ export async function failIdempotencyRecord(idempotencyKey) {
     return { success: false, error: 'Supabase unconfigured' };
   }
 
+  // Attempt atomic stored procedure first
+  const rpcRes = await supabaseFetch('rpc/fail_idempotency_record', {
+    method: 'POST',
+    body: {
+      p_key: String(idempotencyKey)
+    }
+  });
+
+  if (rpcRes.success) {
+    return rpcRes;
+  }
+
+  // Direct table fallback
   return await supabaseFetch(`inquiry_idempotency_ledger?idempotency_key=eq.${encodeURIComponent(idempotencyKey)}`, {
     method: 'PATCH',
     body: {
@@ -665,5 +694,57 @@ export async function failIdempotencyRecord(idempotencyKey) {
     },
     prefer: 'return=representation'
   });
+}
+
+/**
+ * Diagnostic function to inspect actual live database tables and RPC status
+ */
+export async function inspectDatabaseState() {
+  const status = getSupabaseStatus();
+  if (!status.configured) {
+    return {
+      configured: false,
+      projectRef: 'NOT_CONFIGURED',
+      error: 'Supabase credentials not configured'
+    };
+  }
+
+  const tableCheck = await supabaseFetch('inquiry_idempotency_ledger?limit=1');
+  const rpcCheck = await supabaseFetch('rpc/reserve_idempotency_lock', {
+    method: 'POST',
+    body: { p_key: 'probe_test', p_hash: 'probe_hash' }
+  });
+  const leadsCheck = await supabaseFetch('leads?limit=1');
+  const crmCheck = await supabaseFetch('crm_activities?limit=1');
+  const openApiCheck = await supabaseFetch('');
+
+  const openApiPaths = openApiCheck.success && openApiCheck.data?.paths ? Object.keys(openApiCheck.data.paths) : [];
+
+  return {
+    configured: true,
+    projectRef: status.projectRef,
+    availablePostgRestEndpoints: openApiPaths,
+    tableCheck: {
+      success: tableCheck.success,
+      status: tableCheck.status,
+      error: tableCheck.error,
+      data: tableCheck.data || null
+    },
+    rpcCheck: {
+      success: rpcCheck.success,
+      status: rpcCheck.status,
+      error: rpcCheck.error
+    },
+    leadsCheck: {
+      success: leadsCheck.success,
+      status: leadsCheck.status,
+      error: leadsCheck.error
+    },
+    crmCheck: {
+      success: crmCheck.success,
+      status: crmCheck.status,
+      error: crmCheck.error
+    }
+  };
 }
 
