@@ -60,6 +60,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+#variable_conflict use_column
 DECLARE
     v_row record;
 BEGIN
@@ -75,11 +76,11 @@ BEGIN
         RETURN;
     END IF;
 
-    -- If conflict, query existing state
-    SELECT status, response_payload, inquiry_id, quote_id, expires_at
+    -- If conflict, query existing state with qualified table alias
+    SELECT l.status, l.response_payload, l.inquiry_id, l.quote_id, l.expires_at
     INTO v_row
-    FROM public.inquiry_idempotency_ledger
-    WHERE idempotency_key = p_key;
+    FROM public.inquiry_idempotency_ledger l
+    WHERE l.idempotency_key = p_key;
 
     -- If existing lock has expired and was IN_PROGRESS, allow worker to reclaim it
     IF v_row.status = 'IN_PROGRESS' AND v_row.expires_at < timezone('utc'::text, now()) THEN

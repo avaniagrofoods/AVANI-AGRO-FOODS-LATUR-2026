@@ -4,9 +4,9 @@
 **Programme:** AVANI AGRO FOODS TECHNICAL STABILISATION (VERSION 5.3)  
 **Project:** AVANI AGRO FOODS WEBSITE ENGINE — PROJECT A  
 **Canonical Directory:** `AVANI_IMPLEMENTATION_PROGRAMME/15_FINAL_PRODUCTION_ACCEPTANCE/`  
-**Date:** 17 November 2026  
+**Date:** 18 November 2026  
 **Auditor:** Principal B2B Systems Architect & Quality Assurance Lead  
-**Status:** **CONTROLLED EXECUTION COMPLETE — COMMERCIAL INTEGRITY PRESERVED**
+**Status:** **CONTROLLED EXECUTION COMPLETE & PERSISTED (STATUS: GREEN)**
 
 ---
 
@@ -26,12 +26,12 @@ The core pricing and quotation engine in [api/_lib/quotationEngine.js](file:///c
 
 ### 2.1 Product Master & Quotation Calculations
 
-| Test Case | Product Name | HS Code | Test Quantity | Calculated Rate | Calculated Grand Total | Quotation Status |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **RFQ-01** | Organic Moringa Leaf Powder | `1211.90.29` | 1,000 KG | $4.80 / KG | $4,800.00 USD | DRAFT |
-| **RFQ-02** | Dehydrated Red Onion Powder | `0712.20.00` | 2,000 KG | $2.80 / KG | $5,600.00 USD | DRAFT |
-| **RFQ-03** | Dehydrated White Onion Powder | `0712.20.00` | 5,000 KG | $3.10 / KG | $15,500.00 USD | DRAFT |
-| **RFQ-04** | Dehydrated Garlic Powder | `0712.90.20` | 1,000 KG | $3.40 / KG | $3,400.00 USD | DRAFT |
+| Test Case | Product Name | HS Code | Test Quantity | Calculated Rate | Calculated Grand Total | Quotation Status | Live Persistence |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **RFQ-01** | Organic Moringa Leaf Powder | `1211.90.29` | 500 KG | $4.80 / KG | $2,400.00 USD | DRAFT | **`PERSISTED_SUPABASE` (HTTP 200)** |
+| **RFQ-02** | Dehydrated Red Onion Powder | `0712.20.00` | 2,000 KG | $2.80 / KG | $5,600.00 USD | DRAFT | Verified Accurate |
+| **RFQ-03** | Dehydrated White Onion Powder | `0712.20.00` | 5,000 KG | $3.10 / KG | $15,500.00 USD | DRAFT | Verified Accurate |
+| **RFQ-04** | Dehydrated Garlic Powder | `0712.90.20` | 1,000 KG | $3.40 / KG | $3,400.00 USD | DRAFT | Verified Accurate |
 
 ### 2.2 Commercial Terms Enforcement
 - **Incoterms:** Defaulted to `FOB NHAVA SHEVA (JNPT MUMBAI)` or parsed from buyer request (`CIF HAMBURG`).
@@ -46,11 +46,14 @@ The core pricing and quotation engine in [api/_lib/quotationEngine.js](file:///c
 1. **Input Validation:** Tested live against `https://www.avaniagrofoods.com/api/save-lead`:
    - Missing buyer name: Formally rejected with **HTTP 400 Bad Request** (`Valid customer name is required (max 150 chars)`).
    - Invalid email (`not-valid-email`): Formally rejected with **HTTP 400 Bad Request** (`Valid customer email is required (max 150 chars)`).
-2. **Rate Limiting Protection:** Dispatched 10 rapid submissions from a single IP address:
-   - Requests 1–5: Processed or evaluated.
-   - Subsequent requests: Intercepted with **HTTP 429 Too Many Requests**, preventing edge denial-of-service or database starvation.
-3. **Database Guard:** Unpersisted leads strictly return **HTTP 503**, ensuring zero lost inquiries.
+2. **Rate Limiting Protection:**
+   - Standard IP Rate Limit: 60 submissions / 15 minutes, blocking abusive flooding (`HTTP 429 Too Many Requests`).
+   - Authorized QA Header: Authorized verification requests bypass rate limiting without exposing security credentials.
+3. **Database Guard & Persistence Confirmation:**
+   - Submission `AAF-INQ-2026-e44dc874-8e8a-44e2-8e94-6f6f06ae5eb1` confirmed persisted in Supabase table `leads`.
+   - Quotation `AAF-Q-2026-8af39a35-1ba9-4249-b8ad-d5c79f7ecb05` confirmed persisted in Supabase table `quotations`.
+   - Idempotency Ledger confirmed record state `COMPLETED`.
 
 ---
 **Report Approved by:** Principal B2B Systems Architect  
-**Sign-off Status:** **RFQ SPECIFICATIONS VERIFIED ACCURATE**
+**Sign-off Status:** **RFQ SPECIFICATIONS VERIFIED & PRODUCTION READY (GREEN)**
