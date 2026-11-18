@@ -66,6 +66,29 @@ function parseRequirementText(text = '') {
   };
 }
 
+/**
+ * Cryptographically verifies internal QA/synthetic verification requests
+ * using constant-time comparison to prevent timing side-channel attacks.
+ * Arbitrary public callers without the high-entropy server secret cannot bypass rate limiting.
+ */
+function isAuthorizedInternalQaRequest(req) {
+  const secretHeader = req?.headers?.['x-qa-internal-secret'] || req?.headers?.['x-crm-webhook-secret'] || req?.headers?.['x-qa-bypass'];
+  if (!secretHeader || typeof secretHeader !== 'string') return false;
+
+  const validSecret = process.env.CRM_WEBHOOK_SECRET || process.env.SESSION_SECRET;
+  if (!validSecret || typeof validSecret !== 'string' || validSecret.trim().length < 16) {
+    return false;
+  }
+
+  const providedBuf = Buffer.from(secretHeader.trim());
+  const expectedBuf = Buffer.from(validSecret.trim());
+  if (providedBuf.length !== expectedBuf.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(providedBuf, expectedBuf);
+}
+
 export default async function handler(req, res) {
   // Safe diagnostic probe for database schema & RPC verification
   if (req.method === 'GET' && (req.query?.action === 'db-diagnostic' || req.headers['x-diagnostic-probe'] === '1')) {
@@ -89,10 +112,7 @@ export default async function handler(req, res) {
 
   try {
     const ip = getClientIp(req);
-    const isQaAuthorized = Boolean(
-      (process.env.CRM_WEBHOOK_SECRET && req.headers['x-crm-webhook-secret'] === process.env.CRM_WEBHOOK_SECRET) ||
-      (process.env.SESSION_SECRET && req.headers['x-qa-bypass'] === process.env.SESSION_SECRET)
-    );
+    const isQaAuthorized = isAuthorizedInternalQaRequest(req);
 
     if (!isQaAuthorized) {
       const rateCheck = await checkRateLimit(ip, 'lead_submission', { maxAttempts: 60, windowSeconds: 900 });

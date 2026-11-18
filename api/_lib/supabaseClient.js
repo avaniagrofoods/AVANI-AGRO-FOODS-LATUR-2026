@@ -590,8 +590,8 @@ export async function fetchLeadsFromSupabase({ limit = 50, offset = 0, status = 
 // ============================================================
 
 /**
- * Atomically reserve an idempotency lock in PostgreSQL via stored procedure
- * with direct PostgREST table fallback for resilient dual-mode operation.
+ * Atomically reserve an idempotency lock in PostgreSQL via stored procedure.
+ * Enforces strict fail-closed atomicity: zero non-atomic REST fallbacks.
  */
 export async function reserveIdempotencyLock(idempotencyKey, requestHash) {
   if (!isSupabaseConfigured()) {
@@ -602,123 +602,31 @@ export async function reserveIdempotencyLock(idempotencyKey, requestHash) {
     };
   }
 
-  // 1. Attempt atomic stored procedure (RPC) first
-  try {
-    const result = await supabaseFetch('rpc/reserve_idempotency_lock', {
-      method: 'POST',
-      body: {
-        p_key: String(idempotencyKey),
-        p_hash: String(requestHash)
-      }
-    });
-
-    if (result.success && Array.isArray(result.data) && result.data.length > 0) {
-      const row = result.data[0];
-      return {
-        success: true,
-        reserved: Boolean(row.reserved),
-        existingStatus: row.existing_status,
-        cachedResponse: row.cached_response,
-        inquiryId: row.inquiry_id,
-        quoteId: row.quote_id
-      };
+  const result = await supabaseFetch('rpc/reserve_idempotency_lock', {
+    method: 'POST',
+    body: {
+      p_key: String(idempotencyKey),
+      p_hash: String(requestHash)
     }
-  } catch (rpcErr) {
-    console.warn('[Supabase Client] reserve_idempotency_lock RPC call threw error, attempting table fallback:', rpcErr.message);
-  }
+  });
 
-  // 2. Direct table fallback: inquiry_idempotency_ledger
-  try {
-    // Check if key already exists in ledger
-    const checkRes = await supabaseFetch(`inquiry_idempotency_ledger?idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`, {
-      method: 'GET'
-    });
-
-    if (checkRes.success && Array.isArray(checkRes.data) && checkRes.data.length > 0) {
-      const existing = checkRes.data[0];
-      // Check if expired IN_PROGRESS lock
-      const isExpired = existing.status === 'IN_PROGRESS' && existing.expires_at && (new Date(existing.expires_at).getTime() < Date.now());
-      if (isExpired) {
-        // Reclaim expired lock
-        const reclaimRes = await supabaseFetch(`inquiry_idempotency_ledger?idempotency_key=eq.${encodeURIComponent(idempotencyKey)}`, {
-          method: 'PATCH',
-          body: {
-            status: 'IN_PROGRESS',
-            request_hash: String(requestHash),
-            updated_at: new Date().toISOString(),
-            expires_at: new Date(Date.now() + 60000).toISOString()
-          },
-          prefer: 'return=representation'
-        });
-        if (reclaimRes.success) {
-          return { success: true, reserved: true, existingStatus: 'RECLAIMED' };
-        }
-      }
-
-      // Existing record is valid (COMPLETED or active IN_PROGRESS)
-      return {
-        success: true,
-        reserved: false,
-        existingStatus: existing.status,
-        cachedResponse: existing.response_payload,
-        inquiryId: existing.inquiry_id,
-        quoteId: existing.quote_id
-      };
-    }
-
-    // Key does not exist: attempt atomic insert
-    const insertRes = await supabaseFetch('inquiry_idempotency_ledger', {
-      method: 'POST',
-      body: {
-        idempotency_key: String(idempotencyKey),
-        request_hash: String(requestHash),
-        status: 'IN_PROGRESS',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 60000).toISOString()
-      },
-      prefer: 'return=representation'
-    });
-
-    if (insertRes.success) {
-      return {
-        success: true,
-        reserved: true,
-        existingStatus: 'IN_PROGRESS'
-      };
-    }
-
-    // If insert failed due to conflict (concurrent insert), fetch existing record
-    const isConflict = insertRes.status === 409 || String(insertRes.error || '').includes('23505');
-    if (isConflict) {
-      const secondCheck = await supabaseFetch(`inquiry_idempotency_ledger?idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&limit=1`, {
-        method: 'GET'
-      });
-      if (secondCheck.success && Array.isArray(secondCheck.data) && secondCheck.data.length > 0) {
-        const row = secondCheck.data[0];
-        return {
-          success: true,
-          reserved: false,
-          existingStatus: row.status,
-          cachedResponse: row.response_payload,
-          inquiryId: row.inquiry_id,
-          quoteId: row.quote_id
-        };
-      }
-    }
-
+  if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+    const row = result.data[0];
     return {
-      success: false,
-      status: 'TABLE_FALLBACK_FAILED',
-      error: insertRes.error || 'Failed to reserve idempotency lock via fallback'
-    };
-  } catch (fallbackErr) {
-    return {
-      success: false,
-      status: 'FALLBACK_EXCEPTION',
-      error: fallbackErr.message
+      success: true,
+      reserved: Boolean(row.reserved),
+      existingStatus: row.existing_status,
+      cachedResponse: row.cached_response,
+      inquiryId: row.inquiry_id,
+      quoteId: row.quote_id
     };
   }
+
+  return {
+    success: false,
+    status: 'RPC_FAILED',
+    error: result.error || 'Failed to execute reserve_idempotency_lock RPC'
+  };
 }
 
 /**
@@ -729,8 +637,7 @@ export async function completeIdempotencyRecord(idempotencyKey, { inquiryId, quo
     return { success: false, error: 'Supabase unconfigured' };
   }
 
-  // Attempt atomic stored procedure first
-  const rpcRes = await supabaseFetch('rpc/complete_idempotency_record', {
+  return await supabaseFetch('rpc/complete_idempotency_record', {
     method: 'POST',
     body: {
       p_key: String(idempotencyKey),
@@ -738,23 +645,6 @@ export async function completeIdempotencyRecord(idempotencyKey, { inquiryId, quo
       p_quote_id: quoteId || null,
       p_response_payload: responsePayload || null
     }
-  });
-
-  if (rpcRes.success) {
-    return rpcRes;
-  }
-
-  // Direct table fallback
-  return await supabaseFetch(`inquiry_idempotency_ledger?idempotency_key=eq.${encodeURIComponent(idempotencyKey)}`, {
-    method: 'PATCH',
-    body: {
-      status: 'COMPLETED',
-      inquiry_id: inquiryId || null,
-      quote_id: quoteId || null,
-      response_payload: responsePayload || null,
-      updated_at: new Date().toISOString()
-    },
-    prefer: 'return=representation'
   });
 }
 
@@ -766,26 +656,11 @@ export async function failIdempotencyRecord(idempotencyKey) {
     return { success: false, error: 'Supabase unconfigured' };
   }
 
-  // Attempt atomic stored procedure first
-  const rpcRes = await supabaseFetch('rpc/fail_idempotency_record', {
+  return await supabaseFetch('rpc/fail_idempotency_record', {
     method: 'POST',
     body: {
       p_key: String(idempotencyKey)
     }
-  });
-
-  if (rpcRes.success) {
-    return rpcRes;
-  }
-
-  // Direct table fallback
-  return await supabaseFetch(`inquiry_idempotency_ledger?idempotency_key=eq.${encodeURIComponent(idempotencyKey)}`, {
-    method: 'PATCH',
-    body: {
-      status: 'FAILED',
-      updated_at: new Date().toISOString()
-    },
-    prefer: 'return=representation'
   });
 }
 
