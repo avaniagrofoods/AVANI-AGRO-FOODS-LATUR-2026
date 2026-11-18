@@ -221,6 +221,31 @@ export default async function handler(req, res) {
         }
       } else if (lockRes.reserved === false) {
         if (lockRes.existingStatus === 'COMPLETED') {
+          // Payload integrity check: compare incoming requestHash with stored original hash
+          const storedHash = lockRes.requestHash || lockRes.cachedResponse?.idempotency?.requestHash;
+          if (storedHash && storedHash !== requestHash) {
+            return res.status(409).json({
+              success: false,
+              code: 'IDEMPOTENCY_KEY_PAYLOAD_MISMATCH',
+              error: 'The provided idempotency key was previously used with a different request payload.'
+            });
+          }
+          // Semantic fallback comparison if storedHash is absent
+          const cachedInq = lockRes.cachedResponse?.inquiry;
+          if (!storedHash && cachedInq) {
+            const norm = (v) => String(v || '').trim().toLowerCase();
+            const emailMatch = norm(cachedInq.email) === norm(email);
+            const qtyMatch = norm(cachedInq.quantityOriginal) === norm(rawQuantity) || Number(cachedInq.quantityNormalizedKg) === Number(quantityNormalizedKg);
+            const productMatch = norm(cachedInq.product) === norm(productMaster?.name || rawProduct);
+            if (!emailMatch || !qtyMatch || !productMatch) {
+              return res.status(409).json({
+                success: false,
+                code: 'IDEMPOTENCY_KEY_PAYLOAD_MISMATCH',
+                error: 'The provided idempotency key was previously used with a different request payload.'
+              });
+            }
+          }
+
           return res.status(200).json(lockRes.cachedResponse || {
             success: true,
             message: 'Duplicate enquiry detected. Authoritative confirmation retransmitted.',
@@ -715,7 +740,11 @@ export default async function handler(req, res) {
           whatsapp: integrations.whatsapp
         }
       },
-      integrations
+      integrations,
+      idempotency: {
+        key: idempotencyKey,
+        requestHash
+      }
     };
 
     if (isSupabaseConfigured()) {

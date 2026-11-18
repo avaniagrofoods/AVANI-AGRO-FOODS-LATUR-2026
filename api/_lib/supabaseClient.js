@@ -612,13 +612,23 @@ export async function reserveIdempotencyLock(idempotencyKey, requestHash) {
 
   if (result.success && Array.isArray(result.data) && result.data.length > 0) {
     const row = result.data[0];
+    let storedHash = row.cached_response?.idempotency?.requestHash || row.cached_response?.requestHash || null;
+    if (!storedHash && row.reserved === false) {
+      try {
+        const hashRes = await supabaseFetch(`inquiry_idempotency_ledger?idempotency_key=eq.${encodeURIComponent(idempotencyKey)}&select=request_hash`);
+        if (hashRes.success && Array.isArray(hashRes.data) && hashRes.data.length > 0) {
+          storedHash = hashRes.data[0].request_hash || null;
+        }
+      } catch (_) {}
+    }
     return {
       success: true,
       reserved: Boolean(row.reserved),
       existingStatus: row.existing_status,
       cachedResponse: row.cached_response,
       inquiryId: row.inquiry_id,
-      quoteId: row.quote_id
+      quoteId: row.quote_id,
+      requestHash: storedHash
     };
   }
 
