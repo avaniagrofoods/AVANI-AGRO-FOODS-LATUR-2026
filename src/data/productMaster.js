@@ -21,7 +21,8 @@ export const PRODUCT_MASTER = [
     moqKg: 100,
     active: true,
     lastUpdated: '2026-09-29T16:25:00Z',
-    verificationStatus: 'VERIFIED_ACTIVE'
+    verificationStatus: 'VERIFIED_ACTIVE',
+    priceApprovalStatus: 'INDICATIVE_NOT_APPROVED'
   },
   {
     productId: 'red-onion-powder',
@@ -40,7 +41,8 @@ export const PRODUCT_MASTER = [
     moqKg: 100,
     active: true,
     lastUpdated: '2026-09-29T16:25:00Z',
-    verificationStatus: 'VERIFIED_ACTIVE'
+    verificationStatus: 'VERIFIED_ACTIVE',
+    priceApprovalStatus: 'INDICATIVE_NOT_APPROVED'
   },
   {
     productId: 'garlic-powder',
@@ -59,7 +61,8 @@ export const PRODUCT_MASTER = [
     moqKg: 100,
     active: true,
     lastUpdated: '2026-09-29T16:25:00Z',
-    verificationStatus: 'VERIFIED_ACTIVE'
+    verificationStatus: 'VERIFIED_ACTIVE',
+    priceApprovalStatus: 'INDICATIVE_NOT_APPROVED'
   },
   {
     productId: 'ginger-powder',
@@ -78,7 +81,8 @@ export const PRODUCT_MASTER = [
     moqKg: 100,
     active: true,
     lastUpdated: '2026-09-29T16:25:00Z',
-    verificationStatus: 'VERIFIED_ACTIVE'
+    verificationStatus: 'VERIFIED_ACTIVE',
+    priceApprovalStatus: 'INDICATIVE_NOT_APPROVED'
   },
   {
     productId: 'turmeric-powder',
@@ -97,7 +101,8 @@ export const PRODUCT_MASTER = [
     moqKg: 100,
     active: true,
     lastUpdated: '2026-09-29T16:25:00Z',
-    verificationStatus: 'VERIFIED_ACTIVE'
+    verificationStatus: 'VERIFIED_ACTIVE',
+    priceApprovalStatus: 'INDICATIVE_NOT_APPROVED'
   },
   {
     productId: 'beetroot-powder',
@@ -116,7 +121,8 @@ export const PRODUCT_MASTER = [
     moqKg: 100,
     active: true,
     lastUpdated: '2026-09-29T16:25:00Z',
-    verificationStatus: 'VERIFIED_ACTIVE'
+    verificationStatus: 'VERIFIED_ACTIVE',
+    priceApprovalStatus: 'INDICATIVE_NOT_APPROVED'
   }
 ];
 

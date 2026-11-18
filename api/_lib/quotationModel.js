@@ -256,6 +256,17 @@ export async function sendQuotationToBuyer(quotation, options = {}) {
     throw err;
   }
 
+  // Prevent indicative / unapproved / missing-approval prices from being dispatched as approved customer quotations
+  if (
+    quotation.ownerPriceApproved !== true ||
+    String(quotation.priceApprovalStatus || '').includes('INDICATIVE')
+  ) {
+    const err = new Error('Explicit owner commercial price approval (ownerPriceApproved: true) is required before dispatching quotation to a buyer.');
+    err.code = 'UNAPPROVED_COMMERCIAL_PRICE';
+    err.issues = ['Missing or unapproved ownerPriceApproved flag; indicative prices cannot be dispatched to buyers'];
+    throw err;
+  }
+
   const adminReviewed = options.adminReviewed !== undefined ? options.adminReviewed : true;
   if (!adminReviewed) {
     const err = new Error('Explicit admin review confirmation is required before dispatching quotation.');

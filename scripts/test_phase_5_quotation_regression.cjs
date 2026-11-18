@@ -490,6 +490,7 @@ async function runPhase5QuotationRegression() {
     try {
       const quote = createQuotationFromLead(baseLead);
       quote.status = 'READY_FOR_BUYER';
+      quote.ownerPriceApproved = true;
       quote.quotation.items[0].rate = 350;
       updateProcessorConfirmation(quote, createFullConfirmationUpdates());
       const res = await sendQuotationToBuyer(quote, {
@@ -529,6 +530,7 @@ async function runPhase5QuotationRegression() {
     try {
       const quote = createQuotationFromLead(baseLead);
       quote.status = 'READY_FOR_BUYER';
+      quote.ownerPriceApproved = true;
       quote.quotation.items[0].rate = 350;
       updateProcessorConfirmation(quote, createFullConfirmationUpdates());
       const res = await sendQuotationToBuyer(quote, {
@@ -606,6 +608,7 @@ async function runPhase5QuotationRegression() {
     try {
       const quote = createQuotationFromLead(baseLead);
       quote.status = 'READY_FOR_BUYER';
+      quote.ownerPriceApproved = true;
       quote.quotation.items[0].rate = 350;
       updateProcessorConfirmation(quote, createFullConfirmationUpdates());
       const res = await sendQuotationToBuyer(quote, {
@@ -626,6 +629,7 @@ async function runPhase5QuotationRegression() {
     try {
       const quote = createQuotationFromLead(baseLead);
       quote.status = 'READY_FOR_BUYER';
+      quote.ownerPriceApproved = true;
       quote.quotation.items[0].rate = 350;
       updateProcessorConfirmation(quote, createFullConfirmationUpdates());
       const res = await sendQuotationToBuyer(quote, {
@@ -789,6 +793,7 @@ async function runPhase5QuotationRegression() {
     try {
       const quote = createQuotationFromLead(baseLead);
       quote.status = 'READY_FOR_BUYER';
+      quote.ownerPriceApproved = true;
       quote.quotation.items[0].rate = 350;
       updateProcessorConfirmation(quote, createFullConfirmationUpdates());
       const res = await sendQuotationToBuyer(quote, {
@@ -812,6 +817,7 @@ async function runPhase5QuotationRegression() {
     try {
       const quote = createQuotationFromLead(baseLead);
       quote.status = 'READY_FOR_BUYER';
+      quote.ownerPriceApproved = true;
       quote.quotation.items[0].rate = 350;
       updateProcessorConfirmation(quote, createFullConfirmationUpdates());
       const res = await sendQuotationToBuyer(quote, {
@@ -835,6 +841,7 @@ async function runPhase5QuotationRegression() {
     try {
       const quote = createQuotationFromLead(baseLead);
       quote.status = 'READY_FOR_BUYER';
+      quote.ownerPriceApproved = true;
       quote.quotation.items[0].rate = 350;
       updateProcessorConfirmation(quote, createFullConfirmationUpdates());
       const res = await sendQuotationToBuyer(quote, {
@@ -983,6 +990,7 @@ async function runPhase5QuotationRegression() {
     try {
       const quote = createQuotationFromLead(baseLead);
       quote.status = 'READY_FOR_BUYER';
+      quote.ownerPriceApproved = true;
       quote.quotation.items[0].rate = 350;
       updateProcessorConfirmation(quote, createFullConfirmationUpdates());
       const res = await sendQuotationToBuyer(quote, {
@@ -1010,6 +1018,7 @@ async function runPhase5QuotationRegression() {
     try {
       const quote = createQuotationFromLead(baseLead);
       quote.status = 'READY_FOR_BUYER';
+      quote.ownerPriceApproved = true;
       quote.quotation.items[0].rate = 350;
       updateProcessorConfirmation(quote, createFullConfirmationUpdates());
       const res1 = await sendQuotationToBuyer(quote, {
@@ -1042,6 +1051,7 @@ async function runPhase5QuotationRegression() {
     try {
       const quote = createQuotationFromLead(baseLead);
       quote.status = 'READY_FOR_BUYER';
+      quote.ownerPriceApproved = true;
       quote.quotation.items[0].rate = 350;
       updateProcessorConfirmation(quote, createFullConfirmationUpdates());
       await sendQuotationToBuyer(quote, {

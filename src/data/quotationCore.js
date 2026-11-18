@@ -11,12 +11,19 @@ import {
   parseUnitRate
 } from './productMaster.js';
 
+export function computeDefaultValidUntil(issueDateStr, validityDays = 15) {
+  const parsed = issueDateStr ? new Date(issueDateStr) : new Date();
+  const base = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  const validDate = new Date(base.getTime() + validityDays * 86400000);
+  return validDate.toISOString().split('T')[0];
+}
+
 export const DEFAULT_COMMERCIAL_TERMS = [
   '1. Payment Terms: 50% Advance Payment, Balance 50% Before Dispatch.',
   '2. Price Basis: FOB Shipment terms (Final port details to be confirmed by Buyer).',
-  '3. Delivery Timeline: Shipment within 60–75 days from the date of advance payment confirmation.',
+  '3. Delivery Timeline: Subject to supplier batch and vessel schedule confirmation prior to Proforma Invoice sign-off.',
   '4. Packaging: 25 kg Food-Grade HDPE Bags included.',
-  '5. Validity: This quotation is valid until 12 Oct 2026.',
+  '5. Validity: This quotation is valid for 15 calendar days from the issue date (subject to supplier batch reconfirmation).',
   '6. Inspection: Pre-dispatch inspection permitted at seller\'s warehouse at buyer\'s cost.',
   '7. Jurisdiction: All disputes are subject to the exclusive jurisdiction of competent courts in Latur, Maharashtra, India.'
 ];
@@ -28,7 +35,7 @@ export function calculateQuotation(input = {}) {
   const quoteId = input.quoteId || input.id || `AAF-Q-2026-${Math.floor(1000 + Math.random() * 9000)}`;
   const inquiryId = input.inquiryId || input.leadId || null;
   const date = input.date || new Date().toISOString().split('T')[0];
-  const validUntil = input.validUntil || '12 Oct 2026';
+  const validUntil = input.validUntil || computeDefaultValidUntil(date, 15);
 
   const customerName = (input.customerName || input.buyerName || input.buyer?.name || input.name || 'Valued Trade Partner').trim();
   const companyName = (input.companyName || input.buyer?.company || input.company || 'Direct Buyer').trim();
@@ -136,10 +143,14 @@ export function calculateQuotation(input = {}) {
     ? input.commercialTerms
     : [...DEFAULT_COMMERCIAL_TERMS];
 
-  const deliveryTimeline = input.deliveryTimeline || 'Shipment within 60–75 days from the date of advance payment confirmation.';
+  const deliveryTimeline = input.deliveryTimeline || 'Subject to supplier batch and vessel schedule confirmation prior to Proforma Invoice sign-off.';
   const paymentTerms = input.paymentTerms || '50% Advance Payment, Balance 50% Before Dispatch.';
   const inspectionTerms = input.inspectionTerms || 'Pre-dispatch inspection permitted at seller\'s warehouse at buyer\'s cost.';
   const jurisdiction = input.jurisdiction || 'All disputes are subject to the exclusive jurisdiction of competent courts in Latur, Maharashtra, India.';
+  const isOwnerApprovedPrice = Boolean(input.ownerPriceApproved === true);
+  const priceApprovalStatus = isOwnerApprovedPrice
+    ? 'COMMERCIAL_APPROVED'
+    : 'INDICATIVE — NOT APPROVED FOR CUSTOMER QUOTATION';
 
   return {
     quoteId,
@@ -171,6 +182,8 @@ export function calculateQuotation(input = {}) {
     paymentTerms,
     inspectionTerms,
     jurisdiction,
+    ownerPriceApproved: isOwnerApprovedPrice,
+    priceApprovalStatus,
     status: input.status || 'DRAFT',
     createdAt: input.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),

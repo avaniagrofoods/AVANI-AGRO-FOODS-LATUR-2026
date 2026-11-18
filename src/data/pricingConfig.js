@@ -21,7 +21,7 @@ export const COMPANY_DETAILS = {
     full: 'Old Barshi Road, 5 No Chauk, KulswaminiNagar, Next to Sai School, Latur-413512, Maharashtra, India'
   },
   registration: {
-    udyam: 'UDYAM-MH-19-0000000',
+    udyam: 'Udyam Registered Enterprise (Latur, Maharashtra)',
     compliance: 'Trade Co-ordination Framework (Partner FSSAI, APEDA, IEC, GST & ISO Compliant)'
   }
 };
@@ -29,15 +29,16 @@ export const COMPANY_DETAILS = {
 export const STANDARD_PRODUCTS = {
   'moringa-powder': {
     id: 'moringa-powder',
-    name: 'Moringa Leaf Powder (Food Grade / Organic)',
+    name: 'Moringa Leaf Powder (Standard Food Grade)',
     hscode: '12119029',
     unit: 'kg',
     moqKg: 100,
     baseFobInrPerKg: 400,
     baseFobUsdPerKg: 4.82,
+    priceApprovalStatus: 'INDICATIVE_NOT_APPROVED',
     packaging: '25 kg Food Grade Laminated HDPE Drums / 4-Layer Vacuum Pouches',
-    specs: '100% Pure Organic Moringa Oleifera Leaf Powder, Mesh 80-100, Moisture < 7%, Green Fine Powder',
-    leadTime: '10-15 working days from PO confirmation'
+    specs: '100% Pure Moringa Oleifera Leaf Powder, Mesh 80-100, Moisture <= 8%, Green Fine Powder (Conventional Food Grade)',
+    leadTime: 'Subject to supplier batch confirmation'
   },
   'red-onion-powder': {
     id: 'red-onion-powder',

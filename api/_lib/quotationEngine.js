@@ -33,7 +33,8 @@ import {
 } from './productMaster.js';
 import {
   DEFAULT_COMMERCIAL_TERMS,
-  calculateQuotation
+  calculateQuotation,
+  computeDefaultValidUntil
 } from '../../src/data/quotationCore.js';
 
 export {
@@ -41,7 +42,8 @@ export {
   parseUnitRate,
   validateQuotation,
   DEFAULT_COMMERCIAL_TERMS,
-  calculateQuotation
+  calculateQuotation,
+  computeDefaultValidUntil
 };
 
 export const COMPANY_INFO = {

@@ -10,7 +10,7 @@
 // ============================================================
 
 import crypto from 'crypto';
-import { calculateQuotation, parseQuantityKg, COMPANY_INFO } from './_lib/quotationEngine.js';
+import { calculateQuotation, parseQuantityKg, computeDefaultValidUntil, COMPANY_INFO } from './_lib/quotationEngine.js';
 import { matchProductMaster } from './_lib/productMaster.js';
 import { getClientIp, checkRateLimit, isAllowedOrigin } from './_lib/auth.js';
 import { 
@@ -61,7 +61,7 @@ function parseRequirementText(text = '') {
     moisture: moistureMatch ? moistureMatch[1] : 'Max 7–8%',
     purity: purityMatch ? purityMatch[1] : '100% Pure',
     packaging: packagingMatch ? packagingMatch[1] : '25 kg Food-Grade HDPE Bags',
-    leadTime: leadTimeMatch ? leadTimeMatch[1] : '60–75 days',
+    leadTime: leadTimeMatch ? leadTimeMatch[1] : 'Subject to supplier batch confirmation',
     parsedPrice: priceMatch ? parseFloat(priceMatch[1]) : null
   };
 }
@@ -297,19 +297,19 @@ export default async function handler(req, res) {
 
     const incoterm = (body.incoterm || 'FOB NHAVA SHEVA (JNPT MUMBAI)').toUpperCase().trim();
     const destinationPort = (body.destinationPort || body.destination || 'NHAVA SHEVA (JNPT MUMBAI)').trim();
-    const leadTime = body.deliveryTimeline || parsedReq.leadTime || '60–75 days';
+    const leadTime = body.deliveryTimeline || parsedReq.leadTime || 'Subject to supplier batch confirmation';
 
     // Full description without truncation
     const fullDescription = body.fullDescription || (
       rawRequirement.length > 30 ? rawRequirement : `${pm.productName}\nNatural Green\n${parsedReq.mesh}\nMoisture ${parsedReq.moisture}\n${parsedReq.purity}\n${parsedReq.packaging}`
     );
 
-    // 5. Calculate Quotation Draft
+    // 5. Calculate Quotation Draft (strictly indicative until owner-approved)
     const quote = calculateQuotation({
       quoteId,
       inquiryId,
       date: dateStr,
-      validUntil: body.validUntil || '12 Oct 2026',
+      validUntil: body.validUntil || computeDefaultValidUntil(dateStr, 15),
       buyerName: name,
       companyName: company,
       email,
@@ -335,8 +335,11 @@ export default async function handler(req, res) {
       freight: Number(body.freight || 0),
       insurance: Number(body.insurance || 0),
       documentation: Number(body.documentation || 0),
-      deliveryTimeline: `Shipment within ${leadTime} from the date of advance payment confirmation.`,
+      deliveryTimeline: body.deliveryTimeline
+        ? `Shipment within ${leadTime} from the date of advance payment confirmation.`
+        : 'Subject to supplier batch and vessel schedule confirmation prior to Proforma Invoice sign-off.',
       paymentTerms: body.paymentTerms || '50% Advance Payment, Balance 50% Before Dispatch.',
+      ownerPriceApproved: false,
       status: 'DRAFT',
       createdAt: timestamp,
       updatedAt: timestamp,
