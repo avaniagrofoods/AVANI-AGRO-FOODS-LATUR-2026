@@ -1,8 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import SEO from '../components/SEO'
 import PasswordGate from '../components/PasswordGate'
 import PrivateNav from '../components/PrivateNav'
+import {
+  isValidOptionalEmail,
+  isValidOptionalPhone,
+  validateVerificationTransition
+} from '../lib/directoryUtils'
 import {
   Search, Download, Plus, Edit, Trash2, MapPin,
   Globe, Mail, Phone, ExternalLink, Filter, CheckCircle2,
@@ -26,6 +31,7 @@ const STATES = [
   'Kerala',
   'Rajasthan',
   'Madhya Pradesh',
+  'Location Not Verified',
   'Other States'
 ]
 
@@ -73,17 +79,26 @@ export default function Manufacturers() {
     certifications: 'FSSAI, Partner NABL Testing',
     leadTime: '10-14 days',
     priceBasis: 'FOB Nhava Sheva',
-    verificationStatus: 'VERIFIED',
+    verificationStatus: 'UNVERIFIED',
     priority: 'HIGH',
     status: 'ACTIVE',
     notes: ''
   })
 
-  // Pagination
+  // Pagination & Race-Condition Protection
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 12
+  const abortControllerRef = useRef(null)
+  const requestIdRef = useRef(0)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    const currentReqId = ++requestIdRef.current
+
     setLoading(true)
     setError('')
     try {
@@ -91,9 +106,12 @@ export default function Manufacturers() {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
+        signal: controller.signal,
       })
+      if (currentReqId !== requestIdRef.current) return
       if (res.ok) {
         const json = await res.json()
+        if (currentReqId !== requestIdRef.current) return
         const manufacturers = json.manufacturers || { small: [], medium: [], large: [] }
         const all = json.all || [...(manufacturers.small || []), ...(manufacturers.medium || []), ...(manufacturers.large || [])]
         setData({
@@ -103,17 +121,26 @@ export default function Manufacturers() {
           all,
         })
       } else {
-        setError('Authentication required to load manufacturer records.')
+        const errJson = await res.json().catch(() => ({}))
+        setError(errJson.error || 'Authentication required to load manufacturer records.')
       }
     } catch (err) {
-      setError('Network error while loading data. Please try again.')
+      if (err?.name === 'AbortError') return
+      if (currentReqId !== requestIdRef.current) return
+      setError('Network error while loading manufacturer data. Please try again.')
     } finally {
-      setLoading(false)
+      if (currentReqId === requestIdRef.current) {
+        setLoading(false)
+      }
     }
-  }
+  }, [])
 
   useEffect(() => {
-    fetchData()
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
   }, [])
 
   useEffect(() => {
@@ -126,28 +153,38 @@ export default function Manufacturers() {
   const currentList = selectedScale === 'all' ? data.all : (data[selectedScale] || [])
 
   const filtered = currentList.filter(item => {
-    const q = search.toLowerCase()
+    const q = search.toLowerCase().trim()
     const matchSearch = !q ||
       item.name?.toLowerCase().includes(q) ||
+      item.companyName?.toLowerCase().includes(q) ||
+      item.supplierType?.toLowerCase().includes(q) ||
+      item.facilityName?.toLowerCase().includes(q) ||
+      item.address?.toLowerCase().includes(q) ||
       item.location?.toLowerCase().includes(q) ||
+      item.state?.toLowerCase().includes(q) ||
+      item.city?.toLowerCase().includes(q) ||
       item.products?.toLowerCase().includes(q) ||
       item.exportCountries?.toLowerCase().includes(q) ||
       item.email?.toLowerCase().includes(q) ||
+      item.phone?.toLowerCase().includes(q) ||
       item.contactPerson?.toLowerCase().includes(q)
 
+    const itemState = (item.state || '').trim()
+    const itemLoc = (item.location || '').trim()
     const matchState = selectedState === 'All States' ||
-      (selectedState.includes('Maharashtra') && item.location?.includes('Maharashtra')) ||
-      (selectedState === 'Gujarat' && item.location?.includes('Gujarat')) ||
-      (selectedState === 'Tamil Nadu' && item.location?.includes('Tamil Nadu')) ||
-      (selectedState === 'Karnataka' && item.location?.includes('Karnataka')) ||
-      (selectedState === 'Andhra Pradesh' && item.location?.includes('Andhra')) ||
-      (selectedState === 'Kerala' && item.location?.includes('Kerala')) ||
-      (selectedState === 'Rajasthan' && item.location?.includes('Rajasthan')) ||
-      (selectedState === 'Madhya Pradesh' && item.location?.includes('Madhya')) ||
-      (selectedState === 'Other States' && !['Maharashtra', 'Gujarat', 'Tamil Nadu', 'Karnataka', 'Andhra', 'Kerala', 'Rajasthan', 'Madhya'].some(s => item.location?.includes(s)))
+      (selectedState.includes('Maharashtra') && (itemState === 'Maharashtra' || itemLoc.includes('Maharashtra'))) ||
+      (selectedState === 'Gujarat' && (itemState === 'Gujarat' || itemLoc.includes('Gujarat'))) ||
+      (selectedState === 'Tamil Nadu' && (itemState === 'Tamil Nadu' || itemLoc.includes('Tamil Nadu'))) ||
+      (selectedState === 'Karnataka' && (itemState === 'Karnataka' || itemLoc.includes('Karnataka'))) ||
+      (selectedState === 'Andhra Pradesh' && (itemState === 'Andhra Pradesh' || itemLoc.includes('Andhra'))) ||
+      (selectedState === 'Kerala' && (itemState === 'Kerala' || itemLoc.includes('Kerala'))) ||
+      (selectedState === 'Rajasthan' && (itemState === 'Rajasthan' || itemLoc.includes('Rajasthan'))) ||
+      (selectedState === 'Madhya Pradesh' && (itemState === 'Madhya Pradesh' || itemState === 'MP' || itemLoc.includes('Madhya'))) ||
+      (selectedState === 'Location Not Verified' && (itemState === 'Unverified' || !itemLoc || itemLoc === 'Location not verified')) ||
+      (selectedState === 'Other States' && !['Maharashtra', 'Gujarat', 'Tamil Nadu', 'Karnataka', 'Andhra Pradesh', 'Kerala', 'Rajasthan', 'Madhya Pradesh', 'MP', 'Unverified'].includes(itemState))
 
     const matchPriority = selectedPriority === 'All' || item.priority === selectedPriority
-    const matchVerification = selectedVerification === 'All' || item.verificationStatus === selectedVerification
+    const matchVerification = selectedVerification === 'All' || (item.verificationStatus || 'UNVERIFIED') === selectedVerification
 
     return matchSearch && matchState && matchPriority && matchVerification
   })
@@ -163,11 +200,18 @@ export default function Manufacturers() {
     return 0
   })
 
-  // Pagination
+  // Pagination (clamped safely to valid page range)
   const totalPages = Math.ceil(sorted.length / pageSize) || 1
-  const paginatedList = sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const paginatedList = sorted.slice((safeCurrentPage - 1) * pageSize, safeCurrentPage * pageSize)
 
-  // Export CSV
+  const csvCell = (val) => {
+    const raw = val == null ? '' : String(val)
+    const safe = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw
+    return `"${safe.replace(/"/g, '""')}"`
+  }
+
+  // Export CSV (filtered view, UTF-8 BOM, no fabricated VERIFIED fallback)
   const handleExportCSV = () => {
     if (!sorted.length) return
     const headers = [
@@ -178,30 +222,30 @@ export default function Manufacturers() {
     ]
     const rows = sorted.map(m => [
       m.id,
-      `"${(m.companyName || m.name || '').replace(/"/g, '""')}"`,
-      `"${(m.scale || '').replace(/"/g, '""')}"`,
-      `"${(m.supplierType || '').replace(/"/g, '""')}"`,
-      `"${(m.location || '').replace(/"/g, '""')}"`,
-      `"${(m.state || '').replace(/"/g, '""')}"`,
-      `"${(m.products || '').replace(/"/g, '""')}"`,
-      `"${(m.exportCountries || '').replace(/"/g, '""')}"`,
-      `"${(m.moq || '').replace(/"/g, '""')}"`,
-      `"${(m.capacity || '').replace(/"/g, '""')}"`,
-      `"${(m.packaging || '').replace(/"/g, '""')}"`,
-      `"${(m.certifications || '').replace(/"/g, '""')}"`,
-      `"${(m.leadTime || '').replace(/"/g, '""')}"`,
-      `"${(m.priceBasis || '').replace(/"/g, '""')}"`,
-      `"${(m.contactPerson || '').replace(/"/g, '""')}"`,
-      `"${(m.email || '').replace(/"/g, '""')}"`,
-      `"${(m.phone || m.contact || '').replace(/"/g, '""')}"`,
-      `"${(m.website || '').replace(/"/g, '""')}"`,
-      `"${(m.verificationStatus || 'VERIFIED')}"`,
-      `"${(m.priority || 'MEDIUM')}"`,
-      `"${(m.status || 'ACTIVE')}"`,
-      `"${(m.notes || '').replace(/"/g, '""')}"`
+      csvCell(m.companyName || m.name),
+      csvCell(m.scale),
+      csvCell(m.supplierType),
+      csvCell(m.location || 'Location not verified'),
+      csvCell(m.state),
+      csvCell(m.products),
+      csvCell(m.exportCountries),
+      csvCell(m.moq),
+      csvCell(m.capacity),
+      csvCell(m.packaging),
+      csvCell(m.certifications),
+      csvCell(m.leadTime),
+      csvCell(m.priceBasis),
+      csvCell(m.contactPerson),
+      csvCell(m.email),
+      csvCell(m.phone || m.contact),
+      csvCell(m.website),
+      csvCell(m.verificationStatus || 'UNVERIFIED'),
+      csvCell(m.priority || 'MEDIUM'),
+      csvCell(m.status || 'ACTIVE'),
+      csvCell(m.notes)
     ])
 
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -226,14 +270,39 @@ export default function Manufacturers() {
     if (selectedSupplier?.id === id) setSelectedSupplier(null)
   }
 
-  // Add Supplier
+  // Add Supplier (email/phone validation, duplicate guard + UNVERIFIED default)
   const handleAddSubmit = (e) => {
     e.preventDefault()
+    const targetName = (newFormData.companyName || newFormData.name || '').trim().toLowerCase()
+    if (!targetName) {
+      window.alert('Supplier/company name is required.')
+      return
+    }
+    if (!isValidOptionalEmail(newFormData.email)) {
+      window.alert('Please enter a valid email address (or leave blank).')
+      return
+    }
+    if (!isValidOptionalPhone(newFormData.phone)) {
+      window.alert('Please enter a valid phone number with 7–16 digits (or leave blank).')
+      return
+    }
+    const targetEmail = (newFormData.email || '').trim().toLowerCase()
+    const duplicate = data.all.find(m =>
+      (targetName && (m.companyName || m.name || '').trim().toLowerCase() === targetName) ||
+      (targetEmail && targetEmail !== 'not available' && m.email && m.email.trim().toLowerCase() === targetEmail)
+    )
+    if (duplicate) {
+      window.alert(`A supplier record with this name or email already exists (ID #${duplicate.id}: ${duplicate.companyName || duplicate.name}). Please edit the existing record instead.`)
+      return
+    }
     const newId = data.all.length ? Math.max(...data.all.map(m => m.id || 0)) + 1 : 1
     const record = {
       ...newFormData,
       id: newId,
-      location: `${newFormData.city ? newFormData.city + ', ' : ''}${newFormData.state}`
+      verificationStatus: 'UNVERIFIED',
+      verificationUpdatedAt: new Date().toISOString(),
+      verificationUpdatedBy: 'founder_portal_operator',
+      location: newFormData.state ? `${newFormData.city ? newFormData.city + ', ' : ''}${newFormData.state}` : 'Location not verified'
     }
     setData(prev => ({
       ...prev,
@@ -244,11 +313,34 @@ export default function Manufacturers() {
     setSelectedSupplier(record)
   }
 
-  // Edit Supplier
+  // Edit Supplier (validates email/phone & requires documentary evidence for verification upgrades)
   const handleEditSubmit = (e) => {
     e.preventDefault()
+    if (!isValidOptionalEmail(editFormData.email)) {
+      window.alert('Please enter a valid email address.')
+      return
+    }
+    if (!isValidOptionalPhone(editFormData.phone)) {
+      window.alert('Please enter a valid phone number with 7–16 digits.')
+      return
+    }
+    const original = data.all.find(m => m.id === editFormData.id)
+    const transition = validateVerificationTransition(
+      original?.verificationStatus || 'UNVERIFIED',
+      editFormData.verificationStatus,
+      editFormData.notes || editFormData.verificationEvidence
+    )
+    if (!transition.allowed) {
+      window.alert(transition.error)
+      return
+    }
+    const updatedRecord = {
+      ...editFormData,
+      verificationUpdatedAt: new Date().toISOString(),
+      verificationUpdatedBy: 'founder_portal_operator'
+    }
     setData(prev => {
-      const updateList = (list) => list.map(m => m.id === editFormData.id ? editFormData : m)
+      const updateList = (list) => list.map(m => m.id === updatedRecord.id ? updatedRecord : m)
       return {
         small: updateList(prev.small),
         medium: updateList(prev.medium),
@@ -256,7 +348,7 @@ export default function Manufacturers() {
         all: updateList(prev.all)
       }
     })
-    setSelectedSupplier(editFormData)
+    setSelectedSupplier(updatedRecord)
     setIsEditModalOpen(false)
   }
 
@@ -414,7 +506,16 @@ export default function Manufacturers() {
           </div>
 
           {/* Results Grid */}
-          {loading ? (
+          {error ? (
+            <div className="card" style={{ textAlign: 'center', padding: '48px 24px', background: '#fef2f2', border: '1px solid #fecaca' }}>
+              <p style={{ color: '#991b1b', fontSize: '0.95rem', fontWeight: 700, marginBottom: 14 }}>
+                {error}
+              </p>
+              <button onClick={fetchData} className="btn btn-primary" style={{ gap: 6 }}>
+                <RefreshCw size={15} /> Retry Loading Manufacturers
+              </button>
+            </div>
+          ) : loading ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
               <RefreshCw size={32} color="var(--color-primary)" className="animate-spin" style={{ margin: '0 auto 12px' }} />
               <p style={{ color: 'var(--color-text-light)', fontSize: '0.9rem' }}>Loading manufacturer records...</p>
@@ -425,7 +526,7 @@ export default function Manufacturers() {
                 No manufacturers found matching your filter criteria.
               </p>
               <button
-                onClick={() => { setSearch(''); setSelectedScale('all'); setSelectedState('All States'); setSelectedPriority('All'); setSelectedVerification('All'); }}
+                onClick={() => { setSearch(''); setSelectedScale('all'); setSelectedState('All States'); setSelectedPriority('All'); setSelectedVerification('All'); setCurrentPage(1); }}
                 className="btn btn-primary"
               >
                 Reset All Filters
@@ -450,8 +551,8 @@ export default function Manufacturers() {
                   <div>
                     {/* Top Row: Location & Scale Badges */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <MapPin size={13} /> {item.location}
+                      <span style={{ fontSize: '0.78rem', fontWeight: 800, color: (!item.location || item.location === 'Location not verified') ? '#b45309' : 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <MapPin size={13} /> {item.location || 'Location not verified'}
                       </span>
                       <div style={{ display: 'flex', gap: 4 }}>
                         <span className="badge" style={{ fontSize: '0.68rem', background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', textTransform: 'capitalize' }}>
@@ -611,7 +712,7 @@ export default function Manufacturers() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                 <div>
                   <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                    <span className="badge">{selectedSupplier.verificationStatus || 'VERIFIED'}</span>
+                    <span className="badge">{selectedSupplier.verificationStatus || 'UNVERIFIED'}</span>
                     <span className="badge" style={{ background: '#f0f9ff', color: '#0369a1', textTransform: 'capitalize' }}>{selectedSupplier.scale || 'Partner'} Scale</span>
                   </div>
                   <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--color-text)', margin: 0 }}>

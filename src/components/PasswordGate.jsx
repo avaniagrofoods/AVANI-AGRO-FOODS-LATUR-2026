@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Lock, Unlock, ShieldAlert, Loader2 } from 'lucide-react'
 import { storeCsrfToken } from '../lib/csrf'
 
@@ -14,9 +14,14 @@ export default function PasswordGate({
   const [loading, setLoading] = useState(false)
   const [checkingSession, setCheckingSession] = useState(true)
 
-  // Verify existing session on mount via server-side session cookie
+  // Keep latest onUnlock callback in a ref so parent re-renders never re-trigger session checks
+  const onUnlockRef = useRef(onUnlock)
+  onUnlockRef.current = onUnlock
+
+  // Verify existing session ONCE on mount via server-side session cookie
   useEffect(() => {
     let isMounted = true
+    const controller = new AbortController()
 
     async function checkAuth() {
       try {
@@ -24,15 +29,17 @@ export default function PasswordGate({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
+          signal: controller.signal,
           body: JSON.stringify({ action: 'verify' }),
         })
         if (res.ok && isMounted) {
           const data = await res.json().catch(() => ({}))
           if (data?.csrfToken) storeCsrfToken(data.csrfToken, 'gate')
           setAuthenticated(true)
-          if (onUnlock) onUnlock()
+          if (onUnlockRef.current) onUnlockRef.current()
         }
-      } catch {
+      } catch (err) {
+        if (err?.name === 'AbortError') return
         // Fallback gracefully if API is unreachable
       } finally {
         if (isMounted) setCheckingSession(false)
@@ -40,8 +47,11 @@ export default function PasswordGate({
     }
 
     checkAuth()
-    return () => { isMounted = false }
-  }, [onUnlock])
+    return () => {
+      isMounted = false
+      controller.abort()
+    }
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()

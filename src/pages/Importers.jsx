@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import SEO from '../components/SEO'
 import PasswordGate from '../components/PasswordGate'
@@ -10,6 +10,14 @@ import {
   X, Check, RefreshCw, Send, MessageSquare, ShieldCheck, Eye
 } from 'lucide-react'
 import { WHATSAPP_NUMBER } from '../data/links'
+import {
+  isValidOptionalEmail,
+  isValidOptionalPhone,
+  csvCell as safeCsvCell,
+  buildUtf8Csv,
+  validateVerificationTransition,
+  clampPage
+} from '../lib/directoryUtils'
 
 const PRIORITIES = ['All', 'HIGH', 'MEDIUM', 'LOW']
 const STATUSES = ['All', 'NEW', 'RESEARCHING', 'VERIFIED', 'CONTACTED', 'REPLIED', 'QUALIFIED', 'SAMPLE', 'QUOTATION', 'NEGOTIATION', 'ORDER', 'FOLLOW-UP']
@@ -66,9 +74,9 @@ export default function Importers() {
     phone: '',
     whatsapp: '',
     website: '',
-    verificationStatus: 'VERIFIED',
+    verificationStatus: 'UNVERIFIED',
     priority: 'HIGH',
-    outreachStatus: 'NEW',
+    outreachStatus: 'NOT_READY',
     moq: '500 kg',
     estimatedRequirement: '2,000 kg / order',
     targetPrice: 'USD 4.50 / kg',
@@ -77,11 +85,20 @@ export default function Importers() {
     notes: ''
   })
 
-  // Pagination
+  // Pagination & Race-Condition Protection
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 12
+  const abortControllerRef = useRef(null)
+  const requestIdRef = useRef(0)
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    const currentReqId = ++requestIdRef.current
+
     setLoading(true)
     setError('')
     try {
@@ -89,22 +106,34 @@ export default function Importers() {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
+        signal: controller.signal,
       })
+      if (currentReqId !== requestIdRef.current) return
       if (res.ok) {
         const json = await res.json()
-        setImporters(json.importers || [])
+        if (currentReqId !== requestIdRef.current) return
+        setImporters(Array.isArray(json.importers) ? json.importers : [])
       } else {
-        setError('Authentication required to load importer records.')
+        const errJson = await res.json().catch(() => ({}))
+        setError(errJson.error || 'Authentication required to load importer records.')
       }
     } catch (err) {
-      setError('Network error loading data. Please try again.')
+      if (err?.name === 'AbortError') return
+      if (currentReqId !== requestIdRef.current) return
+      setError('Network error loading importer data. Please try again.')
     } finally {
-      setLoading(false)
+      if (currentReqId === requestIdRef.current) {
+        setLoading(false)
+      }
     }
-  }
+  }, [])
 
   useEffect(() => {
-    fetchData()
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
   }, [])
 
   // Filter & Sort logic
@@ -119,6 +148,8 @@ export default function Importers() {
       item.products?.toLowerCase().includes(q) ||
       item.email?.toLowerCase().includes(q) ||
       item.phone?.toLowerCase().includes(q) ||
+      item.website?.toLowerCase().includes(q) ||
+      item.domain?.toLowerCase().includes(q) ||
       item.contactPerson?.toLowerCase().includes(q) ||
       item.businessType?.toLowerCase().includes(q)
 
@@ -163,47 +194,77 @@ export default function Importers() {
     return 0
   })
 
-  // Pagination calculation
+  // Pagination calculation (always clamped to valid page range)
   const totalPages = Math.ceil(sorted.length / pageSize) || 1
-  const paginatedList = sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const paginatedList = sorted.slice((safeCurrentPage - 1) * pageSize, safeCurrentPage * pageSize)
 
-  // Export CSV
+  const handleResetFilters = () => {
+    setActiveTab('all')
+    setSearch('')
+    setSelectedCountry('All')
+    setSelectedRegion('All')
+    setSelectedProduct('All')
+    setSelectedPriority('All')
+    setSelectedStatus('All')
+    setSelectedVerification('All')
+    setSelectedCompanyVerification('All')
+    setSelectedBusinessFit('All')
+    setSelectedBuyerType('All')
+    setSelectedOutreachReady('All')
+    setSortBy('name')
+    setCurrentPage(1)
+  }
+
+  // CSV cell helper: prevents formula injection & preserves UTF-8
+  const csvCell = (val) => {
+    const raw = val == null ? '' : String(val)
+    const safe = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw
+    return `"${safe.replace(/"/g, '""')}"`
+  }
+
+  // Export CSV (filtered view, no fabricated verification defaults)
   const handleExportCSV = () => {
     if (!sorted.length) return
     const headers = [
       'ID', 'Company Name', 'Country', 'State/Region', 'City', 'Business Type',
-      'Industry', 'Product Interest', 'Contact Person', 'Designation', 'Email',
-      'Phone', 'Website', 'Verification Status', 'Priority', 'Outreach Status',
+      'Buyer Type', 'Industry', 'Product Interest', 'Contact Person', 'Designation',
+      'Decision Maker Status', 'Email', 'Phone', 'Website', 'Company Verification',
+      'Business Fit', 'Verification Status', 'Priority', 'Outreach Status',
       'Estimated Requirement', 'Target Price', 'Preferred Incoterm', 'Destination Port',
       'Last Contact Date', 'Next Follow Up', 'Notes'
     ]
     const rows = sorted.map(i => [
       i.id,
-      `"${(i.companyName || i.name || '').replace(/"/g, '""')}"`,
-      `"${(i.country || '').replace(/"/g, '""')}"`,
-      `"${(i.region || i.state || '').replace(/"/g, '""')}"`,
-      `"${(i.city || '').replace(/"/g, '""')}"`,
-      `"${(i.businessType || '').replace(/"/g, '""')}"`,
-      `"${(i.industry || '').replace(/"/g, '""')}"`,
-      `"${(i.products || '').replace(/"/g, '""')}"`,
-      `"${(i.contactPerson || '').replace(/"/g, '""')}"`,
-      `"${(i.designation || '').replace(/"/g, '""')}"`,
-      `"${(i.email || '').replace(/"/g, '""')}"`,
-      `"${(i.phone || i.contact || '').replace(/"/g, '""')}"`,
-      `"${(i.website || '').replace(/"/g, '""')}"`,
-      `"${(i.verificationStatus || 'VERIFIED')}"`,
-      `"${(i.priority || 'MEDIUM')}"`,
-      `"${(i.outreachStatus || 'NEW')}"`,
-      `"${(i.estimatedRequirement || '')}"`,
-      `"${(i.targetPrice || '')}"`,
-      `"${(i.preferredIncoterm || '')}"`,
-      `"${(i.destinationPort || '')}"`,
-      `"${(i.lastContactDate || '')}"`,
-      `"${(i.nextFollowUpDate || '')}"`,
-      `"${(i.notes || '').replace(/"/g, '""')}"`
+      csvCell(i.companyName || i.name),
+      csvCell(i.country),
+      csvCell(i.region || i.state),
+      csvCell(i.city),
+      csvCell(i.businessType),
+      csvCell(i.buyerType || 'UNKNOWN'),
+      csvCell(i.industry),
+      csvCell(i.products),
+      csvCell(i.contactPerson),
+      csvCell(i.designation),
+      csvCell(i.decisionMakerStatus || 'NOT_FOUND'),
+      csvCell(i.email),
+      csvCell(i.phone || i.contact),
+      csvCell(i.website),
+      csvCell(i.companyVerificationStatus || 'UNVERIFIED'),
+      csvCell(i.businessFitStatus || 'UNASSESSED'),
+      csvCell(i.explicitStatus || i.verificationStatus || 'UNVERIFIED'),
+      csvCell(i.priority || 'MEDIUM'),
+      csvCell(i.outreachStatus || 'NOT_READY'),
+      csvCell(i.estimatedRequirement),
+      csvCell(i.targetPrice),
+      csvCell(i.preferredIncoterm),
+      csvCell(i.destinationPort),
+      csvCell(i.lastContactDate),
+      csvCell(i.nextFollowUpDate),
+      csvCell(i.notes)
     ])
 
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -233,13 +294,42 @@ export default function Importers() {
     if (selectedImporter?.id === id) setSelectedImporter(null)
   }
 
-  // Add Importer handler
+  // Add Importer handler (validates email/phone, prevents duplicates & enforces UNVERIFIED defaults)
   const handleAddSubmit = (e) => {
     e.preventDefault()
+    const targetName = (newFormData.companyName || newFormData.name || '').trim().toLowerCase()
+    if (!targetName) {
+      window.alert('Company name is required.')
+      return
+    }
+    if (!isValidOptionalEmail(newFormData.email)) {
+      window.alert('Please enter a valid business email address (or leave blank).')
+      return
+    }
+    if (!isValidOptionalPhone(newFormData.phone)) {
+      window.alert('Please enter a valid phone number with 7–16 digits (or leave blank).')
+      return
+    }
+    const targetEmail = (newFormData.email || '').trim().toLowerCase()
+    const duplicate = importers.find(i =>
+      (targetName && (i.companyName || i.name || '').trim().toLowerCase() === targetName) ||
+      (targetEmail && i.email && i.email.trim().toLowerCase() === targetEmail)
+    )
+    if (duplicate) {
+      window.alert(`A record with this company name or email already exists (ID #${duplicate.id}: ${duplicate.companyName || duplicate.name}). Please edit the existing record instead.`)
+      return
+    }
     const newId = importers.length ? Math.max(...importers.map(i => i.id || 0)) + 1 : 1
     const record = {
       ...newFormData,
       id: newId,
+      verificationStatus: 'UNVERIFIED',
+      companyVerificationStatus: 'UNVERIFIED',
+      inVerificationQueue: true,
+      outreachStatus: 'NOT_READY',
+      dataSource: 'MANUAL_ENTRY',
+      verificationUpdatedAt: new Date().toISOString(),
+      verificationUpdatedBy: 'founder_portal_operator',
       location: `${newFormData.city ? newFormData.city + ', ' : ''}${newFormData.country}`
     }
     setImporters(prev => [record, ...prev])
@@ -247,11 +337,34 @@ export default function Importers() {
     setSelectedImporter(record)
   }
 
-  // Edit Importer handler
+  // Edit Importer handler (enforces email/phone validation & evidence requirement for verification upgrades)
   const handleEditSubmit = (e) => {
     e.preventDefault()
-    setImporters(prev => prev.map(i => i.id === editFormData.id ? editFormData : i))
-    setSelectedImporter(editFormData)
+    if (!isValidOptionalEmail(editFormData.email)) {
+      window.alert('Please enter a valid business email address.')
+      return
+    }
+    if (!isValidOptionalPhone(editFormData.phone)) {
+      window.alert('Please enter a valid phone number with 7–16 digits.')
+      return
+    }
+    const original = importers.find(i => i.id === editFormData.id)
+    const transition = validateVerificationTransition(
+      original?.verificationStatus || 'UNVERIFIED',
+      editFormData.verificationStatus,
+      editFormData.notes || editFormData.verificationEvidence
+    )
+    if (!transition.allowed) {
+      window.alert(transition.error)
+      return
+    }
+    const updatedRecord = {
+      ...editFormData,
+      verificationUpdatedAt: new Date().toISOString(),
+      verificationUpdatedBy: 'founder_portal_operator'
+    }
+    setImporters(prev => prev.map(i => i.id === updatedRecord.id ? updatedRecord : i))
+    setSelectedImporter(updatedRecord)
     setIsEditModalOpen(false)
   }
 
@@ -509,7 +622,16 @@ export default function Importers() {
           </div>
 
           {/* Results Grid */}
-          {loading ? (
+          {error ? (
+            <div className="card" style={{ textAlign: 'center', padding: '48px 24px', background: '#fef2f2', border: '1px solid #fecaca' }}>
+              <p style={{ color: '#991b1b', fontSize: '0.95rem', fontWeight: 700, marginBottom: 14 }}>
+                {error}
+              </p>
+              <button onClick={fetchData} className="btn btn-primary" style={{ gap: 6 }}>
+                <RefreshCw size={15} /> Retry Loading Importers
+              </button>
+            </div>
+          ) : loading ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
               <RefreshCw size={32} color="var(--color-primary)" className="animate-spin" style={{ margin: '0 auto 12px' }} />
               <p style={{ color: 'var(--color-text-light)', fontSize: '0.9rem' }}>Loading global buyer records...</p>
@@ -520,7 +642,7 @@ export default function Importers() {
                 No importers found matching your filter criteria.
               </p>
               <button
-                onClick={() => { setSearch(''); setSelectedRegion('All'); setSelectedPriority('All'); setSelectedStatus('All'); setSelectedVerification('All'); }}
+                onClick={handleResetFilters}
                 className="btn btn-primary"
               >
                 Reset All Filters
@@ -807,7 +929,7 @@ export default function Importers() {
             <div className="card" style={{ maxWidth: 640, width: '100%', maxHeight: '90vh', overflowY: 'auto', background: 'white', padding: '32px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                 <div>
-                  <span className="badge" style={{ marginBottom: 6 }}>{selectedImporter.verificationStatus || 'VERIFIED'}</span>
+                  <span className="badge" style={{ marginBottom: 6 }}>{selectedImporter.explicitStatus || selectedImporter.verificationStatus || 'UNVERIFIED'}</span>
                   <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--color-text)', margin: 0 }}>
                     {selectedImporter.companyName || selectedImporter.name}
                   </h2>

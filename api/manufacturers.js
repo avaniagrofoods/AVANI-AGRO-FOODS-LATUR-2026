@@ -63,10 +63,24 @@ export default async function handler(req, res) {
 
   const all = [...MANUFACTURERS.small, ...MANUFACTURERS.medium, ...MANUFACTURERS.large];
 
+  const metrics = {
+    totalRecords: all.length,
+    smallScale: MANUFACTURERS.small.length,
+    mediumScale: MANUFACTURERS.medium.length,
+    largeScale: MANUFACTURERS.large.length,
+    verified: all.filter(m => m.verificationStatus === 'VERIFIED').length,
+    underReview: all.filter(m => m.verificationStatus === 'UNDER_REVIEW').length,
+    unverified: all.filter(m => !m.verificationStatus || m.verificationStatus === 'UNVERIFIED').length,
+    locationUnverified: all.filter(m => !m.location || m.location === 'Location not verified' || m.state === 'Unverified').length,
+    missingContact: all.filter(m => (!m.email || m.email === 'Not Available') && (!m.phone || m.phone === 'Not Available')).length,
+    missingProducts: all.filter(m => !m.products || !String(m.products).trim()).length
+  };
+
   return res.status(200).json({
     success: true,
     count: all.length,
     manufacturers: MANUFACTURERS,
-    all
+    all,
+    metrics
   });
 }
